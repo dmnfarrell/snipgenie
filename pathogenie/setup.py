@@ -21,11 +21,10 @@ setup(
                       'pandas>=0.24',
                       'matplotlib>=3.0',
                       'biopython>=1.5',
-                      #'pyside2>=5.1',
+                      'pyside2>=5.1',
                       'future'],
     entry_points = {
-        'console_scripts': [
-            'pathogenie=pathogenie.app:main',
+        'console_scripts': [            
             'pathogeniegui=pathogenie.gui:main']
             },
     classifiers = ['Operating System :: OS Independent',

@@ -2,7 +2,7 @@ Background
 ----------
 
 This is a Python package for doing variant calling and making phylogenies using
-NGS data from microbial species
+NGS data from microbial species.
 
 Dependencies
 ------------
@@ -12,6 +12,7 @@ pandas
 biopython
 matplotlib
 future
+pyside2
 
 Installation
 ------------
@@ -21,11 +22,9 @@ Installation
 Usage
 -----
 
-  pathogenie 
+  pathogenie
 
 Links
 -----
 
 * https://github.com/dmnfarrell/btbgenie
-
-

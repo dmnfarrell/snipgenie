@@ -369,15 +369,15 @@ class FilesTable(DataFrameTable):
     def addActions(self, event, row):
 
         menu = self.menu
-        fileinfoAction = menu.addAction("File Summary")
+        fastqqualityAction = menu.addAction("Quality Summary")
         removeAction = menu.addAction("Remove Selected")
         action = menu.exec_(self.mapToGlobal(event.pos()))
         # Map the logical row index to a real index for the source model
         #model = self.model
 
-        if action == fileinfoAction:
+        if action == fastqqualityAction:
             #print (row)
-            self.app.show_file_info(row)
+            self.app.quality_summary(row)
         elif action == removeAction:
             self.deleteRows(row)
         return

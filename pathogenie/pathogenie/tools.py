@@ -34,8 +34,7 @@ def get_fastq_info(filename):
     df = fastq_to_dataframe(filename)
     name = os.path.basename(filename).split('.')[0]
     rl = int(df.length.mean())
-    d = {'label':name,'filename':filename,'read_length':rl}
-    return d
+    return rl
 
 def align_info(bamfile):
 
@@ -239,3 +238,20 @@ def vcf_to_dataframe(vcf_file, quality=30):
     print (res.groupby(['var_type','sub_type']).size())
     res = res[res.QUAL>=quality]
     return res
+
+def plot_qualities(filename, ax=None):
+
+    fastq_parser = SeqIO.parse(gzopen(filename, "rt"), "fastq")
+    res=[]
+    c=0
+    for record in fastq_parser:
+        score=record.letter_annotations["phred_quality"]
+        res.append(score)
+        c+=1
+        if c>1500:
+            break
+    df = pd.DataFrame(res)
+    if ax==None:
+        f,ax=plt.subplots(figsize=(12,4))
+    df.mean().plot(ax=ax)
+    return 

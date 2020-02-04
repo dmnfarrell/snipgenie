@@ -31,7 +31,7 @@ from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.Alphabet import generic_dna
-from . import tools
+from . import tools, aligners
 
 tempdir = tempfile.gettempdir()
 home = os.path.expanduser("~")
@@ -40,21 +40,44 @@ module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
 datadir = os.path.join(module_path, 'data')
 dbdir = os.path.join(config_path, 'db')
 customdbdir = os.path.join(config_path, 'custom')
+ref_genome = os.path.join(datadir,'Mbovis_AF212297.fa')
 
-def assign_sample_ids(filenames):
-    """Assign new ids for sample filenames e.g. files. Useful for
-       replacing long file names with short ids.
-       Returns: dataframe with labels
+def get_sample_names(filenames):
+    """Get sample pairs from list of fastq files."""
+
+    res = []
+    cols = ['name','sample','filename']
+    for filename in filenames:
+        name = os.path.basename(filename).split('.')[0]
+        sample = name.split('_R')[0]
+        x = [name, sample, filename]
+        res.append(x)
+
+    df = pd.DataFrame(res, columns=cols)
+    df = df.sort_values(['name','sample','pair']).reset_index(drop=True)
+    df['pair'] = df.groupby('sample').cumcount()+1
+    return df
+
+def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
+    """
+    Align multiple files. Requires a dataframe with a 'sample' column to indicate
+    paired files grouping.
     """
 
-    i=1
-    labels = {}
-    for fname in filenames:
-        n = os.path.splitext(os.path.basename(fname))[0]
-        print (n)
-        sid = 's%02d' %i
-        labels[n] = sid
-        i+=1
-    l = pd.DataFrame.from_dict(labels,orient='index')
-    l.columns = ['id']; l.index.name='filename'
-    return l
+    if not os.path.exists(outdir):
+        os.makedirs(outdir, exist_ok=True)
+    new = []
+    for name,df in samples.groupby('sample'):
+        print (name)
+        files = list(df.filename)
+        #print (files)
+        out = os.path.join(outdir,name+'.bam')
+        print (out)
+        aligners.bwa_align(files[0],files[1], idx=idx, out=out, **kwargs)
+        cmd = 'samtools index {o}'.format(o=out)
+        subprocess.check_output(cmd,shell=True)
+        index = df.index
+        samples.loc[index,'bam_file'] = out
+        if callback != None:
+            callback(out)
+    return samples

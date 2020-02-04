@@ -88,6 +88,11 @@ class App(QMainWindow):
         self.fastq_table = tables.FilesTable(center, app=self, dataframe=pd.DataFrame())
         l.addWidget(self.fastq_table)
 
+        self.tabs = QTabWidget(center)
+        self.tabs.setTabsClosable(True)
+        #self.tabs.tabCloseRequested.connect(self.close_tab)
+        l.addWidget(self.tabs)
+
         self.right = right = QWidget(self.m)
         l2 = QVBoxLayout(right)
         #mainlayout.addWidget(right)
@@ -149,6 +154,14 @@ class App(QMainWindow):
                 QtCore.Qt.CTRL + QtCore.Qt.Key_Q)
         self.menuBar().addMenu(self.file_menu)
 
+        self.analysis_menu = QMenu('&Analysis', self)
+        self.menuBar().addSeparator()
+        self.menuBar().addMenu(self.analysis_menu)
+        #self.analysis_menu.addAction('&Run Blast',
+        #    lambda: self.run_threaded_process(self.run_gene_finder, self.find_genes_completed))
+        self.analysis_menu.addAction('&Align Reads',
+            lambda: self.run_threaded_process(self.align_files, self.alignment_completed))
+
         self.settings_menu = QMenu('&Settings', self)
         self.menuBar().addMenu(self.settings_menu)
         self.settings_menu.addAction('&Set Output Folder', self.set_output_folder)
@@ -170,7 +183,6 @@ class App(QMainWindow):
         data['inputs'] = self.fastq_table.getDataFrame()
         #data['sheets'] = self.sheets
         data['outputdir'] = self.outputdir
-        #data['meta'] = self.saveMeta(table)
         self.projectlabel.setText(filename)
         pickle.dump(data, open(filename,'wb'))
         return
@@ -259,20 +271,18 @@ class App(QMainWindow):
         self.load_fastq_table(filenames)
         return
 
-    def load_samples(self):
-        """load samples from text file"""
-
-        return
-
     def load_fastq_table(self, filenames):
         """Append/Load fasta inputs into table"""
 
         if filenames is None or len(filenames) == 0:
             return
 
-        info = [tools.get_fastq_info(f) for f in filenames]
-        new = pd.DataFrame(info)
         df = self.fastq_table.model.df
+
+        new = app.get_sample_names(filenames)
+        new['read_length'] = new.filename.apply(tools.get_fastq_info)
+        print (new)
+
         if len(df)>0:
             new = pd.concat([df,new],sort=False).reset_index(drop=True)
         self.fastq_table.setDataFrame(new)
@@ -309,6 +319,84 @@ class App(QMainWindow):
             self.show_info('You should set an output folder from the Settings menu')
             return 0
         return 1
+
+    def align_files(self, progress_callback):
+        """Run gene annotation for input files.
+        progress_callback: signal for indicating progress in gui
+        """
+
+        retval = self.check_output_folder()
+        if retval == 0:
+            return
+        self.running = True
+        self.opts.applyOptions()
+        kwds = self.opts.kwds
+        overwrite = kwds['overwrite']
+        df = self.fastq_table.model.df
+
+        #rows = self.fastq_table.getSelectedRows()
+        #df = df.loc[rows]
+        msg = 'Aligning reads..\nThis may take some time.'
+        progress_callback.emit(msg)
+        ref = app.ref_genome
+        print (ref)
+        progress_callback.emit('Using reference genome: %s' %ref)
+        path = os.path.join(self.outputdir, 'mapped')
+        if not os.path.exists(path):
+            os.makedirs(path)
+        app.align_reads(df, idx=ref, outdir=path, overwrite=overwrite, threads=kwds['threads'],
+                            callback=progress_callback.emit)
+        return
+
+    def alignment_completed(self):
+        """Gene blasting/finding completed"""
+
+        self.info.append("finished")
+        self.progressbar.setRange(0,1)
+        df = self.fastq_table.getDataFrame()
+        self.fastq_table.refresh()
+        self.running = False
+        return
+
+    def run_threaded_process(self, process, on_complete):
+        """Execute a function in the background with a worker"""
+
+        worker = Worker(fn=process)
+        self.threadpool.start(worker)
+        worker.signals.finished.connect(on_complete)
+        worker.signals.progress.connect(self.progress_fn)
+        self.progressbar.setRange(0,0)
+        return
+
+    def progress_fn(self, msg):
+
+        print (msg)
+        self.info.append(msg)
+        self.info.verticalScrollBar().setValue(1)
+        return
+
+    def quality_summary(self, row):
+        """Summary of features"""
+
+        df = self.fastq_table.model.df
+        row = self.fastq_table.getSelectedRows()[0]
+        data = df.iloc[row]
+        name = data['name']
+        w = widgets.PlotViewer(self)
+        import pylab as plt
+        fig,ax = plt.subplots(2,1, figsize=(7,5), dpi=65, facecolor=(1,1,1), edgecolor=(0,0,0))
+        axs=ax.flat
+        tools.plot_qualities(data.filename, ax=axs[0])
+        w.show_figure(fig)
+        self.tabs.addTab(w, name )
+        return
+
+    def show_info(self, msg):
+
+        self.info.append(msg)
+        self.info.verticalScrollBar().setValue(
+            self.info.verticalScrollBar().maximum())
+        return
 
     def quit(self):
         self.close()
@@ -416,7 +504,7 @@ class AppOptions(widgets.BaseOptions):
                        'blast':['db','identity','coverage'],
                        }
         self.opts = {'threads':{'type':'combobox','default':4,'items':cpus},
-                    'overwrite':{'type':'checkbox','default':True},
+                    'overwrite':{'type':'checkbox','default':False},
                     'aligner':{'type':'combobox','default':'bwa',
                     'items':aligners,'label':'aligner'},
                     'db':{'type':'combobox','default':'card',

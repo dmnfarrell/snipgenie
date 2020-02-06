@@ -31,6 +31,9 @@ BOWTIE_PARAMS = '-v 1 --best'
 
 def build_bwa_index(fastafile, path=None):
 
+    cmd = 'bwa index %s' %fastafile
+    subprocess.check_output(cmd, shell=True)
+    print (cmd)
     return
 
 def bwa_align(file1, file2, idx, out, threads=4, overwrite=False):
@@ -38,7 +41,7 @@ def bwa_align(file1, file2, idx, out, threads=4, overwrite=False):
 
     #cmd = 'bowtie2 -x %s -1 %s -2 %s --threads 6 | samtools view -bS - > %s' %(idx,files[0],files[1],out)
     cmd = 'bwa mem -M -t {t} {i} {f1} {f2} | samtools view -bt - | samtools sort -o {o}'.format(i=idx,f1=file1,f2=file2,o=out,t=threads)
-    
+
     if not os.path.exists(out) or overwrite == True:
         print (cmd )
         subprocess.check_output(cmd, shell=True)

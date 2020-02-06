@@ -32,7 +32,7 @@ from PySide2.QtGui import *
 import pandas as pd
 import numpy as np
 from Bio import SeqIO
-from . import tools, app, widgets, tables
+from . import tools, aligners, app, widgets, tables
 
 home = os.path.expanduser("~")
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
@@ -63,7 +63,9 @@ class App(QMainWindow):
         self.setCentralWidget(self.main)
         self.setup_gui()
         self.clear_project()
-
+        
+        if platform.system() == 'Windows':
+            app.fetch_binaries()
         if project != None:
             self.load_project(project)
         self.threadpool = QtCore.QThreadPool()
@@ -159,8 +161,12 @@ class App(QMainWindow):
         self.menuBar().addMenu(self.analysis_menu)
         #self.analysis_menu.addAction('&Run Blast',
         #    lambda: self.run_threaded_process(self.run_gene_finder, self.find_genes_completed))
+        self.analysis_menu.addAction('&Trim Reads',
+            lambda: self.run_threaded_process(self.run_trimming, self.processing_completed))
         self.analysis_menu.addAction('&Align Reads',
-            lambda: self.run_threaded_process(self.align_files, self.alignment_completed))
+            lambda: self.run_threaded_process(self.align_files, self.processing_completed))
+        self.analysis_menu.addAction('&Call Variants',
+            lambda: self.run_threaded_process(self.variant_calling, self.processing_completed))
 
         self.settings_menu = QMenu('&Settings', self)
         self.menuBar().addMenu(self.settings_menu)
@@ -196,7 +202,7 @@ class App(QMainWindow):
                                                   options=options)
         if filename:
             if not os.path.splitext(filename)[1] == '.proj':
-                filename += '.pygf'
+                filename += '.proj'
             self.proj_file = filename
             self.save_project()
         return
@@ -320,6 +326,16 @@ class App(QMainWindow):
             return 0
         return 1
 
+    def run_trimming(self, progress_callback):
+        """Run quality and adapter trimming"""
+
+        retval = self.check_output_folder()
+        if retval == 0:
+            return
+        self.running = True
+
+        return
+
     def align_files(self, progress_callback):
         """Run gene annotation for input files.
         progress_callback: signal for indicating progress in gui
@@ -339,6 +355,7 @@ class App(QMainWindow):
         msg = 'Aligning reads..\nThis may take some time.'
         progress_callback.emit(msg)
         ref = app.ref_genome
+        aligners.build_bwa_index(ref)
         print (ref)
         progress_callback.emit('Using reference genome: %s' %ref)
         path = os.path.join(self.outputdir, 'mapped')
@@ -348,8 +365,25 @@ class App(QMainWindow):
                             callback=progress_callback.emit)
         return
 
-    def alignment_completed(self):
-        """Gene blasting/finding completed"""
+    def variant_calling(self, progress_callback):
+        """Run variant calling for available bam files."""
+
+        retval = self.check_output_folder()
+        if retval == 0:
+            return
+        self.running = True
+        df = self.fastq_table.model.df
+
+        bam_files = ' '.join(list(df.bam_file.unique()))
+        #progress_callback.emit(bam_files)
+        print (bam_files)
+        path = self.outputdir
+        self.vcf_file = app.variant_calling(bam_files, app.ref_genome, path, callback=progress_callback.emit)
+
+        return
+
+    def processing_completed(self):
+        """Alignment/calling completed"""
 
         self.info.append("finished")
         self.progressbar.setRange(0,1)
@@ -386,7 +420,9 @@ class App(QMainWindow):
         import pylab as plt
         fig,ax = plt.subplots(2,1, figsize=(7,5), dpi=65, facecolor=(1,1,1), edgecolor=(0,0,0))
         axs=ax.flat
-        tools.plot_qualities(data.filename, ax=axs[0])
+        tools.plot_fastq_qualities(data.filename, ax=axs[0])
+        tools.plot_fastq_gc_content(data.filename, ax=axs[1])
+        plt.tight_layout()
         w.show_figure(fig)
         self.tabs.addTab(w, name )
         return
@@ -435,10 +471,10 @@ class App(QMainWindow):
         text='pathogenie GUI\n'\
             +'version '+__version__+snap+'\n'\
             +'Copyright (C) Damien Farrell 2020-\n'\
-            +'This program is free software; you can redistribute it and/or\n'\
-            +'modify it under the terms of the GNU GPL\n'\
-            +'as published by the Free Software Foundation; either\n'\
-            +'version 3 of the License, or (at your option) any\n'\
+            +'This program is free software; you can redistribute it and/or '\
+            +'modify it under the terms of the GNU GPL '\
+            +'as published by the Free Software Foundation; either '\
+            +'version 3 of the License, or (at your option) any '\
             +'later version.\n'\
             +'Using Python v%s, PySide2 v%s\n' %(pythonver, qtver)\
             +'pandas v%s, matplotlib v%s' %(pandasver,mplver)

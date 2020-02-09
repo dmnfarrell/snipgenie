@@ -29,6 +29,33 @@ import numpy as np
 import pandas as pd
 from gzip import open as gzopen
 
+def batch_iterator(iterator, batch_size):
+    """Returns lists of length batch_size.
+
+    This can be used on any iterator, for example to batch up
+    SeqRecord objects from Bio.SeqIO.parse(...), or to batch
+    Alignment objects from Bio.AlignIO.parse(...), or simply
+    lines from a file handle.
+
+    This is a generator function, and it returns lists of the
+    entries from the supplied iterator.  Each list will have
+    batch_size entries, although the final list may be shorter.
+    """
+    entry = True  # Make sure we loop once
+    while entry:
+        batch = []
+        while len(batch) < batch_size:
+            try:
+                entry = iterator.__next__()
+            except StopIteration:
+                entry = None
+            if entry is None:
+                # End of file
+                break
+            batch.append(entry)
+        if batch:
+            yield batch
+
 def get_fastq_info(filename):
 
     df = fastq_to_dataframe(filename)
@@ -178,7 +205,7 @@ def fastq_to_dataframe(filename, size=1000):
     """
 
     ext = os.path.splitext(filename)[1]
-    if ext=='.fastq' or ext=='.gz':
+    if ext=='.gz':
         fastq_parser = SeqIO.parse(gzopen(filename, "rt"), "fastq")
     else:
         fastq_parser = SeqIO.parse(open(filename, "r"), "fastq")
@@ -194,28 +221,36 @@ def fastq_to_dataframe(filename, size=1000):
     df['length'] = df.seq.str.len()
     return df
 
-def trim_adapters(infile, outfile, adapter=None, quality=20, method='cutadapt'):
+def trim_reads_default(filename,  outfile, right_quality=35):
+    """Trim adapters - built in method"""
+
+    #trimmed = []
+    fastq_parser = SeqIO.parse(gzopen(filename, "rt"), "fastq")
+    c=0
+    out = gzopen(outfile, "wt")
+    for record in fastq_parser:
+        score = record.letter_annotations["phred_quality"]
+        for i in range(len(score)-1,0,-1):
+            if score[i] >= right_quality:
+                break
+        #trimmed.append(record[:i])
+
+        SeqIO.write(record[:i],out,'fastq')
+    return
+
+def trim_reads(filename, outfile, adapter=None, right_quality=30, method='default'):
     """Trim adapters using cutadapt"""
 
-    if adapter is not None and not type(adapter) is str:
-        print ('not valid adapter')
-        return
-
+    #if adapter is not None and not type(adapter) is str:
+    #    print ('not valid adapter')
+    #    return
     if method == 'default':
-        newfile = open( outfile, "w" )
-        newfile.close()
-        ext = os.path.splitext(filename)[1]
-        if ext=='.fastq' or ext=='.gz':
-            fastq_parser = SeqIO.parse(gzopen(filename, "rt"), "fastq")
-        else:
-            fastq_parser = SeqIO.parse(open(filename, "r"), "fastq")
-        #for fastq_rec in fastq_parser:
-        #    pass
+        trim_reads_default(filename,  outfile, right_quality=30)
     elif method == 'cutadapt':
         if adapter != None:
-            cmd = 'cutadapt -O 5 -q 20 -a {a} {i} -o {o}'.format(a=adapter,i=infile,o=outfile)
+            cmd = 'cutadapt -O 5 -q 20 -a {a} {i} -o {o}'.format(a=adapter,i=filename,o=outfile)
         else:
-            cmd = 'cutadapt -O 5 -q 20 {i} -o {o}'.format(i=infile,o=outfile)
+            cmd = 'cutadapt -O 5 -q 20 {i} -o {o}'.format(i=filename,o=outfile)
         print (cmd)
         result = subprocess.check_output(cmd, shell=True, executable='/bin/bash')
     return
@@ -226,17 +261,20 @@ def vcf_to_dataframe(vcf_file, quality=30):
     vcf_reader = vcf.Reader(open(vcf_file,'r'))
     #print (vcf_reader.filters)
     res=[]
+    cols = ['chrom','var_type','sub_type','start','end','REF','ALT','QUAL','DP']
     for rec in vcf_reader:
-        x = rec.CHROM, rec.var_type, rec.var_subtype, rec.start, rec.end, rec.REF, rec.ALT,
-        rec.QUAL, rec.INFO['DP'] ,rec.INFO['AO'][0],rec.INFO['RO']
-        #print rec, rec.INFO['DP'] ,rec.INFO['RO']
+        x = [rec.CHROM, rec.var_type, rec.var_subtype, rec.start, rec.end, rec.REF, str(rec.ALT[0]),
+            rec.QUAL, rec.INFO['DP']]
+        #print (rec.__dict__)
+        #print (rec.INFO.keys())
+        #for call in rec.samples:
+            #print (call.sample, call.data, rec.genotype(call.sample))
+
         res.append(x)
         #print (x)
-    cols = ['chrom','var_type','sub_type','start','end','REF','ALT']#,'QUAL','DP','AO','RO']
-    res=pd.DataFrame(res,columns=cols)
-    #print res[:20]
-    print (res.groupby(['var_type','sub_type']).size())
-    res = res[res.QUAL>=quality]
+
+    res = pd.DataFrame(res,columns=cols)    
+    #print (res.groupby(['var_type','sub_type']).size())
     return res
 
 def plot_fastq_qualities(filename, ax=None, limit=10000):

@@ -63,14 +63,13 @@ class App(QMainWindow):
         self.setCentralWidget(self.main)
         self.setup_gui()
         self.clear_project()
-        
+
         if platform.system() == 'Windows':
             app.fetch_binaries()
         if project != None:
             self.load_project(project)
         self.threadpool = QtCore.QThreadPool()
-        if project != None:
-            self.load_project(project)
+
         return
 
     def setup_gui(self):
@@ -122,6 +121,16 @@ class App(QMainWindow):
         self.progressbar.setRange(0,1)
         self.statusBar.addWidget(self.progressbar, 2)
         self.setStatusBar(self.statusBar)
+        return
+
+    @QtCore.Slot(int)
+    def close_tab(self, index):
+        """Close current tab"""
+
+        #index = self.tabs.currentIndex()
+        name = self.tabs.tabText(index)
+        self.tabs.removeTab(index)
+        del self.sheets[name]
         return
 
     @QtCore.Slot(int)
@@ -186,9 +195,11 @@ class App(QMainWindow):
 
         filename = self.proj_file
         data={}
+        data['results'] = self.results
         data['inputs'] = self.fastq_table.getDataFrame()
         #data['sheets'] = self.sheets
         data['outputdir'] = self.outputdir
+
         self.projectlabel.setText(filename)
         pickle.dump(data, open(filename,'wb'))
         return
@@ -226,6 +237,7 @@ class App(QMainWindow):
 
         self.outputdir = None
         self.sheets = {}
+        self.results = {}
         self.proj_file = None
         self.fastq_table.setDataFrame(pd.DataFrame({'name':[]}))
         #self.tabs.clear()
@@ -238,21 +250,20 @@ class App(QMainWindow):
 
         self.clear_project()
         data = pickle.load(open(filename,'rb'))
-        keys = ['sheets','annotations','outputdir']
+        keys = ['sheets','outputdir','results']
         for k in keys:
             if k in data:
                 self.__dict__[k] = data[k]
 
-        #for s in self.sheets:
-            #df = self.sheets[s]['data']
-            #kind = self.sheets[s]['kind']
-            #self.add_table(s, df, kind)
         ft = self.fastq_table
         ft.setDataFrame(data['inputs'])
         ft.resizeColumns()
         self.proj_file = filename
         self.projectlabel.setText(self.proj_file)
         self.outdirLabel.setText(self.outputdir)
+        print (self.results)
+        if 'vcf_file' in self.results:
+            self.show_variants()
         return
 
     def load_project_dialog(self):
@@ -332,8 +343,26 @@ class App(QMainWindow):
         retval = self.check_output_folder()
         if retval == 0:
             return
+        progress_callback.emit('Running trimming')
+        self.opts.applyOptions()
+        kwds = self.opts.kwds
         self.running = True
-
+        overwrite = kwds['overwrite']
+        threshold = kwds['quality']
+        df = self.fastq_table.model.df
+        path = os.path.join(self.outputdir, 'trimmed')
+        if not os.path.exists(path):
+            os.makedirs(path, exist_ok=True)
+        st=time.time()
+        for i,row in df.iterrows():
+            outfile = os.path.join(path, os.path.basename(row.filename))
+            progress_callback.emit(outfile)
+            if not os.path.exists(outfile) or overwrite == True:
+                tools.trim_reads(row.filename, outfile)
+            df.loc[i,'trimmed'] = outfile
+            self.fastq_table.refresh()
+        t = round(time.time()-st,1)
+        progress_callback.emit('took %s seconds' %str(t))
         return
 
     def align_files(self, progress_callback):
@@ -356,7 +385,7 @@ class App(QMainWindow):
         progress_callback.emit(msg)
         ref = app.ref_genome
         aligners.build_bwa_index(ref)
-        print (ref)
+
         progress_callback.emit('Using reference genome: %s' %ref)
         path = os.path.join(self.outputdir, 'mapped')
         if not os.path.exists(path):
@@ -374,12 +403,22 @@ class App(QMainWindow):
         self.running = True
         df = self.fastq_table.model.df
 
-        bam_files = ' '.join(list(df.bam_file.unique()))
-        #progress_callback.emit(bam_files)
+        #use trimmed files if present in table
+        bam_files = list(df.bam_file.unique())
         print (bam_files)
         path = self.outputdir
-        self.vcf_file = app.variant_calling(bam_files, app.ref_genome, path, callback=progress_callback.emit)
+        self.results['vcf_file'] = app.variant_calling(bam_files, app.ref_genome,
+                                    path, callback=progress_callback.emit)
+        self.show_variants()
+        return
 
+    def show_variants(self):
+
+        vcf_file = self.results['vcf_file']
+        vdf = tools.vcf_to_dataframe(vcf_file)
+        table = tables.DefaultTable(self.tabs, app=self, dataframe=vdf)
+        i = self.tabs.addTab(table, 'variants')
+        self.tabs.setCurrentIndex(i)
         return
 
     def processing_completed(self):
@@ -390,6 +429,14 @@ class App(QMainWindow):
         df = self.fastq_table.getDataFrame()
         self.fastq_table.refresh()
         self.running = False
+        return
+
+    def run(self):
+        """Run all steps"""
+
+        self.run_trimming()
+        self.align_files()
+        self.variant_calling()
         return
 
     def run_threaded_process(self, process, on_complete):
@@ -424,7 +471,8 @@ class App(QMainWindow):
         tools.plot_fastq_gc_content(data.filename, ax=axs[1])
         plt.tight_layout()
         w.show_figure(fig)
-        self.tabs.addTab(w, name )
+        i = self.tabs.addTab(w, name )
+        self.tabs.setCurrentIndex(i)
         return
 
     def show_info(self, msg):
@@ -436,9 +484,20 @@ class App(QMainWindow):
 
     def quit(self):
         self.close()
+        return
 
-    def closeEvent(self, ce):
-        self.quit()
+    def closeEvent(self, event=None):
+
+        if self.proj_file != None and event != None:
+            reply = QMessageBox.question(self, 'Confirm', "Save the current project?",
+                                            QMessageBox.Cancel | QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.Cancel:
+                event.ignore()
+                return
+            elif reply == QMessageBox.Yes:
+                self.save_project()
+        #self.close()
+        event.accept()
 
     def _check_snap(self):
         if os.environ.has_key('SNAP_USER_COMMON'):
@@ -536,6 +595,7 @@ class AppOptions(widgets.BaseOptions):
         aligners = ['bwa','bowtie','bowtie2']
         cpus = [str(i) for i in range(1,os.cpu_count()+1)]
         self.groups = {'general':['threads','overwrite'],
+                        'trimming':['quality'],
                         'aligners':['aligner'],
                        'blast':['db','identity','coverage'],
                        }
@@ -546,7 +606,8 @@ class AppOptions(widgets.BaseOptions):
                     'db':{'type':'combobox','default':'card',
                     'items':[],'label':'database'},
                     'identity':{'type':'entry','default':90},
-                    'coverage':{'type':'entry','default':50}
+                    'coverage':{'type':'entry','default':50},
+                    'quality':{'type':'spinbox','default':30}
                     }
         return
 

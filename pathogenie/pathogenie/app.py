@@ -80,7 +80,8 @@ def get_sample_names(filenames):
 def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
     """
     Align multiple files. Requires a dataframe with a 'sample' column to indicate
-    paired files grouping.
+    paired files grouping. If a trimmed column is present these files will align_reads
+    instead of the raw ones.
     """
 
     bwacmd = 'bwa'
@@ -91,7 +92,11 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
         print (name)
         if callback != None:
             callback('aligning %s' %name)
-        files = list(df.filename)
+        if 'trimmed' in df.columns:
+            files = list(df.trimmed)
+            callback('using trimmed')
+        else:
+            files = list(df.filename)
         #print (files)
         out = os.path.join(outdir,name+'.bam')
         print (out)
@@ -104,32 +109,41 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
             callback(out)
     return samples
 
-def variant_calling(bam_files, ref, outpath, callback=None, **kwargs):
+def variant_calling(bam_files, ref, outpath, sample_file=None, callback=None, **kwargs):
     """Call variants with bcftools"""
 
-    bcftoolscmd = 'bcftools'
-    if platform.system() == 'Windows':
-        bcftoolscmd = tools.win_binary_path('bcftools.exe')
-
+    bam_files = ' '.join(bam_files)
     rawbcf = os.path.join(outpath,'raw.bcf')
-    cmd = '{c} mpileup -O b -o {o} -f {r} {b}'.format(r=ref, b=bam_files, o=rawbcf,c=bcftoolscmd)
+    cmd = 'bcftools mpileup -O b -o {o} -f {r} {b}'.format(r=ref, b=bam_files, o=rawbcf)
     print (cmd)
     if callback != None:
         callback(cmd)
     subprocess.check_output(cmd,shell=True)
     #find snps
     vcfout = os.path.join(outpath,'calls.vcf')
-    cmd = '{c} call --ploidy 1 -m -v -o {v} {raw}'.format(v=vcfout,raw=rawbcf,c=bcftoolscmd)
+    cmd = 'bcftools call --ploidy 1 -m -v -o {v} {raw}'.format(v=vcfout,raw=rawbcf)
     if callback != None:
         callback(cmd)
     print (cmd)
     subprocess.check_output(cmd,shell=True)
+    #rename samples
+    if sample_file != None:
+        cmd = 'bcftools reheader --samples {s} -o {v} {v}'.format(v=vcfout,s=sample_file)
+        print(cmd)
+        tmp = subprocess.check_output(cmd,shell=True)
     #filter the calls
-    vcfout = os.path.join(outpath,'calls.vcf')
     final = os.path.join(outpath,'filtered')
-    cmd = 'vcftools --vcf {i} --minQ 20 --recode --recode-INFO-all --out {o}'.format(i=vcfout,o=final,c=bcftoolscmd)
+    cmd = 'vcftools --vcf {i} --minQ 20 --recode --recode-INFO-all --out {o}'.format(i=vcfout,o=final)
     print (cmd)
     tmp = subprocess.check_output(cmd,shell=True)
     if callback != None:
         callback(tmp)
-    return final
+    return final+'.recode.vcf'
+
+def create_bam_labels(filenames):
+
+    names = [os.path.basename(i).split('.')[0] for i in filenames]
+    with open('samples.txt','w+') as file:
+        for s in zip(bam_files,names):
+            file.write('%s %s\n' %(s[0],s[1]))
+    return

@@ -40,8 +40,19 @@ config_path = os.path.join(home,'.config/pathogenie')
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
 datadir = os.path.join(module_path, 'data')
 dbdir = os.path.join(config_path, 'db')
-customdbdir = os.path.join(config_path, 'custom')
+sequencedir = os.path.join(config_path, 'genome')
 ref_genome = os.path.join(datadir,'Mbovis_AF212297.fa')
+ref_gff = os.path.join(datadir,'Mbovis_AF212297.gff')
+
+def copy_ref_genomes():
+    """Copy default ref genome files to config dir"""
+
+    path = sequencedir
+    if not os.path.exists(path):
+        os.makedirs(path,exist_ok=True)
+    dest = os.path.join(path, os.path.basename(ref_genome))
+    shutil.copy(ref_genome, dest)
+    return
 
 def fetch_binaries():
     """Get windows binaries -- windows only"""
@@ -61,14 +72,17 @@ def fetch_binaries():
         urllib.request.urlretrieve(link, filename)
     return
 
-def get_sample_names(filenames):
+def get_sample_names(filenames, sep='-'):
     """Get sample pairs from list of fastq files."""
 
     res = []
     cols = ['name','sample','filename']
     for filename in filenames:
         name = os.path.basename(filename).split('.')[0]
-        sample = name.split('_R')[0]
+        sample = name.split(sep)[0]
+        #if we can't get sample name try another delimeter?
+        if name == sample:
+            sample = name.split('_')[0]
         x = [name, sample, filename]
         res.append(x)
 

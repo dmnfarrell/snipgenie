@@ -35,7 +35,7 @@ try:
 except AttributeError:
     def _fromUtf8(s):
         return s
-from . import tools
+from . import tools, plotting
 
 def dialogFromOptions(parent, opts, sections=None,
                       sticky='news', wrap=2, section_wrap=2):
@@ -330,7 +330,7 @@ class FileViewer(QDialog):
         #self.setCentralWidget(ed)
         l = QVBoxLayout(self)
         self.setLayout(l)
-        #w = self.recselect = QComboBox()
+        #w = self.chromselect = QComboBox()
         #l.addWidget(QLabel('contig'))
         #l.addWidget(w)
         l.addWidget(ed)
@@ -372,4 +372,167 @@ class PlotViewer(QDialog):
         self.grid.addWidget(canvas)
         self.fig = fig
         #self.ax = ax
+        return
+
+class BamViewer(QDialog):
+    """Sequence records features viewer using dna_features_viewer"""
+    def __init__(self, parent=None, filename=None):
+
+        super(BamViewer, self).__init__(parent)
+        #self.setWindowTitle('Bam File View')
+        self.setGeometry(QtCore.QRect(200, 200, 1000, 300))
+        self.setMinimumHeight(150)
+        self.add_widgets()
+        return
+
+    def add_widgets(self):
+        """Add widgets"""
+
+        l = QVBoxLayout(self)
+        self.setLayout(l)
+        val=0
+        navpanel = QWidget()
+        navpanel.setMaximumHeight(60)
+        l.addWidget(navpanel)
+        bl = QHBoxLayout(navpanel)
+        slider = QSlider(QtCore.Qt.Horizontal)
+        slider.setTickPosition(slider.TicksBothSides)
+        slider.setTickInterval(1000)
+        slider.setPageStep(200)
+        slider.setValue(1)
+        #slider.sliderReleased.connect(self.value_changed)
+        slider.valueChanged.connect(self.value_changed)
+        self.slider = slider
+        bl.addWidget(slider)
+
+        zoomoutbtn = QPushButton('-')
+        zoomoutbtn.setMaximumWidth(50)
+        bl.addWidget(zoomoutbtn)
+        zoomoutbtn.clicked.connect(self.zoom_out)
+        zoominbtn = QPushButton('+')
+        zoominbtn.setMaximumWidth(50)
+        bl.addWidget(zoominbtn)
+        zoominbtn.clicked.connect(self.zoom_in)
+
+        self.chromselect = QComboBox()
+        self.chromselect.currentIndexChanged.connect(self.update_chrom)
+        bl.addWidget(self.chromselect)
+
+        #add plot axes
+        from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+        import matplotlib.pyplot as plt
+        fig = plt.figure(figsize=(15,2))
+        spec = fig.add_gridspec(ncols=1, nrows=4)
+        self.ax1 = fig.add_subplot(spec[0, 0])
+        self.ax2 = fig.add_subplot(spec[1:, 0])
+        self.canvas = FigureCanvas(fig)
+        self.fig = fig
+        l.addWidget(self.canvas)
+
+        bottom = QWidget()
+        bottom.setMaximumHeight(50)
+        l.addWidget(bottom)
+        bl2 = QHBoxLayout(bottom)
+        self.loclbl = QLabel('')
+        bl2.addWidget(self.loclbl)
+        return
+
+    def load_data(self, bam_file, ref_file, vcf_file=None):
+        """Load reference seq and get contig/chrom names"""
+
+        self.ref_file = ref_file
+        self.bam_file = bam_file
+        chromnames = plotting.get_fasta_names(ref_file)
+        length = plotting.get_fasta_length(ref_file)
+        self.chrom = chromnames[0]
+        self.chromselect.addItems(chromnames)
+        self.chromselect.setStyleSheet("QComboBox { combobox-popup: 0; }");
+        self.chromselect.setMaxVisibleItems(10)
+        sl = self.slider
+        sl.setMinimum(1)
+        sl.setMaximum(length)
+        sl.setTickInterval(length/20)
+        return
+
+    def set_chrom(self, chrom):
+        """Set the selected record which also updates the plot"""
+
+        index = self.chromselect.findText(chrom)
+        self.chromselect.setCurrentIndex(index)
+        return
+
+    def update_chrom(self, chrom=None):
+        """Update after chromosome selection changed"""
+
+        recname = self.chromselect.currentText()
+        length = self.length = plotting.get_fasta_length(self.ref_file, key=chrom)
+        sl = self.slider
+        sl.setMinimum(1)
+        sl.setMaximum(length)
+        sl.setTickInterval(length/20)
+        self.redraw()
+        return
+
+    def value_changed(self):
+        """Callback for widgets"""
+
+        length = self.length
+        r = self.view_range
+        start = int(self.slider.value())
+        end = int(start+r)
+        if end > length:
+            return
+        self.redraw(start, end)
+        return
+
+    def zoom_in(self):
+        """Zoom in"""
+
+        #length = len(self.rec.seq)
+        fac = 1.2
+        r = int(self.view_range/fac)
+        start = int(self.slider.value())
+        end = start + r
+        #if end > length:
+        #    end=length
+        self.redraw(start, end)
+        return
+
+    def zoom_out(self):
+        """Zoom out"""
+
+        #length = len(self.rec.seq)
+        fac = 1.2
+        r = int(self.view_range*fac)
+        start = int(self.slider.value())
+        end = start + r
+        #if end > length:
+        #    end=length
+        #    start = start-r
+        self.redraw(start, end)
+        return
+
+    def redraw(self, start=1, end=2000):
+        """Plot the features"""
+
+        #axs=self.axs
+        self.ax1.clear()
+        self.ax2.clear()
+        length = self.length
+        if start<0:
+            start=1
+        if end <= 0:
+            end = start+2000
+        if end-start > 10000:
+            end = start+10000
+        if end > length:
+            end = length
+
+        #print (start, end)
+        cov = plotting.get_coverage(self.bam_file, self.chrom, start, end)
+        plotting.plot_coverage(cov,ax=self.ax1,xaxis=False)
+        plotting.plot_bam_alignment(self.bam_file, self.chrom, start, end, ax=self.ax2)
+        self.canvas.draw()
+        self.view_range = end-start
+        self.loclbl.setText(str(start)+'-'+str(end))
         return

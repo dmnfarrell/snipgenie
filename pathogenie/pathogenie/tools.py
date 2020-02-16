@@ -221,6 +221,53 @@ def fastq_to_dataframe(filename, size=1000):
     df['length'] = df.seq.str.len()
     return df
 
+def features_to_dataframe(features, cds=False, id=''):
+    """Get features from a biopython seq record object into a dataframe
+    Args:
+        features: bio seqfeatures
+       returns: a dataframe with a row for each cds/entry.
+      """
+
+    featurekeys = []
+    allfeat = []
+    for (item, f) in enumerate(features):
+        x = f.__dict__
+        quals = f.qualifiers
+        x.update(quals)
+        d = {}
+        d['start'] = f.location.start
+        d['end'] = f.location.end
+        d['strand'] = f.location.strand
+        d['id'] = id
+        d['feat_type'] = f.type
+        for i in quals:
+            if i in x:
+                if type(x[i]) is list:
+                    d[i] = x[i][0]
+                else:
+                    d[i] = x[i]
+        allfeat.append(d)
+    quals = list(quals.keys())+['id','start','end','strand','feat_type']
+    df = pd.DataFrame(allfeat,columns=quals)
+    if 'translation' in df.keys():
+        df['length'] = df.translation.astype('str').str.len()
+
+    if len(df) == 0:
+        print ('ERROR: genbank file return empty data, check that the file contains protein sequences '\
+               'in the translation qualifier of each protein feature.' )
+    return df
+
+def gff_to_features(gff_file):
+    """Get features from gff file"""
+
+    if gff_file is None or not os.path.exists(gff_file):
+        return
+    from BCBio import GFF
+    in_handle = open(gff_file,'r')
+    rec = list(GFF.parse(in_handle))[0]
+    in_handle.close()
+    return rec.features
+
 def trim_reads_default(filename,  outfile, right_quality=35):
     """Trim adapters - built in method"""
 
@@ -273,7 +320,7 @@ def vcf_to_dataframe(vcf_file, quality=30):
         res.append(x)
         #print (x)
 
-    res = pd.DataFrame(res,columns=cols)    
+    res = pd.DataFrame(res,columns=cols)
     #print (res.groupby(['var_type','sub_type']).size())
     return res
 

@@ -374,6 +374,7 @@ class FilesTable(DataFrameTable):
 
         menu = self.menu
         fastqqualityAction = menu.addAction("Quality Summary")
+        plotbamAction = menu.addAction("Show Read Alignments")
         removeAction = menu.addAction("Remove Selected")
         action = menu.exec_(self.mapToGlobal(event.pos()))
         # Map the logical row index to a real index for the source model
@@ -382,6 +383,9 @@ class FilesTable(DataFrameTable):
         if action == fastqqualityAction:
             #print (row)
             self.app.quality_summary(row)
+        elif action == plotbamAction:
+            #print (row)
+            self.app.show_bam_viewer(row)
         elif action == removeAction:
             self.deleteRows(row)
         return

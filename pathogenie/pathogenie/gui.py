@@ -32,7 +32,7 @@ from PySide2.QtGui import *
 import pandas as pd
 import numpy as np
 from Bio import SeqIO
-from . import tools, aligners, app, widgets, tables
+from . import tools, aligners, app, widgets, tables, plotting
 
 home = os.path.expanduser("~")
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
@@ -62,6 +62,8 @@ class App(QMainWindow):
         self.main.setFocus()
         self.setCentralWidget(self.main)
         self.setup_gui()
+        app.copy_ref_genomes()
+        self.update_ref_genomes()
         self.clear_project()
 
         if platform.system() == 'Windows':
@@ -69,7 +71,6 @@ class App(QMainWindow):
         if project != None:
             self.load_project(project)
         self.threadpool = QtCore.QThreadPool()
-
         return
 
     def setup_gui(self):
@@ -91,7 +92,7 @@ class App(QMainWindow):
 
         self.tabs = QTabWidget(center)
         self.tabs.setTabsClosable(True)
-        #self.tabs.tabCloseRequested.connect(self.close_tab)
+        self.tabs.tabCloseRequested.connect(self.close_tab)
         l.addWidget(self.tabs)
 
         self.right = right = QWidget(self.m)
@@ -130,7 +131,7 @@ class App(QMainWindow):
         #index = self.tabs.currentIndex()
         name = self.tabs.tabText(index)
         self.tabs.removeTab(index)
-        del self.sheets[name]
+        #del self.sheets[name]
         return
 
     @QtCore.Slot(int)
@@ -176,11 +177,12 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.align_files, self.processing_completed))
         self.analysis_menu.addAction('&Call Variants',
             lambda: self.run_threaded_process(self.variant_calling, self.processing_completed))
+        self.analysis_menu.addAction('&Show Annotation', self.show_ref_annotation)
 
         self.settings_menu = QMenu('&Settings', self)
         self.menuBar().addMenu(self.settings_menu)
         self.settings_menu.addAction('&Set Output Folder', self.set_output_folder)
-        #self.settings_menu.addAction('&Add Blast Sequences', self.add_sequences_db)
+        self.settings_menu.addAction('&Add Reference Sequence', self.add_reference)
 
         self.help_menu = QMenu('&Help', self)
         self.menuBar().addMenu(self.help_menu)
@@ -241,6 +243,7 @@ class App(QMainWindow):
         self.proj_file = None
         self.fastq_table.setDataFrame(pd.DataFrame({'name':[]}))
         #self.tabs.clear()
+        self.ref_genome = app.ref_genome
         self.projectlabel.setText('')
         self.outdirLabel.setText(self.outputdir)
         return
@@ -298,7 +301,7 @@ class App(QMainWindow):
 
         new = app.get_sample_names(filenames)
         new['read_length'] = new.filename.apply(tools.get_fastq_info)
-        print (new)
+        #print (new)
 
         if len(df)>0:
             new = pd.concat([df,new],sort=False).reset_index(drop=True)
@@ -315,6 +318,31 @@ class App(QMainWindow):
         if not filenames:
             return
         self.load_fastq_table(filenames)
+        return
+
+    def add_reference(self):
+        """Add a reference genome sequence from fasta"""
+
+        path = app.sequencedir
+        if not os.path.exists(path):
+            os.makedirs(path)
+        filename, _ = QFileDialog.getOpenFileName(self, 'Open Fasta', './',
+                                    filter="Fasta Files(*.fa *.fna *.fasta);;All Files(*.*)")
+        if not filename:
+            return
+        #copy file
+        dest = os.path.join(path, os.path.basename(filename))
+        shutil.copy(filename, dest)
+        #update widget
+        self.update_ref_genomes()
+        return
+
+    def update_ref_genomes(self):
+
+        path = app.sequencedir
+        files = glob.glob(os.path.join(path,'*.f*a'))
+        labels = [os.path.basename(i) for i in files]
+        self.opts.widgets['refgenome'].addItems(labels)
         return
 
     def set_output_folder(self):
@@ -456,13 +484,25 @@ class App(QMainWindow):
         self.info.verticalScrollBar().setValue(1)
         return
 
+    def show_ref_annotation(self):
+
+        gff_file = app.ref_gff
+        feats = tools.gff_to_features(gff_file)
+        df = tools.features_to_dataframe(feats)
+        t = tables.DataFrameTable(self.tabs, dataframe=df)
+        i = self.tabs.addTab(t, 'ref_annotation')
+        self.tabs.setCurrentIndex(i)
+        return
+
     def quality_summary(self, row):
         """Summary of features"""
 
         df = self.fastq_table.model.df
         row = self.fastq_table.getSelectedRows()[0]
         data = df.iloc[row]
-        name = data['name']
+        name = 'qual:'+data['name']
+        if name in self.get_tab_names():
+            return
         w = widgets.PlotViewer(self)
         import pylab as plt
         fig,ax = plt.subplots(2,1, figsize=(7,5), dpi=65, facecolor=(1,1,1), edgecolor=(0,0,0))
@@ -475,12 +515,31 @@ class App(QMainWindow):
         self.tabs.setCurrentIndex(i)
         return
 
+    def show_bam_viewer(self, row):
+        """Show simple alignment view for a bam file"""
+
+        df = self.fastq_table.model.df
+        row = self.fastq_table.getSelectedRows()[0]
+        data = df.iloc[row]
+        name = 'aln:'+data['name']
+        if name in self.get_tab_names():
+            return
+        w = widgets.BamViewer(self)
+        w.load_data(data.bam_file, app.ref_genome)
+        w.redraw(start=1, end=2000)
+        i = self.tabs.addTab(w, name )
+        self.tabs.setCurrentIndex(i)
+        return
+
     def show_info(self, msg):
 
         self.info.append(msg)
         self.info.verticalScrollBar().setValue(
             self.info.verticalScrollBar().maximum())
         return
+
+    def get_tab_names(self):
+        return {self.tabs.tabText(index):index for index in range(self.tabs.count())}
 
     def quit(self):
         self.close()
@@ -592,15 +651,21 @@ class AppOptions(widgets.BaseOptions):
         """Setup variables"""
         self.parent = parent
         self.kwds = {}
+        genomes = []
         aligners = ['bwa','bowtie','bowtie2']
         cpus = [str(i) for i in range(1,os.cpu_count()+1)]
         self.groups = {'general':['threads','overwrite'],
+                        'reference':['refgenome','annotation'],
                         'trimming':['quality'],
                         'aligners':['aligner'],
                        'blast':['db','identity','coverage'],
                        }
         self.opts = {'threads':{'type':'combobox','default':4,'items':cpus},
                     'overwrite':{'type':'checkbox','default':False},
+                    'refgenome':{'type':'combobox','default':'',
+                    'items':genomes,'label':'genome'},
+                    'annotation':{'type':'combobox','default':'',
+                    'items':[],'label':'annotation'},
                     'aligner':{'type':'combobox','default':'bwa',
                     'items':aligners,'label':'aligner'},
                     'db':{'type':'combobox','default':'card',

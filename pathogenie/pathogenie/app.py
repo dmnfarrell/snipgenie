@@ -87,8 +87,9 @@ def get_sample_names(filenames, sep='-'):
         res.append(x)
 
     df = pd.DataFrame(res, columns=cols)
+    df = df.sort_values(['name','sample']).reset_index(drop=True)
     df['pair'] = df.groupby('sample').cumcount()+1
-    df = df.sort_values(['name','sample','pair']).reset_index(drop=True)
+    #df = df.sort_values(['name','sample','pair']).reset_index(drop=True)
     return df
 
 def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):

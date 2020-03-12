@@ -178,6 +178,7 @@ class App(QMainWindow):
         self.analysis_menu.addAction('&Call Variants',
             lambda: self.run_threaded_process(self.variant_calling, self.processing_completed))
         self.analysis_menu.addAction('&Show Annotation', self.show_ref_annotation)
+        self.analysis_menu.addAction('&Run Workflow', self.run)
 
         self.settings_menu = QMenu('&Settings', self)
         self.menuBar().addMenu(self.settings_menu)
@@ -462,9 +463,8 @@ class App(QMainWindow):
     def run(self):
         """Run all steps"""
 
-        self.run_trimming()
-        self.align_files()
-        self.variant_calling()
+        self.run_threaded_process(self.run_trimming, self.processing_completed)
+
         return
 
     def run_threaded_process(self, process, on_complete):

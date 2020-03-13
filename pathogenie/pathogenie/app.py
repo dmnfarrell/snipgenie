@@ -124,16 +124,18 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
             callback(out)
     return samples
 
-def variant_calling(bam_files, ref, outpath, sample_file=None, callback=None, **kwargs):
+def variant_calling(bam_files, ref, outpath, sample_file=None, callback=None, overwrite=False, **kwargs):
     """Call variants with bcftools"""
 
     bam_files = ' '.join(bam_files)
     rawbcf = os.path.join(outpath,'raw.bcf')
     cmd = 'bcftools mpileup -O b -o {o} -f {r} {b}'.format(r=ref, b=bam_files, o=rawbcf)
-    print (cmd)
+    
     if callback != None:
+        print (cmd)
         callback(cmd)
-    subprocess.check_output(cmd,shell=True)
+    if not os.path.exists(rawbcf) or overwrite == True:
+        subprocess.check_output(cmd,shell=True)
     #find snps
     vcfout = os.path.join(outpath,'calls.vcf')
     cmd = 'bcftools call --ploidy 1 -m -v -o {v} {raw}'.format(v=vcfout,raw=rawbcf)
@@ -146,14 +148,14 @@ def variant_calling(bam_files, ref, outpath, sample_file=None, callback=None, **
         cmd = 'bcftools reheader --samples {s} -o {v} {v}'.format(v=vcfout,s=sample_file)
         print(cmd)
         tmp = subprocess.check_output(cmd,shell=True)
-    #filter the calls
     final = os.path.join(outpath,'filtered')
-    cmd = 'vcftools --vcf {i} --minQ 20 --recode --recode-INFO-all --out {o}'.format(i=vcfout,o=final)
+    #cmd = 'vcftools --vcf {i} --minQ 20 --recode --recode-INFO-all --out {o}'.format(i=vcfout,o=final)
+    cmd = 'bcftools filter -e "QUAL<40" -o {o}.vcf.gz -O z {i}'.format(i=vcfout,o=final)
     print (cmd)
     tmp = subprocess.check_output(cmd,shell=True)
     if callback != None:
-        callback(tmp)
-    return final+'.recode.vcf'
+        callback(tmp)        
+    return vcfout
 
 def create_bam_labels(filenames):
 

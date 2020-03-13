@@ -383,18 +383,20 @@ def plot_fastq_gc_content(filename, ax=None, limit=50000):
     ax.set_title('GC content',size=15)
     return
 
-def run_RAXML(infile):
-    """Run Raxml"""
-
-    threads=8
-    bootstraps=10
-    infile='variants.fa'
-    model='GTRCAT'
-    s1=random.randint(0,1e8)
-    s2=random.randint(0,1e8)
-    name='variants'
-
+def run_RAXML(infile, name='variants'):
+    """Run Raxml pthreads"""
+    
+    threads = 8
+    bootstraps = 10
+    infile = 'variants.fa'
+    model = 'GTRCAT'
+    s1 = random.randint(0,1e8)
+    s2 = random.randint(0,1e8)
+    
+    files = glob.glob('RAxML_*')
+    for f in files:
+        os.remove(f)
     cmd = 'raxmlHPC-PTHREADS -f a -N {nb} -T {t} -m {m} -V -p {s1} -x {s2} -n {n} -s {i}'.format(t=threads,nb=bootstraps,n=name,i=infile,s1=s1,s2=s2,m=model)
     print (cmd)
-    subprocess.check_output(cmd, shell=True)
+    tmp = subprocess.check_output(cmd, shell=True)
     return

@@ -1,4 +1,4 @@
-# btbgenie
+# BTBGENIE
 
 The **BTBGENIE** project is a DAFM funded project for development of genomic epidemiology systems for tracking and eradicating Mycobacterium bovis in Ireland.
 

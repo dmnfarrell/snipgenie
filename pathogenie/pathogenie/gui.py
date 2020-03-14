@@ -32,7 +32,7 @@ from PySide2.QtGui import *
 import pandas as pd
 import numpy as np
 from Bio import SeqIO
-from . import tools, aligners, app, widgets, tables, plotting
+from . import tools, aligners, app, widgets, tables, plotting, trees
 
 home = os.path.expanduser("~")
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
@@ -177,7 +177,11 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.align_files, self.processing_completed))
         self.analysis_menu.addAction('&Call Variants',
             lambda: self.run_threaded_process(self.variant_calling, self.processing_completed))
+        self.analysis_menu.addAction('&Create SNP alignment',
+            lambda: self.run_threaded_process(self.snp_alignment, self.processing_completed))
+
         self.analysis_menu.addAction('&Show Annotation', self.show_ref_annotation)
+
         self.analysis_menu.addAction('&Run Workflow', self.run)
 
         self.settings_menu = QMenu('&Settings', self)
@@ -407,7 +411,6 @@ class App(QMainWindow):
         kwds = self.opts.kwds
         overwrite = kwds['overwrite']
         df = self.fastq_table.model.df
-
         #rows = self.fastq_table.getSelectedRows()
         #df = df.loc[rows]
         msg = 'Aligning reads..\nThis may take some time.'
@@ -430,15 +433,18 @@ class App(QMainWindow):
         if retval == 0:
             return
         self.running = True
+        self.opts.applyOptions()
+        kwds = self.opts.kwds
+        print (kwds)
+        overwrite = kwds['overwrite']
         df = self.fastq_table.model.df
 
         #use trimmed files if present in table
         bam_files = list(df.bam_file.unique())
-        print (bam_files)
         path = self.outputdir
         self.results['vcf_file'] = app.variant_calling(bam_files, app.ref_genome,
-                                    path, callback=progress_callback.emit)
-        self.show_variants()
+                                    path, overwrite=overwrite, callback=progress_callback.emit)
+        #self.show_variants()
         return
 
     def show_variants(self):
@@ -448,6 +454,27 @@ class App(QMainWindow):
         table = tables.DefaultTable(self.tabs, app=self, dataframe=vdf)
         i = self.tabs.addTab(table, 'variants')
         self.tabs.setCurrentIndex(i)
+        return
+
+    def snp_alignment(self, progress_callback):
+        """Make snp matrix from variant positions"""
+
+        self.opts.applyOptions()
+        kwds = self.opts.kwds
+        vcf_file = self.results['vcf_file']
+        result = app.fasta_alignment_from_vcf('mapped/filtered.vcf.gz', app.ref_genome,
+                                                callback=progress_callback.emit)
+        outfile = os.path.join(self.outputdir, 'variants.fa')
+        self.results['snp_file'] = outfile
+        SeqIO.write(result, outfile, 'fasta')
+
+        return
+
+    def view_tree(self):
+
+        trees.run_RAXML(outfile)
+        #t = trees.create_tree('RAxML_bipartitions.variants')#, labelmap)
+        trees.biopython_draw_tree('RAxML_bipartitions.variants')
         return
 
     def processing_completed(self):

@@ -124,6 +124,65 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
             callback(out)
     return samples
 
+def worker(region,out,bam_files):
+    """Run bcftools for single region."""
+
+    cmd = 'bcftools mpileup -r {reg} -O b -o {o} -f {r} {b}'.format(r=ref, reg=region, b=bam_files, o=out)
+    #print (cmd)
+    subprocess.check_output(cmd, shell=True)
+    cmd = 'bcftools index {o}'.format(o=out)
+    subprocess.check_output(cmd, shell=True)
+    return
+
+def mpileup_parallel(bam_files, ref, outpath, threads=4, callback=None):
+    """Run mpileup in parallel over multiple regions, then concat vcf files.
+    Assumes alignment to a bacterial reference with a single chromosome."""
+
+    import multiprocessing as mp
+    bam_files = ' '.join(bam_files)
+    ref = app.ref_genome
+    rawbcf = os.path.join(outpath,'raw.bcf')
+    tmpdir = 'tmp'
+    chr = 'NC_002945.4'
+    length = tools.get_fasta_length(ref)
+    #print (length)
+    #find regions
+    bsize = int(length/(threads-1))
+    x = np.linspace(1,length,threads,dtype=int)
+    blocks=[]
+    for i in range(len(x)):
+        if i < len(x)-1:
+            blocks.append((x[i],x[i+1]-1))
+    #print (blocks, bsize)
+
+    pool = mp.Pool(threads)
+    res = []
+    outfiles = []
+    st = time.time()
+
+    for start,end in blocks:
+        #end = start+bsize
+        print (start, end)
+        region = '{c}:{s}-{e}'.format(c=chr,s=start,e=end)
+        out = '{o}/{s}.bcf'.format(o=tmpdir,s=start)
+        f = pool.apply_async(worker, [region,out,bam_files])
+        res.append(f)
+        outfiles.append(out)
+
+    pool.close()
+    pool.join()
+    t=time.time()-st
+    print ('took %s seconds' %str(round(t,3)))
+
+    #concat files
+    cmd = 'bcftools concat {i} -O b -o {o}'.format(i=' '.join(outfiles),o=rawbcf)
+    print (cmd)
+    subprocess.check_output(cmd, shell=True)
+    #remove temp files
+    for f in outfiles:
+        os.remove(f)
+    return rawbcf
+
 def variant_calling(bam_files, ref, outpath, sample_file=None, callback=None, overwrite=False, **kwargs):
     """Call variants with bcftools"""
 

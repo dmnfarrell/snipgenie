@@ -56,6 +56,15 @@ def batch_iterator(iterator, batch_size):
         if batch:
             yield batch
 
+def get_fasta_length(filename):
+    """Get length of reference sequence"""
+
+    from pyfaidx import Fasta
+    refseq = Fasta(filename)
+    key = list(refseq.keys())[0]
+    l = len(refseq[key])
+    return l
+
 def get_fastq_info(filename):
 
     df = fastq_to_dataframe(filename)
@@ -305,7 +314,12 @@ def trim_reads(filename, outfile, adapter=None, right_quality=30, method='defaul
 def vcf_to_dataframe(vcf_file, quality=30):
 
     import vcf
-    vcf_reader = vcf.Reader(open(vcf_file,'r'))
+    ext = os.path.splitext(vcf_file)[1]
+    if ext == '.gz':
+        file = gzopen(vcf_file, "rt")
+    else:
+        file = open(vcf_file)
+    vcf_reader = vcf.Reader(file,'r')
     #print (vcf_reader.filters)
     res=[]
     cols = ['chrom','var_type','sub_type','start','end','REF','ALT','QUAL','DP']
@@ -315,13 +329,10 @@ def vcf_to_dataframe(vcf_file, quality=30):
         #print (rec.__dict__)
         #print (rec.INFO.keys())
         #for call in rec.samples:
-            #print (call.sample, call.data, rec.genotype(call.sample))
-
+        #    print (call.sample, call.data, rec.genotype(call.sample))
         res.append(x)
         #print (x)
-
     res = pd.DataFrame(res,columns=cols)
-    #print (res.groupby(['var_type','sub_type']).size())
     return res
 
 def plot_fastq_qualities(filename, ax=None, limit=10000):

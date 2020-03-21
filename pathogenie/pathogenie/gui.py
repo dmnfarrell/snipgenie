@@ -175,8 +175,7 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.run_trimming, self.processing_completed))
         self.analysis_menu.addAction('&Align Reads',
             lambda: self.run_threaded_process(self.align_files, self.processing_completed))
-        self.analysis_menu.addAction('&Call Variants',
-            lambda: self.run_threaded_process(self.variant_calling, self.processing_completed))
+        self.analysis_menu.addAction('&Call Variants', self.variant_calling)
         self.analysis_menu.addAction('&Create SNP alignment',
             lambda: self.run_threaded_process(self.snp_alignment, self.processing_completed))
 
@@ -426,7 +425,7 @@ class App(QMainWindow):
                             callback=progress_callback.emit)
         return
 
-    def variant_calling(self, progress_callback):
+    def variant_calling(self):
         """Run variant calling for available bam files."""
 
         retval = self.check_output_folder()
@@ -437,13 +436,14 @@ class App(QMainWindow):
         kwds = self.opts.kwds
         print (kwds)
         overwrite = kwds['overwrite']
+        threads = int(kwds['threads'])
         df = self.fastq_table.model.df
 
         #use trimmed files if present in table
         bam_files = list(df.bam_file.unique())
         path = self.outputdir
-        self.results['vcf_file'] = app.variant_calling(bam_files, app.ref_genome,
-                                    path, overwrite=overwrite, callback=progress_callback.emit)
+        self.results['vcf_file'] = app.variant_calling(bam_files, app.ref_genome, path, threads=threads,
+                                    overwrite=overwrite, callback=self.progress_fn)
         #self.show_variants()
         return
 

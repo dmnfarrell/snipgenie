@@ -24,8 +24,9 @@ setup(
                       'pyside2>=5.1',
                       'future'],
     entry_points = {
-        'console_scripts': [            
-            'pathogeniegui=pathogenie.gui:main']
+        'console_scripts': [
+            'pathogeniegui=pathogenie.gui:main',
+            'pathogenie=pathogenie.app:main']
             },
     classifiers = ['Operating System :: OS Independent',
             'Programming Language :: Python :: 2.7',

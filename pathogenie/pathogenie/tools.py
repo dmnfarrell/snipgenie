@@ -65,6 +65,10 @@ def get_fasta_length(filename):
     l = len(refseq[key])
     return l
 
+def get_chrom(filename):
+    rec = list(SeqIO.parse(filename, 'fasta'))[0]
+    return rec.id
+    
 def get_fastq_info(filename):
 
     df = fastq_to_dataframe(filename)

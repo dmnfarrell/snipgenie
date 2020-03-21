@@ -22,6 +22,7 @@
 
 from __future__ import absolute_import, print_function
 import sys,os,subprocess,glob,re
+import time
 import platform
 import urllib, hashlib, shutil
 import tempfile
@@ -32,7 +33,7 @@ from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.Alphabet import generic_dna
-from . import tools, aligners
+from . import tools, aligners, trees
 
 tempdir = tempfile.gettempdir()
 home = os.path.expanduser("~")
@@ -72,6 +73,15 @@ def fetch_binaries():
         urllib.request.urlretrieve(link, filename)
     return
 
+def get_files_from_paths(paths):
+    """Get files in multiple paths"""
+
+    files=[]
+    for path in paths:
+        s = glob.glob(os.path.join(path,'*.fastq.gz'))
+        files.extend(s)
+    return files
+
 def get_sample_names(filenames, sep='-'):
     """Get sample pairs from list of fastq files."""
 
@@ -109,7 +119,8 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
             callback('aligning %s' %name)
         if 'trimmed' in df.columns:
             files = list(df.trimmed)
-            callback('using trimmed')
+            if callback != None:
+                callback('using trimmed')
         else:
             files = list(df.filename)
         #print (files)
@@ -124,28 +135,28 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
             callback(out)
     return samples
 
-def worker(region,out,bam_files):
+def mpileup_region(region,out,bam_files,callback=None):
     """Run bcftools for single region."""
 
     cmd = 'bcftools mpileup -r {reg} -O b -o {o} -f {r} {b}'.format(r=ref, reg=region, b=bam_files, o=out)
-    #print (cmd)
+    if callback != None:
+        callback(cmd)
     subprocess.check_output(cmd, shell=True)
     cmd = 'bcftools index {o}'.format(o=out)
     subprocess.check_output(cmd, shell=True)
     return
 
-def mpileup_parallel(bam_files, ref, outpath, threads=4, callback=None):
+def mpileup_multiprocess(bam_files, ref, outpath, threads=4, callback=None):
     """Run mpileup in parallel over multiple regions, then concat vcf files.
     Assumes alignment to a bacterial reference with a single chromosome."""
 
     import multiprocessing as mp
     bam_files = ' '.join(bam_files)
-    ref = app.ref_genome
     rawbcf = os.path.join(outpath,'raw.bcf')
     tmpdir = 'tmp'
-    chr = 'NC_002945.4'
+    chr = tools.get_chrom(ref)
     length = tools.get_fasta_length(ref)
-    #print (length)
+
     #find regions
     bsize = int(length/(threads-1))
     x = np.linspace(1,length,threads,dtype=int)
@@ -156,17 +167,14 @@ def mpileup_parallel(bam_files, ref, outpath, threads=4, callback=None):
     #print (blocks, bsize)
 
     pool = mp.Pool(threads)
-    res = []
     outfiles = []
     st = time.time()
 
     for start,end in blocks:
-        #end = start+bsize
         print (start, end)
         region = '{c}:{s}-{e}'.format(c=chr,s=start,e=end)
         out = '{o}/{s}.bcf'.format(o=tmpdir,s=start)
-        f = pool.apply_async(worker, [region,out,bam_files])
-        res.append(f)
+        f = pool.apply_async(mpileup_region, [region,out,bam_files])
         outfiles.append(out)
 
     pool.close()
@@ -183,21 +191,60 @@ def mpileup_parallel(bam_files, ref, outpath, threads=4, callback=None):
         os.remove(f)
     return rawbcf
 
-def variant_calling(bam_files, ref, outpath, sample_file=None, callback=None, overwrite=False, **kwargs):
-    """Call variants with bcftools"""
+def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
+    """Run mpileup in over multiple regions with GNU parallel, then concat vcf files.
+    Assumes alignment to a bacterial reference with a single chromosome."""
 
     bam_files = ' '.join(bam_files)
     rawbcf = os.path.join(outpath,'raw.bcf')
-    cmd = 'bcftools mpileup -O b -o {o} -f {r} {b}'.format(r=ref, b=bam_files, o=rawbcf)
+    tmpdir = 'tmp'
+    chr = tools.get_chrom(ref)
+    length = tools.get_fasta_length(ref)
+    bsize = int(length/(threads-1))
+    x = np.linspace(1,length,threads,dtype=int)
+    blocks=[]
+    for i in range(len(x)):
+        if i < len(x)-1:
+            blocks.append((x[i],x[i+1]-1))
 
-    if callback != None:
-        callback(cmd)
+    outfiles = []
+    regions = []
+    for start,end in blocks:
+        region = '{c}:{s}-{e}'.format(c=chr,s=start,e=end)
+        regions.append(region)
+        out = '{o}/{s}.bcf'.format(o=tmpdir,s=start)
+        outfiles.append(out)
+
+    regstr = ' '.join(regions)
+    filesstr = ' '.join(outfiles)
+    cmd = 'parallel bcftools mpileup -r {{1}} -O b -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'.format(r=ref, reg=regstr, b=bam_files, o=filesstr)
+    print (cmd)
+    subprocess.check_output(cmd, shell=True)
+    #concat files
+    cmd = 'bcftools concat {i} -O b -o {o}'.format(i=' '.join(outfiles),o=rawbcf)
+    print (cmd)
+    subprocess.check_output(cmd, shell=True)
+    #remove temp files
+    for f in outfiles:
+        os.remove(f)
+    return
+
+def variant_calling(bam_files, ref, outpath, sample_file=None, threads=4,
+                    callback=None, overwrite=False, **kwargs):
+    """Call variants with bcftools"""
+
+    #bam_files = ' '.join(bam_files)
+    rawbcf = os.path.join(outpath,'raw.bcf')
+    #cmd = 'bcftools mpileup -O b -o {o} -f {r} {b}'.format(r=ref, b=bam_files, o=rawbcf)
+    #run mpileup in parallel to speed up
+
     if not os.path.exists(rawbcf) or overwrite == True:
-        print (cmd)
-        subprocess.check_output(cmd,shell=True)
+        rawbcf = mpileup_multiprocess(bam_files, ref, outpath, threads=threads, callback=callback)
+        #rawbcf = mpileup_gnuparallel(bam_files, ref, outpath, threads=threads, callback=callback)
+
     #find snps
     vcfout = os.path.join(outpath,'calls.vcf')
-    cmd = 'bcftools call --ploidy 1 -m -v -o {v} {raw}'.format(v=vcfout,raw=rawbcf)
+    cmd = 'bcftools call -V indels --ploidy 1 -m -v -o {v} {raw}'.format(v=vcfout,raw=rawbcf)
     if callback != None:
         callback(cmd)
     print (cmd)
@@ -207,14 +254,14 @@ def variant_calling(bam_files, ref, outpath, sample_file=None, callback=None, ov
         cmd = 'bcftools reheader --samples {s} -o {v} {v}'.format(v=vcfout,s=sample_file)
         print(cmd)
         tmp = subprocess.check_output(cmd,shell=True)
-    final = os.path.join(outpath,'filtered')
-    #cmd = 'vcftools --vcf {i} --minQ 20 --recode --recode-INFO-all --out {o}'.format(i=vcfout,o=final)
-    cmd = 'bcftools filter -e "QUAL<40" -o {o}.vcf.gz -O z {i}'.format(i=vcfout,o=final)
+    final = os.path.join(outpath,'filtered.vcf.gz')
+
+    cmd = 'bcftools filter -e "QUAL<40" -o {o} -O z {i}'.format(i=vcfout,o=final)
     print (cmd)
     tmp = subprocess.check_output(cmd,shell=True)
     if callback != None:
         callback(tmp)
-    return vcfout
+    return final
 
 def create_bam_labels(filenames):
 
@@ -284,3 +331,134 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
         seqrec = SeqRecord(Seq(seq),id=sample)
         result.append(seqrec)
     return result
+
+def trim_files(df, outpath, overwrite=False):
+    """Batch trim fastq files"""
+
+    if not os.path.exists(outpath):
+        os.makedirs(outpath, exist_ok=True)
+    for i,row in df.iterrows():
+        outfile = os.path.join(outpath, os.path.basename(row.filename))
+        print (outfile)
+        if not os.path.exists(outfile) or overwrite == True:
+            tools.trim_reads(row.filename, outfile)
+        df.loc[i,'trimmed'] = outfile
+    return df
+
+class WorkFlow(object):
+    """Class for implementing a prediction workflow from a set of options"""
+    def __init__(self, **kwargs):
+        for i in kwargs:
+            print (i, kwargs[i])
+            self.__dict__[i] = kwargs[i]
+        return
+
+    def setup(self):
+        """Setup main parameters"""
+
+        if self.reference == None:
+            self.reference = ref_genome
+        self.filenames = get_files_from_paths(self.input)
+        df = get_sample_names(self.filenames)
+        df['read_length'] = df.filename.apply(tools.get_fastq_info)
+        self.fastq_table = df
+        print ('The following samples were loaded:')
+        print ('-------------')
+        print (df)
+        print ()
+        time.sleep(1)
+        return True
+
+    def run(self):
+        """Run workflow"""
+
+        #this master table tracks our outputs
+        samples = self.fastq_table
+        if len(samples)==0:
+            print ('no samples found')
+            return
+        print ('trimming fastq files')
+        trimmed_path = os.path.join(self.outdir, 'trimmed')
+        samples = trim_files(samples, trimmed_path, self.overwrite)
+        print ()
+        print ('aligning files')
+        print ('Using reference genome: %s' %self.reference)
+        path = os.path.join(self.outdir, 'mapped')
+        samples = align_reads(samples, idx=self.reference, outdir=path,
+                    threads=self.threads, overwrite=self.overwrite)
+        print ()
+        print ('calling variants')
+        bam_files = list(samples.bam_file.unique())
+        self.vcf_file = variant_calling(bam_files, self.reference, self.outdir, threads=self.threads,
+                                        overwrite=self.overwrite)
+        print (self.vcf_file)
+        #vdf = tools.vcf_to_dataframe(self.vcf_file)
+        #print (vdf.var_type.value_counts())
+        print ()
+        print ('making SNP matrix')
+        result = fasta_alignment_from_vcf(self.vcf_file, self.reference)
+        outfasta = os.path.join(self.outdir, 'variants.fa')
+        SeqIO.write(result, outfasta, 'fasta')
+
+        print ()
+        print ('building tree')
+        trees.run_RAXML(outfasta)
+
+        #labelmap = dict(zip(sra.filename,sra.geo_loc_name_country))
+        t = trees.create_tree('RAxML_bipartitions.variants')#, labelmap)
+        t.render(os.path.join(self.outdir, 'tree.png'))
+
+        return
+
+def test_run():
+    """Test run"""
+
+    args = {'threads':8, 'outdir': 'testing', 'input':'mbovis_sra',
+            'reference': None, 'overwrite':False}
+    W = WorkFlow(**args)
+    st = W.setup()
+    W.run()
+    return
+
+
+def main():
+    "Run the application"
+
+    import sys, os
+    from argparse import ArgumentParser
+    parser = ArgumentParser(description='Pathogenie CLI tool. https://github.com/dmnfarrell/btbgenie')
+    #parser.add_argument("-f", "--fasta", dest="filenames",default=[],
+    #                    help="input fasta file", metavar="FILE")
+    parser.add_argument("-i", "--input", action='append', dest="input", default=[],
+                        help="input folder(s)", metavar="FILE")
+    parser.add_argument("-l", "--labels", dest="labels", default=[],
+                        help="sample labels file", metavar="FILE")
+    parser.add_argument("-r", "--reference", dest="reference", default=None,
+                        help="reference genome filename", metavar="FILE")
+    parser.add_argument("-w", "--overwrite", dest="overwrite", action="store_true", default=False,
+                        help="overwrite intermediate files" )
+    parser.add_argument("-t", "--threads", dest="threads",default=4,
+                        help="cpu threads to use", )
+    parser.add_argument("-o", "--outdir", dest="outdir",
+                        help="Results folder", metavar="FILE")
+    parser.add_argument("-v", "--version", dest="version", action="store_true",
+                        help="Get version")
+    parser.add_argument("-x", "--test", dest="test",  action="store_true",
+                        default=False, help="Do test run")
+
+    args = vars(parser.parse_args())
+
+    if args['test'] == True:
+        test_run()
+    elif args['version'] == True:
+        from . import __version__
+        print ('pathogenie version %s' %__version__)
+        print ('https://github.com/dmnfarrell/btbgenie')
+    else:
+        W = WorkFlow(**args)
+        st = W.setup()
+        if st == True:
+            W.run()
+
+if __name__ == '__main__':
+    main()

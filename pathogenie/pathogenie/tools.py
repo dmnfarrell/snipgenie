@@ -68,7 +68,7 @@ def get_fasta_length(filename):
 def get_chrom(filename):
     rec = list(SeqIO.parse(filename, 'fasta'))[0]
     return rec.id
-    
+
 def get_fastq_info(filename):
 
     df = fastq_to_dataframe(filename)
@@ -82,19 +82,6 @@ def align_info(bamfile):
     temp=subprocess.check_output(cmd, shell=True)
     print (temp)
     return
-
-def variants_call(name, ref, out):
-
-    bamfile = '%s/%s.bam' %(out,name)
-    cmd = 'samtools sort {b} > {b}.sorted && samtools index {b}.sorted'.format(b=bamfile)
-    print (cmd)
-    #subprocess.check_output(cmd, shell=True)
-    cmd = 'samtools mpileup -uf genomes/{r}.fa {b}.sorted | bcftools call -mv \
-    > {o}/{n}.vcf'.format(b=bamfile,n=name,r=ref,o=out)
-    print (cmd)
-    #subprocess.check_output(cmd, shell=True)
-    cmd = 'bedtools intersect -a {gff} -b {o}/{n}.vcf -wa -u > {o}/{n}_variants.bed'.format(n=name,r=ref,gff=gff,o=out)
-    print (cmd)
 
 def clustal_alignment(filename=None, seqs=None, command="clustalw"):
     """Align 2 sequences with clustal"""
@@ -298,19 +285,20 @@ def trim_reads_default(filename,  outfile, right_quality=35):
         SeqIO.write(record[:i],out,'fastq')
     return
 
-def trim_reads(filename, outfile, adapter=None, right_quality=30, method='default'):
+def trim_reads(filename, outfile, adapter=None, quality=20,
+                method='cutadapt', threads=4):
     """Trim adapters using cutadapt"""
 
     #if adapter is not None and not type(adapter) is str:
     #    print ('not valid adapter')
     #    return
     if method == 'default':
-        trim_reads_default(filename,  outfile, right_quality=30)
+        trim_reads_default(filename,  outfile, right_quality=quality)
     elif method == 'cutadapt':
         if adapter != None:
-            cmd = 'cutadapt -O 5 -q 20 -a {a} {i} -o {o}'.format(a=adapter,i=filename,o=outfile)
+            cmd = 'cutadapt -O 5 -q {q} -a {a} -j {t} {i} -o {o}'.format(a=adapter,i=filename,o=outfile,t=threads,q=quality)
         else:
-            cmd = 'cutadapt -O 5 -q 20 {i} -o {o}'.format(i=filename,o=outfile)
+            cmd = 'cutadapt -O 5 -q {q} {i} -j {t} -o {o}'.format(i=filename,o=outfile,t=threads,q=quality)
         print (cmd)
         result = subprocess.check_output(cmd, shell=True, executable='/bin/bash')
     return

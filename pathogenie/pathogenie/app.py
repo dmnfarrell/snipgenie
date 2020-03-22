@@ -34,6 +34,7 @@ from Bio import SeqIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.Alphabet import generic_dna
 from . import tools, aligners, trees
+import multiprocessing as mp
 
 tempdir = tempfile.gettempdir()
 home = os.path.expanduser("~")
@@ -82,7 +83,7 @@ def get_files_from_paths(paths):
         files.extend(s)
     return files
 
-def get_sample_names(filenames, sep='-'):
+def get_samples(filenames, sep='-'):
     """Get sample pairs from list of fastq files."""
 
     res = []
@@ -150,7 +151,6 @@ def mpileup_multiprocess(bam_files, ref, outpath, threads=4, callback=None):
     """Run mpileup in parallel over multiple regions, then concat vcf files.
     Assumes alignment to a bacterial reference with a single chromosome."""
 
-    import multiprocessing as mp
     bam_files = ' '.join(bam_files)
     rawbcf = os.path.join(outpath,'raw.bcf')
     tmpdir = 'tmp'
@@ -174,7 +174,9 @@ def mpileup_multiprocess(bam_files, ref, outpath, threads=4, callback=None):
         print (start, end)
         region = '{c}:{s}-{e}'.format(c=chr,s=start,e=end)
         out = '{o}/{s}.bcf'.format(o=tmpdir,s=start)
+        #if __name__ == '__main__':
         f = pool.apply_async(mpileup_region, [region,out,bam_files])
+        print (f)
         outfiles.append(out)
 
     pool.close()
@@ -227,7 +229,7 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
     #remove temp files
     for f in outfiles:
         os.remove(f)
-    return
+    return rawbcf
 
 def variant_calling(bam_files, ref, outpath, sample_file=None, threads=4,
                     callback=None, overwrite=False, **kwargs):
@@ -239,8 +241,8 @@ def variant_calling(bam_files, ref, outpath, sample_file=None, threads=4,
     #run mpileup in parallel to speed up
 
     if not os.path.exists(rawbcf) or overwrite == True:
-        rawbcf = mpileup_multiprocess(bam_files, ref, outpath, threads=threads, callback=callback)
-        #rawbcf = mpileup_gnuparallel(bam_files, ref, outpath, threads=threads, callback=callback)
+        #rawbcf = mpileup_multiprocess(bam_files, ref, outpath, threads=threads, callback=callback)
+        rawbcf = mpileup_gnuparallel(bam_files, ref, outpath, threads=threads, callback=callback)
 
     #find snps
     vcfout = os.path.join(outpath,'calls.vcf')
@@ -332,7 +334,7 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
         result.append(seqrec)
     return result
 
-def trim_files(df, outpath, overwrite=False):
+def trim_files(df, outpath, overwrite=False, threads=4, quality=30):
     """Batch trim fastq files"""
 
     if not os.path.exists(outpath):
@@ -341,7 +343,7 @@ def trim_files(df, outpath, overwrite=False):
         outfile = os.path.join(outpath, os.path.basename(row.filename))
         print (outfile)
         if not os.path.exists(outfile) or overwrite == True:
-            tools.trim_reads(row.filename, outfile)
+            tools.trim_reads(row.filename, outfile, threads=threads, quality=quality)
         df.loc[i,'trimmed'] = outfile
     return df
 
@@ -359,7 +361,8 @@ class WorkFlow(object):
         if self.reference == None:
             self.reference = ref_genome
         self.filenames = get_files_from_paths(self.input)
-        df = get_sample_names(self.filenames)
+        self.threads = int(self.threads)
+        df = get_samples(self.filenames)
         df['read_length'] = df.filename.apply(tools.get_fastq_info)
         self.fastq_table = df
         print ('The following samples were loaded:')
@@ -379,15 +382,18 @@ class WorkFlow(object):
             return
         print ('trimming fastq files')
         trimmed_path = os.path.join(self.outdir, 'trimmed')
-        samples = trim_files(samples, trimmed_path, self.overwrite)
+        samples = trim_files(samples, trimmed_path, self.overwrite,
+                              quality=self.quality, threads=self.threads)
         print ()
         print ('aligning files')
+        print ('--------------')
         print ('Using reference genome: %s' %self.reference)
         path = os.path.join(self.outdir, 'mapped')
         samples = align_reads(samples, idx=self.reference, outdir=path,
                     threads=self.threads, overwrite=self.overwrite)
         print ()
         print ('calling variants')
+        print ('----------------')
         bam_files = list(samples.bam_file.unique())
         self.vcf_file = variant_calling(bam_files, self.reference, self.outdir, threads=self.threads,
                                         overwrite=self.overwrite)
@@ -396,8 +402,9 @@ class WorkFlow(object):
         #print (vdf.var_type.value_counts())
         print ()
         print ('making SNP matrix')
+        print ('-----------------')
         result = fasta_alignment_from_vcf(self.vcf_file, self.reference)
-        outfasta = os.path.join(self.outdir, 'variants.fa')
+        outfasta = os.path.join(self.outdir, 'snp_matrix.fa')
         SeqIO.write(result, outfasta, 'fasta')
 
         print ()
@@ -437,13 +444,17 @@ def main():
                         help="reference genome filename", metavar="FILE")
     parser.add_argument("-w", "--overwrite", dest="overwrite", action="store_true", default=False,
                         help="overwrite intermediate files" )
+    parser.add_argument("-m", "--trim", dest="trim", action="store_true", default=False,
+                        help="trim fastq files" )
+    parser.add_argument("-q", "--quality", dest="quality", default=20,
+                        help="trim quality" )
     parser.add_argument("-t", "--threads", dest="threads",default=4,
                         help="cpu threads to use", )
     parser.add_argument("-o", "--outdir", dest="outdir",
                         help="Results folder", metavar="FILE")
     parser.add_argument("-v", "--version", dest="version", action="store_true",
                         help="Get version")
-    parser.add_argument("-x", "--test", dest="test",  action="store_true",
+    parser.add_argument("-s", "--test", dest="test",  action="store_true",
                         default=False, help="Do test run")
 
     args = vars(parser.parse_args())

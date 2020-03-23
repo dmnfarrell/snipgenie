@@ -45,7 +45,15 @@ dbdir = os.path.join(config_path, 'db')
 sequencedir = os.path.join(config_path, 'genome')
 ref_genome = os.path.join(datadir,'Mbovis_AF212297.fa')
 ref_gff = os.path.join(datadir,'Mbovis_AF212297.gff')
+#windows only path to binaries
+bin_path = os.path.join(config_path, 'binaries')
 
+if not os.path.exists(config_path):
+    try:
+        os.makedirs(config_path, exist_ok=True)
+    except:
+        os.makedirs(config_path)
+        
 def copy_ref_genomes():
     """Copy default ref genome files to config dir"""
 
@@ -60,13 +68,11 @@ def fetch_binaries():
     """Get windows binaries -- windows only"""
 
     url = "https://github.com/dmnfarrell/btbgenie/pathogenie/raw/master/win_binaries/"
-    path = os.path.join(config_path, 'binaries')
     os.makedirs(path, exist_ok=True)
-    names = ['blastn.exe','makeblastdb.exe',
-            'bcftools.exe','bwa.exe','samtools.exe',
+    names = ['bcftools.exe','bwa.exe','samtools.exe',
             'msys-2.0.dll','msys-bz2-1.dll','msys-lzma-5.dll','msys-ncursesw6.dll','msys-z.dll']
     for n in names:
-        filename = os.path.join(path,n)
+        filename = os.path.join(bin_path,n)
         if os.path.exists(filename):
             continue
         link = os.path.join(url,n)
@@ -110,7 +116,6 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
     instead of the raw ones.
     """
 
-    bwacmd = 'bwa'
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
     new = []
@@ -138,6 +143,13 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
 
 def mpileup_region(region,out,bam_files,callback=None):
     """Run bcftools for single region."""
+
+    bcftoolscmd = 'bcftools'
+    if getattr(sys, 'frozen', False):
+        bcftoolscmd = tools.resource_path('bin/bcftools.exe')
+    elif platform.system() == 'Windows':
+        fetch_binaries()
+        cmd = os.path.join('bin_path','bcftools.exe')
 
     cmd = 'bcftools mpileup -r {reg} -O b -o {o} -f {r} {b}'.format(r=ref, reg=region, b=bam_files, o=out)
     if callback != None:

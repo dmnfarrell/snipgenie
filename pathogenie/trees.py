@@ -28,7 +28,6 @@ from Bio import Phylo, AlignIO
 import numpy as np
 import pandas as pd
 sys.path.append('ete')
-from ete3 import Tree, NodeStyle, TreeStyle
 
 def set_tiplabels(t, labelmap):
     for l in t.iter_leaves():
@@ -43,12 +42,15 @@ def delete_nodes(t, names):
             l.delete()
 
 def format_nodes(t):
+    from ete3 import NodeStyle
     for n in t.traverse():
         ns = NodeStyle()
         ns["size"] = 0
         n.set_style(ns)
 
 def color_leaves(t, colors):
+    from ete3 import NodeStyle
+
     for l in t.iter_leaves():
         if l.name in colors:
             clr = colors[l.name]
@@ -85,7 +87,7 @@ def run_RAXML(infile, name='variants', threads=8):
     cmd = 'raxmlHPC-PTHREADS -f a -N {nb} -T {t} -m {m} -V -p {s1} -x {s2} -n {n} -s {i}'.format(t=threads,nb=bootstraps,n=name,i=infile,s1=s1,s2=s2,m=model)
     print (cmd)
     tmp = subprocess.check_output(cmd, shell=True)
-    return    
+    return
 
 def biopython_draw_tree(filename):
 

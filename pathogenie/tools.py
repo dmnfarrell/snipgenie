@@ -29,12 +29,25 @@ import numpy as np
 import pandas as pd
 from gzip import open as gzopen
 
+home = os.path.expanduser("~")
+config_path = os.path.join(home,'.config','pathogenie')
+bin_path = os.path.join(config_path, 'binaries')
+
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
 
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
+
+def get_cmd(cmd):
+    """Get windows version of a command if required"""
     
+    if getattr(sys, 'frozen', False):
+        cmd = tools.resource_path('bin/%s.exe' %cmd)
+    elif platform.system() == 'Windows':
+        cmd = os.path.join(bin_path, '%s.exe' %cmd)
+    return cmd
+
 def batch_iterator(iterator, batch_size):
     """Returns lists of length batch_size.
 

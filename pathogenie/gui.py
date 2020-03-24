@@ -62,7 +62,7 @@ class App(QMainWindow):
         self.main.setFocus()
         self.setCentralWidget(self.main)
         self.setup_gui()
-        app.copy_ref_genomes()
+        #app.copy_ref_genomes()
         self.update_ref_genomes()
         self.clear_project()
 

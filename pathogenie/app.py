@@ -38,14 +38,13 @@ import multiprocessing as mp
 
 tempdir = tempfile.gettempdir()
 home = os.path.expanduser("~")
-config_path = os.path.join(home,'.config/pathogenie')
+config_path = os.path.join(home,'.config','pathogenie')
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
 datadir = os.path.join(module_path, 'data')
-dbdir = os.path.join(config_path, 'db')
-sequencedir = os.path.join(config_path, 'genome')
-ref_genome = os.path.join(datadir,'Mbovis_AF212297.fa')
-ref_gff = os.path.join(datadir,'Mbovis_AF212297.gff')
-#windows only path to binaries
+sequence_path = os.path.join(config_path, 'genome')
+ref_genome = os.path.join(sequence_path, 'Mbovis_AF212297.fa')
+#ref_gff = os.path.join(datadir, 'Mbovis_AF212297.gff')
+#windows only path to binaries 
 bin_path = os.path.join(config_path, 'binaries')
 
 if not os.path.exists(config_path):
@@ -53,28 +52,40 @@ if not os.path.exists(config_path):
         os.makedirs(config_path, exist_ok=True)
     except:
         os.makedirs(config_path)
-        
+
+def check_platform():
+    """See if we are running in Windows"""
+    
+    if platform.system() == 'Windows':
+        print('checking binaries are present')
+        fetch_binaries()
+    return
+
 def copy_ref_genomes():
     """Copy default ref genome files to config dir"""
 
-    path = sequencedir
+    src = os.path.join(datadir, 'Mbovis_AF212297.fa')
+    path = sequence_path
     if not os.path.exists(path):
         os.makedirs(path,exist_ok=True)
     dest = os.path.join(path, os.path.basename(ref_genome))
-    shutil.copy(ref_genome, dest)
+    shutil.copy(src, dest)    
     return
+
+copy_ref_genomes()
 
 def fetch_binaries():
     """Get windows binaries -- windows only"""
 
-    url = "https://github.com/dmnfarrell/btbgenie/pathogenie/raw/master/win_binaries/"
-    os.makedirs(path, exist_ok=True)
-    names = ['bcftools.exe','bwa.exe','samtools.exe',
-            'msys-2.0.dll','msys-bz2-1.dll','msys-lzma-5.dll','msys-ncursesw6.dll','msys-z.dll']
+    url = "https://github.com/dmnfarrell/pathogenie/raw/master/win_binaries/"
+    os.makedirs(bin_path, exist_ok=True)
+    names = ['bcftools.exe','bwa.exe','samtools.exe','tabix.exe',
+             'msys-2.0.dll','msys-bz2-1.dll','msys-lzma-5.dll','msys-ncursesw6.dll','msys-z.dll']
     for n in names:
         filename = os.path.join(bin_path,n)
         if os.path.exists(filename):
             continue
+        print ('fetching %s' %n)
         link = os.path.join(url,n)
         print (filename,link)
         urllib.request.urlretrieve(link, filename)
@@ -119,6 +130,7 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
     new = []
+    samtoolscmd = tools.get_cmd('samtools')
     for name,df in samples.groupby('sample'):
         print (name)
         if callback != None:
@@ -133,7 +145,7 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
         out = os.path.join(outdir,name+'.bam')
         print (out)
         aligners.bwa_align(files[0],files[1], idx=idx, out=out, **kwargs)
-        cmd = 'samtools index {o}'.format(o=out)
+        cmd = '{s} index {o}'.format(o=out,s=samtoolscmd)
         subprocess.check_output(cmd,shell=True)
         index = df.index
         samples.loc[index,'bam_file'] = out
@@ -247,18 +259,21 @@ def variant_calling(bam_files, ref, outpath, sample_file=None, threads=4,
                     callback=None, overwrite=False, **kwargs):
     """Call variants with bcftools"""
 
-    #bam_files = ' '.join(bam_files)
     rawbcf = os.path.join(outpath,'raw.bcf')
-    #cmd = 'bcftools mpileup -O b -o {o} -f {r} {b}'.format(r=ref, b=bam_files, o=rawbcf)
-    #run mpileup in parallel to speed up
-
+    bcftoolscmd = tools.get_cmd('bcftools')
     if not os.path.exists(rawbcf) or overwrite == True:
-        #rawbcf = mpileup_multiprocess(bam_files, ref, outpath, threads=threads, callback=callback)
-        rawbcf = mpileup_gnuparallel(bam_files, ref, outpath, threads=threads, callback=callback)
+        if platform.system() == 'Windows':
+            bam_files = ' '.join(bam_files)
+            cmd = '{bc} mpileup -O b -o {o} -f {r} {b}'.format(bc=bcftoolscmd,r=ref, b=bam_files, o=rawbcf)
+            subprocess.check_output(cmd, shell=True)
+        #if linux use mpileup in parallel to speed up
+        else:
+            #rawbcf = mpileup_multiprocess(bam_files, ref, outpath, threads=threads, callback=callback)
+            rawbcf = mpileup_gnuparallel(bam_files, ref, outpath, threads=threads, callback=callback)
 
     #find snps
     vcfout = os.path.join(outpath,'calls.vcf')
-    cmd = 'bcftools call -V indels --ploidy 1 -m -v -o {v} {raw}'.format(v=vcfout,raw=rawbcf)
+    cmd = '{bc} call -V indels --ploidy 1 -m -v -o {v} {raw}'.format(bc=bcftoolscmd,v=vcfout,raw=rawbcf)
     if callback != None:
         callback(cmd)
     print (cmd)
@@ -270,7 +285,7 @@ def variant_calling(bam_files, ref, outpath, sample_file=None, threads=4,
         tmp = subprocess.check_output(cmd,shell=True)
     final = os.path.join(outpath,'filtered.vcf.gz')
 
-    cmd = 'bcftools filter -e "QUAL<40" -o {o} -O z {i}'.format(i=vcfout,o=final)
+    cmd = '{bc} filter -e "QUAL<40" -o {o} -O z {i}'.format(bc=bcftoolscmd,i=vcfout,o=final)
     print (cmd)
     tmp = subprocess.check_output(cmd,shell=True)
     if callback != None:
@@ -292,7 +307,8 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
     from pyfaidx import Fasta
     from pyfaidx import FastaVariant
     #index vcf
-    cmd = 'tabix -p vcf -f {i}'.format(i=vcf_file)
+    tabixcmd = tools.get_cmd('tabix')
+    cmd = '{t} -p vcf -f {i}'.format(t=tabixcmd,i=vcf_file)
     tmp = subprocess.check_output(cmd,shell=True)
     #get samples?
     import vcf
@@ -349,13 +365,16 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
 def trim_files(df, outpath, overwrite=False, threads=4, quality=30):
     """Batch trim fastq files"""
 
+    method = 'cutadapt'
+    if platform.system() == 'Windows':
+        method = 'default'   
     if not os.path.exists(outpath):
         os.makedirs(outpath, exist_ok=True)
     for i,row in df.iterrows():
         outfile = os.path.join(outpath, os.path.basename(row.filename))
         print (outfile)
         if not os.path.exists(outfile) or overwrite == True:
-            tools.trim_reads(row.filename, outfile, threads=threads, quality=quality)
+            tools.trim_reads(row.filename, outfile, threads=threads, quality=quality, method=method)
         df.loc[i,'trimmed'] = outfile
     return df
 
@@ -381,6 +400,8 @@ class WorkFlow(object):
         print ('-------------')
         print (df)
         print ()
+        print ('building index')
+        aligners.build_bwa_index(self.reference)
         time.sleep(1)
         return True
 
@@ -470,7 +491,7 @@ def main():
                         default=False, help="Do test run")
 
     args = vars(parser.parse_args())
-
+    check_platform()
     if args['test'] == True:
         test_run()
     elif args['version'] == True:

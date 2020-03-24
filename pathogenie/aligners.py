@@ -20,6 +20,7 @@
 
 from __future__ import absolute_import, print_function
 import sys, os, string, types, re
+import platform
 import shutil, glob, collections
 import itertools
 import subprocess
@@ -27,15 +28,10 @@ import numpy as np
 import pandas as pd
 from . import tools
 
-BOWTIE_INDEXES = None
-BOWTIE_PARAMS = '-v 1 --best'
-
 def build_bwa_index(fastafile, path=None):
 
-    bwacmd = 'bwa'
-    if getattr(sys, 'frozen', False):
-        cmd = tools.resource_path('bin/bwa.exe')
-    cmd = 'bwa index %s' %fastafile
+    bwacmd = tools.get_cmd('bwa')
+    cmd = '{b} index {i}'.format(b=bwacmd,i=fastafile)
     subprocess.check_output(cmd, shell=True)
     print (cmd)
     return
@@ -43,14 +39,13 @@ def build_bwa_index(fastafile, path=None):
 def bwa_align(file1, file2, idx, out, threads=4, overwrite=False):
     """align reads to ref"""
 
-    bwacmd = 'bwa'
-    if getattr(sys, 'frozen', False):
-        cmd = tools.resource_path('bin/bwa.exe')
-    #cmd = 'bowtie2 -x %s -1 %s -2 %s --threads 6 | samtools view -bS - > %s' %(idx,files[0],files[1],out)
-    cmd = '{b} mem -M -t {t} {i} {f1} {f2} | samtools view -bt - | samtools sort -o {o}'.format(b=bwacmd,i=idx,f1=file1,f2=file2,o=out,t=threads)
+    bwacmd = tools.get_cmd('bwa')
+    samtoolscmd = tools.get_cmd('samtools')
+    cmd = '{b} mem -M -t {t} {i} {f1} {f2} | {s} view -bt - | {s} sort -o {o}'.format(b=bwacmd,i=idx,s=samtoolscmd,
+                                                                                      f1=file1,f2=file2,o=out,t=threads)
 
     if not os.path.exists(out) or overwrite == True:
-        print (cmd )
+        print (cmd)
         subprocess.check_output(cmd, shell=True)
     return
 

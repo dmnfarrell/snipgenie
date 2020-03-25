@@ -31,7 +31,6 @@ Links
 
 http://dmnfarrell.github.io/btbgenie
 
-
 Installation
 ============
 

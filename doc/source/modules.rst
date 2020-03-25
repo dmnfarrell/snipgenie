@@ -1,5 +1,5 @@
-pandastable
-===========
+pathogenie
+==========
 
 .. toctree::
    :maxdepth: 4

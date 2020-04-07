@@ -41,12 +41,14 @@ def bwa_align(file1, file2, idx, out, threads=4, overwrite=False):
 
     bwacmd = tools.get_cmd('bwa')
     samtoolscmd = tools.get_cmd('samtools')
+    if file2 == None:
+        file2=''
     cmd = '{b} mem -M -t {t} {i} {f1} {f2} | {s} view -bt - | {s} sort -o {o}'.format(b=bwacmd,i=idx,s=samtoolscmd,
                                                                                       f1=file1,f2=file2,o=out,t=threads)
 
     if not os.path.exists(out) or overwrite == True:
         print (cmd)
-        subprocess.check_output(cmd, shell=True)
+        subprocess.check_output(cmd, shell=True)        
     return
 
 def build_bowtie_index(fastafile, path=None):

@@ -44,7 +44,7 @@ datadir = os.path.join(module_path, 'data')
 sequence_path = os.path.join(config_path, 'genome')
 ref_genome = os.path.join(sequence_path, 'Mbovis_AF212297.fa')
 #ref_gff = os.path.join(datadir, 'Mbovis_AF212297.gff')
-#windows only path to binaries 
+#windows only path to binaries
 bin_path = os.path.join(config_path, 'binaries')
 
 if not os.path.exists(config_path):
@@ -53,9 +53,12 @@ if not os.path.exists(config_path):
     except:
         os.makedirs(config_path)
 
+defaults = {'threads':4, 'labelsep':'_','quality':25,
+            'reference': None, 'overwrite':False}
+
 def check_platform():
     """See if we are running in Windows"""
-    
+
     if platform.system() == 'Windows':
         print('checking binaries are present')
         fetch_binaries()
@@ -69,7 +72,7 @@ def copy_ref_genomes():
     if not os.path.exists(path):
         os.makedirs(path,exist_ok=True)
     dest = os.path.join(path, os.path.basename(ref_genome))
-    shutil.copy(src, dest)    
+    shutil.copy(src, dest)
     return
 
 copy_ref_genomes()
@@ -94,6 +97,8 @@ def fetch_binaries():
 def get_files_from_paths(paths):
     """Get files in multiple paths"""
 
+    if not type(paths) == list:
+        paths = [paths]
     files=[]
     for path in paths:
         s = glob.glob(os.path.join(path,'*.fastq.gz'))
@@ -120,6 +125,13 @@ def get_samples(filenames, sep='-'):
     #df = df.sort_values(['name','sample','pair']).reset_index(drop=True)
     return df
 
+def check_samples_unique(samples):
+    """Check that sample names are unique"""
+    
+    x = samples['sample'].value_counts()
+    if len(x[x>2]) > 0:
+        return False
+
 def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
     """
     Align multiple files. Requires a dataframe with a 'sample' column to indicate
@@ -132,7 +144,7 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
     new = []
     samtoolscmd = tools.get_cmd('samtools')
     for name,df in samples.groupby('sample'):
-        print (name)
+        #print (name)
         if callback != None:
             callback('aligning %s' %name)
         if 'trimmed' in df.columns:
@@ -142,11 +154,15 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
         else:
             files = list(df.filename)
         #print (files)
+        if len(files) == 1:
+            #unpaired reads
+            files.append(None)
         out = os.path.join(outdir,name+'.bam')
-        print (out)
         aligners.bwa_align(files[0],files[1], idx=idx, out=out, **kwargs)
-        cmd = '{s} index {o}'.format(o=out,s=samtoolscmd)
-        subprocess.check_output(cmd,shell=True)
+        idx = out+'.bai'
+        if not os.path.exists(idx):
+            cmd = '{s} index {o}'.format(o=out,s=samtoolscmd)
+            subprocess.check_output(cmd,shell=True)
         index = df.index
         samples.loc[index,'bam_file'] = out
         if callback != None:
@@ -177,7 +193,7 @@ def mpileup_multiprocess(bam_files, ref, outpath, threads=4, callback=None):
 
     bam_files = ' '.join(bam_files)
     rawbcf = os.path.join(outpath,'raw.bcf')
-    tmpdir = 'tmp'
+    tmpdir = '/tmp'
     chr = tools.get_chrom(ref)
     length = tools.get_fasta_length(ref)
 
@@ -223,7 +239,7 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
 
     bam_files = ' '.join(bam_files)
     rawbcf = os.path.join(outpath,'raw.bcf')
-    tmpdir = 'tmp'
+    tmpdir = '/tmp'
     chr = tools.get_chrom(ref)
     length = tools.get_fasta_length(ref)
     bsize = int(length/(threads-1))
@@ -303,12 +319,11 @@ def create_bam_labels(filenames):
 def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
     """Get a fasta alignment for all snp sites in a multi sample
     vcf file, including the reference sequence"""
-
+    
     from pyfaidx import Fasta
     from pyfaidx import FastaVariant
     #index vcf
-    tabixcmd = tools.get_cmd('tabix')
-    cmd = '{t} -p vcf -f {i}'.format(t=tabixcmd,i=vcf_file)
+    cmd = 'tabix -p vcf -f {i}'.format(i=vcf_file)
     tmp = subprocess.check_output(cmd,shell=True)
     #get samples?
     import vcf
@@ -316,7 +331,7 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
     samples = vcf_reader.samples
     print ('%s samples' %len(samples))
     result = []
-
+    
     #reference sequence
     reference = Fasta(ref)
     chrom = list(reference.keys())[0]
@@ -325,15 +340,13 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
     sites=[]
     for sample in samples:
         #print (sample)
-        variant = FastaVariant(ref, vcf_file,
+        variant = FastaVariant(ref, vcf_file, 
                                  sample=sample, het=True, hom=True)
         pos = list(variant[chrom].variant_sites)
         sites.extend(pos)
         #print (sample)
         #print (pos[:20])
     sites = sorted(set(sites))
-    n=550
-    #sites=sites[:n]
     print ('using %s sites' %len(sites))
     if callback != None:
         callback('using %s sites' %len(sites))
@@ -344,15 +357,16 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
     refseq = ''.join(refseq)
     #print (refseq)
     refrec = SeqRecord(Seq(refseq),id='ref')
-    result.append(refrec)
+    result.append(refrec) 
 
+    sites_matrix = {}
     #iterate over variants in each sample
-    for sample in samples:
+    for sample in samples:        
         seq=[]
-        variant = FastaVariant(ref, vcf_file,
-                                 sample=sample, het=True, hom=True)
+        variant = FastaVariant(ref, vcf_file, 
+                                 sample=sample, het=True, hom=True)     
         #for p in variant[chrom].variant_sites:
-        for p in sites:
+        for p in sites:        
             rec = variant[chrom][p-1:p]
             #print (p,rec)
             seq.append(rec.seq)
@@ -360,21 +374,24 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
         #print (seq)
         seqrec = SeqRecord(Seq(seq),id=sample)
         result.append(seqrec)
-    return result
+        sites_matrix[sample] = list(seqrec)
+    df = pd.DataFrame(sites_matrix)
+    df.index=sites    
+    return result, df
 
 def trim_files(df, outpath, overwrite=False, threads=4, quality=30):
     """Batch trim fastq files"""
 
     method = 'cutadapt'
     if platform.system() == 'Windows':
-        method = 'default'   
+        method = 'default'
     if not os.path.exists(outpath):
         os.makedirs(outpath, exist_ok=True)
     for i,row in df.iterrows():
-        outfile = os.path.join(outpath, os.path.basename(row.filename))
-        print (outfile)
+        outfile = os.path.join(outpath, os.path.basename(row.filename))        
         if not os.path.exists(outfile) or overwrite == True:
             tools.trim_reads(row.filename, outfile, threads=threads, quality=quality, method=method)
+            print (outfile)
         df.loc[i,'trimmed'] = outfile
     return df
 
@@ -384,22 +401,31 @@ class WorkFlow(object):
         for i in kwargs:
             print (i, kwargs[i])
             self.__dict__[i] = kwargs[i]
+        for i in defaults:
+            if i not in self.__dict__:
+                self.__dict__[i] = defaults[i]
+                print (i, defaults[i])
         return
 
     def setup(self):
         """Setup main parameters"""
-
+        
         if self.reference == None:
             self.reference = ref_genome
         self.filenames = get_files_from_paths(self.input)
         self.threads = int(self.threads)
-        df = get_samples(self.filenames)
+        df = get_samples(self.filenames, sep=self.labelsep)
         df['read_length'] = df.filename.apply(tools.get_fastq_info)
         self.fastq_table = df
-        print ('The following samples were loaded:')
+        sample_size = len(df['sample'].unique())
+        print ('%s samples were loaded:' %sample_size)
         print ('-------------')
         print (df)
         print ()
+        s = check_samples_unique(df)
+        if s == False:
+            print ('samples names are not unique! try a different labelsep value.')
+            return False
         print ('building index')
         aligners.build_bwa_index(self.reference)
         time.sleep(1)
@@ -413,7 +439,9 @@ class WorkFlow(object):
         if len(samples)==0:
             print ('no samples found')
             return
+        
         print ('trimming fastq files')
+        print ('--------------------')
         trimmed_path = os.path.join(self.outdir, 'trimmed')
         samples = trim_files(samples, trimmed_path, self.overwrite,
                               quality=self.quality, threads=self.threads)
@@ -436,16 +464,17 @@ class WorkFlow(object):
         print ()
         print ('making SNP matrix')
         print ('-----------------')
-        result = fasta_alignment_from_vcf(self.vcf_file, self.reference)
-        outfasta = os.path.join(self.outdir, 'snp_matrix.fa')
-        SeqIO.write(result, outfasta, 'fasta')
-
+        snprecs, smat = fasta_alignment_from_vcf(self.vcf_file, self.reference)
+        outfasta = os.path.join(self.outdir, 'snp_matrix.fa')        
+        SeqIO.write(snprecs, outfasta, 'fasta')
+        #write out sites matrix as txt file
+        smat.to_csv(os.path.join(self.outdir,'snp_matrix.txt'), sep=' ')
         print ()
         print ('building tree')
-        trees.run_RAXML(outfasta)
-
+        treefile = trees.run_RAXML(outfasta, outpath=self.outdir)
+        print (treefile)
         #labelmap = dict(zip(sra.filename,sra.geo_loc_name_country))
-        t = trees.create_tree('RAxML_bipartitions.variants')#, labelmap)
+        t = trees.create_tree(treefile)#, labelmap)
         t.render(os.path.join(self.outdir, 'tree.png'))
 
         return
@@ -460,7 +489,6 @@ def test_run():
     W.run()
     return
 
-
 def main():
     "Run the application"
 
@@ -473,13 +501,15 @@ def main():
                         help="input folder(s)", metavar="FILE")
     parser.add_argument("-l", "--labels", dest="labels", default=[],
                         help="sample labels file", metavar="FILE")
+    parser.add_argument("-e", "--labelsep", dest="labelsep", default=',',
+                        help="symbol to split sample labels on")
     parser.add_argument("-r", "--reference", dest="reference", default=None,
                         help="reference genome filename", metavar="FILE")
     parser.add_argument("-w", "--overwrite", dest="overwrite", action="store_true", default=False,
                         help="overwrite intermediate files" )
     parser.add_argument("-m", "--trim", dest="trim", action="store_true", default=False,
                         help="trim fastq files" )
-    parser.add_argument("-q", "--quality", dest="quality", default=20,
+    parser.add_argument("-q", "--quality", dest="quality", default=25,
                         help="trim quality" )
     parser.add_argument("-t", "--threads", dest="threads",default=4,
                         help="cpu threads to use", )

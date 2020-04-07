@@ -315,9 +315,9 @@ def trim_reads(filename, outfile, adapter=None, quality=20,
         trim_reads_default(filename,  outfile, right_quality=quality)
     elif method == 'cutadapt':
         if adapter != None:
-            cmd = 'cutadapt -O 5 -q {q} -a {a} -j {t} {i} -o {o}'.format(a=adapter,i=filename,o=outfile,t=threads,q=quality)
+            cmd = 'cutadapt -O 5 -q {q} -a {a} -j {t} -m 75 {i} -o {o}'.format(a=adapter,i=filename,o=outfile,t=threads,q=quality)
         else:
-            cmd = 'cutadapt -O 5 -q {q} {i} -j {t} -o {o}'.format(i=filename,o=outfile,t=threads,q=quality)
+            cmd = 'cutadapt -O 5 -q {q} {i} -j {t} -m 75 -o {o}'.format(i=filename,o=outfile,t=threads,q=quality)
         print (cmd)
         result = subprocess.check_output(cmd, shell=True, executable='/bin/bash')
     return

@@ -66,6 +66,7 @@ def color_leaves(t, colors):
         l.set_style(ns)
 
 def get_colormap(values):
+    
     labels = values.unique()
     cmap = plt.cm.get_cmap('Set1')
     colors=qcolors
@@ -73,21 +74,27 @@ def get_colormap(values):
     clrs = dict(list(zip(labels,colors)))
     return clrs
 
-def run_RAXML(infile, name='variants', threads=8):
-    """Run Raxml pthreads"""
+def run_RAXML(infile, name='variants', threads=8, outpath='.'):
+    """Run Raxml pthreads. 
+    Returns name of .tree file.
+    """
 
+    outpath = os.path.abspath(outpath)
     bootstraps = 10
     model = 'GTRCAT'
     s1 = random.randint(0,1e8)
     s2 = random.randint(0,1e8)
 
-    files = glob.glob('RAxML_*')
+    files = glob.glob(os.path.join(outpath,'RAxML_*'))
     for f in files:
         os.remove(f)
-    cmd = 'raxmlHPC-PTHREADS -f a -N {nb} -T {t} -m {m} -V -p {s1} -x {s2} -n {n} -s {i}'.format(t=threads,nb=bootstraps,n=name,i=infile,s1=s1,s2=s2,m=model)
-    print (cmd)
+    
+    cmd = 'raxmlHPC-PTHREADS -f a -N {nb} -T {t} -m {m} -V -p {s1} -x {s2} -n {n} -w {w} -s {i}'\
+            .format(t=threads,nb=bootstraps,n=name,i=infile,s1=s1,s2=s2,m=model,w=outpath)
+    print (cmd)   
     tmp = subprocess.check_output(cmd, shell=True)
-    return
+    out = os.path.join(outpath,'RAxML_bipartitions.variants')
+    return out
 
 def biopython_draw_tree(filename):
 
@@ -96,17 +103,18 @@ def biopython_draw_tree(filename):
     Phylo.draw(tree)
     return
 
-def create_tree(filename, labelmap=None):
+def create_tree(filename, ref=None, labelmap=None):
     """Draw a tree """
 
     from ete3 import Tree, NodeStyle, TreeStyle
     t = Tree(filename)
-    t.set_outgroup('ref')
+    if ref != None:
+        t.set_outgroup(ref)
     if labelmap != None:
-        trees.set_tiplabels(t,labelmap)
+        set_tiplabels(t,labelmap)
     format_nodes(t)
     ts = TreeStyle()
-    ts.scale=1000
-    t.render("%%inline", tree_style=ts)
-    t.render("tree.png", tree_style=ts)
+    ts.scale=15000
+    #t.render("%%inline", tree_style=ts)
+    #t.render("tree.png", tree_style=ts)
     return t

@@ -26,7 +26,7 @@ setup(
                       'future'],
     entry_points = {
         'console_scripts': [
-            'pathogeniegui=pathogenie.gui:main',
+            'pathogenie-gui=pathogenie.gui:main',
             'pathogenie=pathogenie.app:main']
             },
     classifiers = ['Operating System :: OS Independent',

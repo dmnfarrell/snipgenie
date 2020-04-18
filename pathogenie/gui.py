@@ -303,7 +303,7 @@ class App(QMainWindow):
 
         df = self.fastq_table.model.df
 
-        new = app.get_sample_names(filenames)
+        new = app.get_samples(filenames)
         new['read_length'] = new.filename.apply(tools.get_fastq_info)
         #print (new)
 
@@ -343,7 +343,7 @@ class App(QMainWindow):
 
     def update_ref_genomes(self):
 
-        path = app.sequencedir
+        path = app.sequence_path
         files = glob.glob(os.path.join(path,'*.f*a'))
         labels = [os.path.basename(i) for i in files]
         self.opts.widgets['refgenome'].addItems(labels)

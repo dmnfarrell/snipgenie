@@ -14,16 +14,13 @@ https://pathogenie.readthedocs.io/en/latest/
 
 Note for Windows users: a standalone installer will be available.
 
-```
-git clone https://github.com/dmnfarrell/btbgenie.git
-```
+`pip install -e git+https://github.com/dmnfarrell/pathogenie.git#egg=pathogenie`
 
-Then move to the directory and run
-```
-python -m pathogenie.app
-```
+(Use pip3 on Ubuntu to ensure you use Python 3)
 
-Will be made available on pip soon.
+## Usage
+
+Run `pathogenie` for the cli or `pathogenie-gui` for the desktop version.
 
 ## Dependencies
 
@@ -42,9 +39,11 @@ Other binaries required:
 * samtools
 * bcftools
 
-These can be installed with apt in Ubuntu.
+The binaries can be installed with apt in Ubuntu. They are downloaded automatically in Windows.
 
 ## Screenshots
+
+Desktop application:
 
 <img src=img/scr1.png width=450px>
 

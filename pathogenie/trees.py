@@ -53,6 +53,7 @@ def color_leaves(t, colors):
 
     for l in t.iter_leaves():
         if l.name in colors:
+            #print (l.name, colors[l.name])
             clr = colors[l.name]
         else:
             clr='black'
@@ -66,16 +67,18 @@ def color_leaves(t, colors):
         l.set_style(ns)
 
 def get_colormap(values):
-    
+
+    import pylab as plt
     labels = values.unique()
     cmap = plt.cm.get_cmap('Set1')
-    colors=qcolors
+    colors = [cmap(i) for i in range(len(labels))]
+    #colors=qcolors
     #clrs = {labels[i]:cmap(float(i)/(len(labels))) for i in range(len(labels))}
     clrs = dict(list(zip(labels,colors)))
     return clrs
 
 def run_RAXML(infile, name='variants', threads=8, outpath='.'):
-    """Run Raxml pthreads. 
+    """Run Raxml pthreads.
     Returns name of .tree file.
     """
 
@@ -88,10 +91,10 @@ def run_RAXML(infile, name='variants', threads=8, outpath='.'):
     files = glob.glob(os.path.join(outpath,'RAxML_*'))
     for f in files:
         os.remove(f)
-    
+
     cmd = 'raxmlHPC-PTHREADS -f a -N {nb} -T {t} -m {m} -V -p {s1} -x {s2} -n {n} -w {w} -s {i}'\
             .format(t=threads,nb=bootstraps,n=name,i=infile,s1=s1,s2=s2,m=model,w=outpath)
-    print (cmd)   
+    print (cmd)
     tmp = subprocess.check_output(cmd, shell=True)
     out = os.path.join(outpath,'RAxML_bipartitions.variants')
     return out
@@ -103,18 +106,21 @@ def biopython_draw_tree(filename):
     Phylo.draw(tree)
     return
 
-def create_tree(filename, ref=None, labelmap=None):
+def create_tree(filename, ref=None, labelmap=None, colormap=None):
     """Draw a tree """
 
     from ete3 import Tree, NodeStyle, TreeStyle
     t = Tree(filename)
     if ref != None:
         t.set_outgroup(ref)
+    if colormap != None:
+        color_leaves(t, colormap)
     if labelmap != None:
         set_tiplabels(t,labelmap)
-    format_nodes(t)
+
+    #format_nodes(t)
     ts = TreeStyle()
-    ts.scale=15000
+    ts.scale=1500
     #t.render("%%inline", tree_style=ts)
     #t.render("tree.png", tree_style=ts)
     return t

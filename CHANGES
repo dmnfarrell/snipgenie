@@ -1,0 +1,10 @@
+=======
+CHANGES
+=======
+
+0.1.0
+-----
+
+* first version
+* runs cli and gui workflow
+* functions working so far: trimming, alignment, variant calling

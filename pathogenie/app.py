@@ -127,10 +127,13 @@ def get_samples(filenames, sep='-'):
 
 def check_samples_unique(samples):
     """Check that sample names are unique"""
-    
+
     x = samples['sample'].value_counts()
     if len(x[x>2]) > 0:
         return False
+
+def results_summary(df):
+    return df.groupby('sample').first()[['name','bam_file','read_length','coverage']].reset_index()
 
 def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
     """
@@ -153,18 +156,21 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
                 callback('using trimmed')
         else:
             files = list(df.filename)
-        #print (files)
         if len(files) == 1:
             #unpaired reads
             files.append(None)
         out = os.path.join(outdir,name+'.bam')
         aligners.bwa_align(files[0],files[1], idx=idx, out=out, **kwargs)
-        idx = out+'.bai'
-        if not os.path.exists(idx):
+        bamidx = out+'.bai'
+        if not os.path.exists(bamidx):
             cmd = '{s} index {o}'.format(o=out,s=samtoolscmd)
             subprocess.check_output(cmd,shell=True)
+            print (cmd)
         index = df.index
         samples.loc[index,'bam_file'] = out
+        #find coverage
+        cov = tools.get_bam_coverage(out)
+        samples.loc[index,'coverage'] = cov
         if callback != None:
             callback(out)
     return samples
@@ -316,69 +322,6 @@ def create_bam_labels(filenames):
             file.write('%s %s\n' %(s[0],s[1]))
     return
 
-def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
-    """Get a fasta alignment for all snp sites in a multi sample
-    vcf file, including the reference sequence"""
-    
-    from pyfaidx import Fasta
-    from pyfaidx import FastaVariant
-    #index vcf
-    cmd = 'tabix -p vcf -f {i}'.format(i=vcf_file)
-    tmp = subprocess.check_output(cmd,shell=True)
-    #get samples?
-    import vcf
-    vcf_reader = vcf.Reader(open(vcf_file, 'rb'))
-    samples = vcf_reader.samples
-    print ('%s samples' %len(samples))
-    result = []
-    
-    #reference sequence
-    reference = Fasta(ref)
-    chrom = list(reference.keys())[0]
-
-    #get the set of all sites first
-    sites=[]
-    for sample in samples:
-        #print (sample)
-        variant = FastaVariant(ref, vcf_file, 
-                                 sample=sample, het=True, hom=True)
-        pos = list(variant[chrom].variant_sites)
-        sites.extend(pos)
-        #print (sample)
-        #print (pos[:20])
-    sites = sorted(set(sites))
-    print ('using %s sites' %len(sites))
-    if callback != None:
-        callback('using %s sites' %len(sites))
-    #get reference sequence for site positions
-    refseq=[]
-    for p in sites:
-        refseq.append(reference[chrom][p-1].seq)
-    refseq = ''.join(refseq)
-    #print (refseq)
-    refrec = SeqRecord(Seq(refseq),id='ref')
-    result.append(refrec) 
-
-    sites_matrix = {}
-    #iterate over variants in each sample
-    for sample in samples:        
-        seq=[]
-        variant = FastaVariant(ref, vcf_file, 
-                                 sample=sample, het=True, hom=True)     
-        #for p in variant[chrom].variant_sites:
-        for p in sites:        
-            rec = variant[chrom][p-1:p]
-            #print (p,rec)
-            seq.append(rec.seq)
-        seq = ''.join(seq)
-        #print (seq)
-        seqrec = SeqRecord(Seq(seq),id=sample)
-        result.append(seqrec)
-        sites_matrix[sample] = list(seqrec)
-    df = pd.DataFrame(sites_matrix)
-    df.index=sites    
-    return result, df
-
 def trim_files(df, outpath, overwrite=False, threads=4, quality=30):
     """Batch trim fastq files"""
 
@@ -388,7 +331,7 @@ def trim_files(df, outpath, overwrite=False, threads=4, quality=30):
     if not os.path.exists(outpath):
         os.makedirs(outpath, exist_ok=True)
     for i,row in df.iterrows():
-        outfile = os.path.join(outpath, os.path.basename(row.filename))        
+        outfile = os.path.join(outpath, os.path.basename(row.filename))
         if not os.path.exists(outfile) or overwrite == True:
             tools.trim_reads(row.filename, outfile, threads=threads, quality=quality, method=method)
             print (outfile)
@@ -409,7 +352,7 @@ class WorkFlow(object):
 
     def setup(self):
         """Setup main parameters"""
-        
+
         if self.reference == None:
             self.reference = ref_genome
         self.filenames = get_files_from_paths(self.input)
@@ -439,7 +382,7 @@ class WorkFlow(object):
         if len(samples)==0:
             print ('no samples found')
             return
-        
+
         print ('trimming fastq files')
         print ('--------------------')
         trimmed_path = os.path.join(self.outdir, 'trimmed')
@@ -459,24 +402,29 @@ class WorkFlow(object):
         self.vcf_file = variant_calling(bam_files, self.reference, self.outdir, threads=self.threads,
                                         overwrite=self.overwrite)
         print (self.vcf_file)
-        #vdf = tools.vcf_to_dataframe(self.vcf_file)
-        #print (vdf.var_type.value_counts())
         print ()
         print ('making SNP matrix')
         print ('-----------------')
-        snprecs, smat = fasta_alignment_from_vcf(self.vcf_file, self.reference)
-        outfasta = os.path.join(self.outdir, 'snp_matrix.fa')        
+        snprecs, smat = tools.fasta_alignment_from_vcf(self.vcf_file, self.reference)
+        outfasta = os.path.join(self.outdir, 'snp_matrix.fa')
         SeqIO.write(snprecs, outfasta, 'fasta')
         #write out sites matrix as txt file
         smat.to_csv(os.path.join(self.outdir,'snp_matrix.txt'), sep=' ')
         print ()
         print ('building tree')
+        print ('-------------')
         treefile = trees.run_RAXML(outfasta, outpath=self.outdir)
         print (treefile)
         #labelmap = dict(zip(sra.filename,sra.geo_loc_name_country))
         t = trees.create_tree(treefile)#, labelmap)
         t.render(os.path.join(self.outdir, 'tree.png'))
-
+        #save summary table
+        summ = results_summary(samples)
+        summ.to_csv(os.path.join(self.outdir,'summary.csv'))
+        print ()
+        print ('Done. Sample summary:')
+        print ('---------------------')
+        print (summ)
         return
 
 def test_run():

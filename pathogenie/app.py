@@ -169,8 +169,8 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
         index = df.index
         samples.loc[index,'bam_file'] = out
         #find coverage
-        cov = tools.get_bam_coverage(out)
-        samples.loc[index,'coverage'] = cov
+        cov = tools.get_bam_depth(out)
+        samples.loc[index,'depth'] = cov
         if callback != None:
             callback(out)
     return samples
@@ -416,11 +416,11 @@ class WorkFlow(object):
         treefile = trees.run_RAXML(outfasta, outpath=self.outdir)
         print (treefile)
         #labelmap = dict(zip(sra.filename,sra.geo_loc_name_country))
-        t = trees.create_tree(treefile)#, labelmap)
+        t,ts = trees.create_tree(treefile)#, labelmap)
         t.render(os.path.join(self.outdir, 'tree.png'))
         #save summary table
         summ = results_summary(samples)
-        summ.to_csv(os.path.join(self.outdir,'summary.csv'))
+        summ.to_csv(os.path.join(self.outdir,'summary.csv'),index=False)
         print ()
         print ('Done. Sample summary:')
         print ('---------------------')

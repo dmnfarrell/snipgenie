@@ -468,14 +468,17 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
     df.index=sites
     return result, df
 
-def get_bam_coverage(filename):
-    """Get mean coverage from bam file"""
+def get_bam_depth(filename, how='mean'):
+    """Get depth from bam file"""
 
     cmd = 'samtools depth %s ' %filename
     tmp=subprocess.check_output(cmd, shell=True)
     from io import StringIO
-    c=pd.read_csv(StringIO(tmp.decode()),sep='\t',names=['chr','pos','coverage'])
-    return c.coverage.mean().round(2)
+    c = pd.read_csv(StringIO(tmp.decode()),sep='\t',names=['chr','pos','depth'])
+    if how == 'mean':
+        return c.coverage.mean().round(2)
+    else:
+        return c.depth.sum().round(2)
 
 def fetch_sra_reads(df,path):
     """Download a set of reads from SRA using dataframe with runs"""

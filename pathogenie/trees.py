@@ -109,7 +109,7 @@ def biopython_draw_tree(filename):
 def create_tree(filename, ref=None, labelmap=None, colormap=None):
     """Draw a tree """
 
-    from ete3 import Tree, NodeStyle, TreeStyle
+    from ete3 import Tree, TreeStyle, TextFace
     t = Tree(filename)
     if ref != None:
         t.set_outgroup(ref)
@@ -120,7 +120,5 @@ def create_tree(filename, ref=None, labelmap=None, colormap=None):
 
     #format_nodes(t)
     ts = TreeStyle()
-    ts.scale=1500
-    #t.render("%%inline", tree_style=ts)
-    #t.render("tree.png", tree_style=ts)
-    return t
+    ts.scale=300    
+    return t, ts

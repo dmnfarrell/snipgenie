@@ -29,7 +29,8 @@ import pandas as pd
 from . import tools
 
 def build_bwa_index(fastafile, path=None):
-
+    """Build a bwa index"""
+    
     bwacmd = tools.get_cmd('bwa')
     cmd = '{b} index {i}'.format(b=bwacmd,i=fastafile)
     subprocess.check_output(cmd, shell=True)
@@ -37,7 +38,12 @@ def build_bwa_index(fastafile, path=None):
     return
 
 def bwa_align(file1, file2, idx, out, threads=4, overwrite=False):
-    """align reads to ref"""
+    """Align reads to a reference with bwa.
+    Args:
+        file1, file2: fastq files
+        idx: bwa index name
+        out: output bam file name
+    """
 
     bwacmd = tools.get_cmd('bwa')
     samtoolscmd = tools.get_cmd('samtools')

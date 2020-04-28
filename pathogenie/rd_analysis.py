@@ -29,6 +29,8 @@ from Bio import Phylo, AlignIO
 import numpy as np
 import pandas as pd
 from gzip import open as gzopen
+import tempfile
+from . import tools, aligners
 
 tempdir = tempfile.gettempdir()
 home = os.path.expanduser("~")
@@ -39,31 +41,32 @@ mtbref = os.path.join(datadir, 'MTB-H37Rv.fa')
 
 def create_rd_index(names=None):
     """Get RD region sequence from reference and make bwa index"""
-    
-    df=mtbdiff.RD.set_index('RD_name')
+
+    RD = pd.read_csv(os.path.join(datadir,'RD.csv'))
+    df=RD.set_index('RD_name')
     if names!= None:
         df=df.loc[names]
     seqs=[]
-    for name, row in df.iterrows():        
+    for name, row in df.iterrows():
         #print (name,row.Start, row.Stop, row.Rv)
         from pyfaidx import Fasta
-        rg = Fasta(mtbref)
+        rg = Fasta('../MTB-H37Rv.fna')
         sseq = rg['NC_000962.3'][row.Start:row.Stop].seq
         #refname = '%s.fa' %name
-        seqs.append(SeqRecord(Seq(sseq),id=name))        
+        seqs.append(SeqRecord(Seq(sseq),id=name))
     SeqIO.write(seqs, 'RD.fa', 'fasta')
     aligners.build_bwa_index('RD.fa')
-    
-def align_regions(df):
+
+def align_regions(df, path):
     """Align reads to regions of difference"""
-    
+
     from io import StringIO
-    out = 'rd_aligned'
+    from pyfaidx import Fasta
     ref = 'RD.fa'
     rg = Fasta('../MTB-H37Rv.fna')
     res = []
     for i,g in df.groupby('sample'):
-        out=os.path.join('../rd_aligned',i+'.bam')
+        out=os.path.join(path,i+'.bam')
         f1 = g.iloc[0].filename; f2 = g.iloc[1].filename
         if not os.path.exists(out):
             aligners.bwa_align(f1, f2, ref, out, threads=4, overwrite=False)
@@ -73,7 +76,7 @@ def align_regions(df):
         avdepth = int(tmp)*2/len(rg)
         print (avdepth)
         cmd = 'samtools coverage --min-BQ 1 %s' %out
-        tmp = subprocess.check_output(cmd,shell=True)    
+        tmp = subprocess.check_output(cmd,shell=True)
         s = pd.read_csv(StringIO(tmp.decode()),sep='\t')
         s['name'] = i
         #print (s)

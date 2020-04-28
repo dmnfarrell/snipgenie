@@ -46,6 +46,7 @@ ref_genome = os.path.join(sequence_path, 'Mbovis_AF212297.fa')
 #ref_gff = os.path.join(datadir, 'Mbovis_AF212297.gff')
 #windows only path to binaries
 bin_path = os.path.join(config_path, 'binaries')
+default_filter = "'QUAL>=40 && INFO/DP>=10 && MQ>40'"
 
 if not os.path.exists(config_path):
     try:
@@ -133,7 +134,11 @@ def check_samples_unique(samples):
         return False
 
 def results_summary(df):
-    return df.groupby('sample').first()[['name','bam_file','read_length','coverage']].reset_index()
+    return df.groupby('sample').first()[['name','bam_file','read_length']].reset_index()
+
+def write_samples(df, path):
+    filename = os.path.join(path, 'samples.txt')
+    df.drop_duplicates('sample')['sample'].to_csv(filename,index=False,header=False)
 
 def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
     """
@@ -168,9 +173,9 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
             print (cmd)
         index = df.index
         samples.loc[index,'bam_file'] = out
-        #find coverage
-        cov = tools.get_bam_depth(out)
-        samples.loc[index,'depth'] = cov
+        #find mean depth
+        #depth = tools.get_bam_depth(out)
+        #samples.loc[index,'depth'] = depth
         if callback != None:
             callback(out)
     return samples
@@ -265,7 +270,9 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
 
     regstr = ' '.join(regions)
     filesstr = ' '.join(outfiles)
-    cmd = 'parallel bcftools mpileup -r {{1}} -O b -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'.format(r=ref, reg=regstr, b=bam_files, o=filesstr)
+    annotatestr = '"AD,ADF,ADR,DP,SP,INFO/AD,INFO/ADF,INFO/ADR"'
+    cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
+            .format(r=ref, reg=regstr, b=bam_files, o=filesstr, a=annotatestr)
     print (cmd)
     subprocess.check_output(cmd, shell=True)
     #concat files
@@ -277,10 +284,12 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
         os.remove(f)
     return rawbcf
 
-def variant_calling(bam_files, ref, outpath, sample_file=None, threads=4,
-                    callback=None, overwrite=False, **kwargs):
+def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
+                    callback=None, overwrite=False, filter=None, **kwargs):
     """Call variants with bcftools"""
 
+    if filter == None:
+        filter = default_filter
     rawbcf = os.path.join(outpath,'raw.bcf')
     bcftoolscmd = tools.get_cmd('bcftools')
     if not os.path.exists(rawbcf) or overwrite == True:
@@ -300,14 +309,19 @@ def variant_calling(bam_files, ref, outpath, sample_file=None, threads=4,
         callback(cmd)
     print (cmd)
     subprocess.check_output(cmd,shell=True)
-    #rename samples
-    if sample_file != None:
-        cmd = 'bcftools reheader --samples {s} -o {v} {v}'.format(v=vcfout,s=sample_file)
+
+    #relabel samples in vcf header
+    if relabel == True:
+        sample_file = os.path.join(outpath,'samples.txt')
+        rlout = os.path.join(tempdir,'calls.vcf')
+        cmd = 'bcftools reheader --samples {s} -o {o} {v}'.format(o=rlout,v=vcfout,s=sample_file)
         print(cmd)
         tmp = subprocess.check_output(cmd,shell=True)
-    final = os.path.join(outpath,'filtered.vcf.gz')
+        shutil.copy(rlout, vcfout)
 
-    cmd = '{bc} filter -e "QUAL<40" -o {o} -O z {i}'.format(bc=bcftoolscmd,i=vcfout,o=final)
+    #filter variants
+    final = os.path.join(outpath,'filtered.vcf.gz')
+    cmd = '{bc} filter -i {f} -o {o} -O z {i}'.format(bc=bcftoolscmd,i=vcfout,o=final,f=filter)
     print (cmd)
     tmp = subprocess.check_output(cmd,shell=True)
     if callback != None:
@@ -379,6 +393,7 @@ class WorkFlow(object):
 
         #this master table tracks our outputs
         samples = self.fastq_table
+        write_samples(samples, self.outdir)
         if len(samples)==0:
             print ('no samples found')
             return
@@ -406,10 +421,10 @@ class WorkFlow(object):
         print ('making SNP matrix')
         print ('-----------------')
         snprecs, smat = tools.fasta_alignment_from_vcf(self.vcf_file, self.reference)
-        outfasta = os.path.join(self.outdir, 'snp_matrix.fa')
+        outfasta = os.path.join(self.outdir, 'core.fa')
         SeqIO.write(snprecs, outfasta, 'fasta')
         #write out sites matrix as txt file
-        smat.to_csv(os.path.join(self.outdir,'snp_matrix.txt'), sep=' ')
+        smat.to_csv(os.path.join(self.outdir,'core.txt'), sep=' ')
         print ()
         print ('building tree')
         print ('-------------')

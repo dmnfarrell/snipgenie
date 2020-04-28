@@ -407,7 +407,12 @@ def plot_fastq_gc_content(filename, ax=None, limit=50000):
 
 def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
     """Get a fasta alignment for all snp sites in a multi sample
-    vcf file, including the reference sequence"""
+    vcf file.
+    Args:
+        vcf_file: input vcf
+        ref: the reference sequence
+        callback: optional function to direct output
+    """
 
     from pyfaidx import Fasta
     from pyfaidx import FastaVariant
@@ -449,11 +454,12 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
     result.append(refrec)
 
     sites_matrix = {}
+    sites_matrix['ref'] = list(refrec)
     #iterate over variants in each sample
     for sample in samples:
         seq=[]
         variant = FastaVariant(ref, vcf_file,
-                                 sample=sample, het=True, hom=True)
+                               sample=sample, het=True, hom=True)
         #for p in variant[chrom].variant_sites:
         for p in sites:
             rec = variant[chrom][p-1:p]
@@ -464,9 +470,11 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
         seqrec = SeqRecord(Seq(seq),id=sample)
         result.append(seqrec)
         sites_matrix[sample] = list(seqrec)
-    df = pd.DataFrame(sites_matrix)
-    df.index=sites
-    return result, df
+
+    #smat is a dataframe matrix of the positions and genotype
+    smat = pd.DataFrame(sites_matrix)
+    smat.index = sites
+    return result, smat
 
 def get_bam_depth(filename, how='mean'):
     """Get depth from bam file"""
@@ -476,7 +484,7 @@ def get_bam_depth(filename, how='mean'):
     from io import StringIO
     c = pd.read_csv(StringIO(tmp.decode()),sep='\t',names=['chr','pos','depth'])
     if how == 'mean':
-        return c.coverage.mean().round(2)
+        return c.depth.mean().round(2)
     else:
         return c.depth.sum().round(2)
 

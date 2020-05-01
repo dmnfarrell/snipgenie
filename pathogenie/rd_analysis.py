@@ -21,15 +21,13 @@
 
 from __future__ import print_function
 import sys,os,subprocess,glob,shutil,re,random
-import platform
-from Bio.SeqRecord import SeqRecord
-from Bio.Seq import Seq
-from Bio import SeqIO
-from Bio import Phylo, AlignIO
 import numpy as np
 import pandas as pd
-from gzip import open as gzopen
+import pylab as plt
 import tempfile
+from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 from . import tools, aligners
 
 tempdir = tempfile.gettempdir()
@@ -43,39 +41,39 @@ def create_rd_index(names=None):
     """Get RD region sequence from reference and make bwa index"""
 
     RD = pd.read_csv(os.path.join(datadir,'RD.csv'))
-    df=RD.set_index('RD_name')
+    df = RD.set_index('RD_name')
     if names!= None:
         df=df.loc[names]
     seqs=[]
     for name, row in df.iterrows():
         #print (name,row.Start, row.Stop, row.Rv)
         from pyfaidx import Fasta
-        rg = Fasta('../MTB-H37Rv.fna')
+        rg = Fasta(mtbref)
         sseq = rg['NC_000962.3'][row.Start:row.Stop].seq
         #refname = '%s.fa' %name
         seqs.append(SeqRecord(Seq(sseq),id=name))
     SeqIO.write(seqs, 'RD.fa', 'fasta')
     aligners.build_bwa_index('RD.fa')
 
-def align_regions(df, path):
-    """Align reads to regions of difference"""
+def find_regions(df, path):
+    """Align reads to regions of difference and get coverage stats."""
 
     from io import StringIO
     from pyfaidx import Fasta
     ref = 'RD.fa'
-    rg = Fasta('../MTB-H37Rv.fna')
+    rg = Fasta(mtbref)
     res = []
     for i,g in df.groupby('sample'):
         out=os.path.join(path,i+'.bam')
         f1 = g.iloc[0].filename; f2 = g.iloc[1].filename
         if not os.path.exists(out):
             aligners.bwa_align(f1, f2, ref, out, threads=4, overwrite=False)
-
+        #get the average sequencing depth
         cmd = 'zcat %s | paste - - - - | cut -f2 | wc -c' %f1
         tmp = subprocess.check_output(cmd,shell=True)
         avdepth = int(tmp)*2/len(rg)
         print (avdepth)
-        cmd = 'samtools coverage --min-BQ 1 %s' %out
+        cmd = 'samtools coverage --min-BQ 0 %s' %out
         tmp = subprocess.check_output(cmd,shell=True)
         s = pd.read_csv(StringIO(tmp.decode()),sep='\t')
         s['name'] = i
@@ -84,3 +82,49 @@ def align_regions(df, path):
         res.append(s)
     res = pd.concat(res)
     return res
+
+def get_matrix(res, cutoff=0.15):
+    """Get presence/absence matrix for RDs"""
+    
+    X = pd.pivot_table(res,index='name',columns=['#rname'],values='ratio')
+    X=X.clip(lower=cutoff).replace(cutoff,0)
+    X=X.clip(upper=cutoff).replace(cutoff,1)
+    X=X.sort_values(by=X.columns[0])
+    #print (X[:4])
+    return X
+
+def plot_rd_matrix(df):
+    """Plot matrix of rd regions"""
+    
+    fig, ax = plt.subplots(figsize=(15,6))
+    im = ax.imshow(df)
+    ax.set_xticks(np.arange(len(df.columns)))
+    ax.set_yticks(np.arange(len(df)))
+    ax.set_xticklabels(df.columns)
+    ax.set_yticklabels(df.index)
+    plt.setp(ax.get_xticklabels(), rotation=80, ha="right",
+             rotation_mode="anchor")
+    plt.tight_layout()
+    return
+
+def apply_rules(x): 
+    """Identify isolate using RD rules"""
+    
+    if x.RD239 == 0:
+        return 'L1'
+    elif x.RD105 == 0:
+        return 'L2'
+    elif x.RD4 == 1:
+        if (x.RD1mic == 0):
+            return 'Microti'
+        elif (x.RD12bov == 0 or x.RD1bcg == 0 or x.RD2bcg == 0):
+            return 'Caprae'
+    elif x.RD4 == 0:
+        if x.RD1bcg==1 and x.RD2bcg==1 and x.RD12bov == 0:
+            return 'Bovis'
+        elif x.RD1bcg==0 and x.RD2bcg==1:
+            return 'BCG (Moreau)'
+        elif x.RD1bcg==0 and x.RD2bcg==0:
+            return 'BCG (Merieux)'
+    elif x.RD711 == 0:
+        return 'Africanum'

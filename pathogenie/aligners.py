@@ -30,14 +30,14 @@ from . import tools
 
 def build_bwa_index(fastafile, path=None):
     """Build a bwa index"""
-    
+
     bwacmd = tools.get_cmd('bwa')
     cmd = '{b} index {i}'.format(b=bwacmd,i=fastafile)
     subprocess.check_output(cmd, shell=True)
     print (cmd)
     return
 
-def bwa_align(file1, file2, idx, out, threads=4, overwrite=False):
+def bwa_align(file1, file2, idx, out, threads=4, overwrite=False, filter=None):
     """Align reads to a reference with bwa.
     Args:
         file1, file2: fastq files
@@ -49,11 +49,11 @@ def bwa_align(file1, file2, idx, out, threads=4, overwrite=False):
     samtoolscmd = tools.get_cmd('samtools')
     if file2 == None:
         file2=''
-    cmd = '{b} mem -M -t {t} {i} {f1} {f2} | {s} view -bt - | {s} sort -o {o}'.format(b=bwacmd,i=idx,s=samtoolscmd,
+    cmd = '{b} mem -M -t {t} {i} {f1} {f2} | {s} view -F 0x04 -bt - | {s} sort -o {o}'.format(b=bwacmd,i=idx,s=samtoolscmd,
                                                                                       f1=file1,f2=file2,o=out,t=threads)
     if not os.path.exists(out) or overwrite == True:
         print (cmd)
-        tmp = subprocess.check_output(cmd, shell=True)        
+        tmp = subprocess.check_output(cmd, shell=True)
     return
 
 def build_bowtie_index(fastafile, path=None):

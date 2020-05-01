@@ -43,7 +43,7 @@ module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
 datadir = os.path.join(module_path, 'data')
 sequence_path = os.path.join(config_path, 'genome')
 ref_genome = os.path.join(sequence_path, 'Mbovis_AF212297.fa')
-#ref_gff = os.path.join(datadir, 'Mbovis_AF212297.gff')
+ref_gff = os.path.join(datadir, 'Mbovis_csq_format.gff')
 #windows only path to binaries
 bin_path = os.path.join(config_path, 'binaries')
 default_filter = "'QUAL>=40 && INFO/DP>=10 && MQ>40'"
@@ -285,7 +285,7 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
     return rawbcf
 
 def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
-                    callback=None, overwrite=False, filter=None, **kwargs):
+                    callback=None, overwrite=False, filter=None, gff_file=None, **kwargs):
     """Call variants with bcftools"""
 
     if filter == None:
@@ -326,6 +326,14 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     tmp = subprocess.check_output(cmd,shell=True)
     if callback != None:
         callback(tmp)
+      
+    #consequence calling
+    if gff_file != None:
+        csqout = os.path.join(outpath, 'csq.tsv')
+        cmd = 'bcftools csq -f {r} -g {g} filtered.vcf.gz -Ot -o {o}'.format(r=ref,g=gff_file,o=csqout)
+        print (cmd)
+        tmp = subprocess.check_output(cmd,shell=True)
+        
     return final
 
 def create_bam_labels(filenames):
@@ -369,6 +377,7 @@ class WorkFlow(object):
 
         if self.reference == None:
             self.reference = ref_genome
+            self.gff_file = ref_gff
         self.filenames = get_files_from_paths(self.input)
         self.threads = int(self.threads)
         df = get_samples(self.filenames, sep=self.labelsep)
@@ -415,6 +424,7 @@ class WorkFlow(object):
         print ('----------------')
         bam_files = list(samples.bam_file.unique())
         self.vcf_file = variant_calling(bam_files, self.reference, self.outdir, threads=self.threads,
+                                        gff_file=self.gff_file,
                                         overwrite=self.overwrite)
         print (self.vcf_file)
         print ()
@@ -468,6 +478,8 @@ def main():
                         help="symbol to split sample labels on")
     parser.add_argument("-r", "--reference", dest="reference", default=None,
                         help="reference genome filename", metavar="FILE")
+    parser.add_argument("-g", "--gff", dest="gff_file", default=None,
+                        help="reference gff, optional", metavar="FILE")   
     parser.add_argument("-w", "--overwrite", dest="overwrite", action="store_true", default=False,
                         help="overwrite intermediate files" )
     parser.add_argument("-m", "--trim", dest="trim", action="store_true", default=False,
@@ -475,7 +487,7 @@ def main():
     parser.add_argument("-q", "--quality", dest="quality", default=25,
                         help="trim quality" )
     parser.add_argument("-t", "--threads", dest="threads",default=4,
-                        help="cpu threads to use", )
+                        help="cpu threads to use")
     parser.add_argument("-o", "--outdir", dest="outdir",
                         help="Results folder", metavar="FILE")
     parser.add_argument("-v", "--version", dest="version", action="store_true",

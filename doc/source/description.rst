@@ -1,7 +1,7 @@
 Introduction
 ============
 
-**Pathogenie** is a desktop application for microbial variant calling and phylogenetic analysis from raw read data. It is primarily written to be used with bacterial isolates of MBovis but can be applied to other species. This is in early stages of development. Anyone interested in using the software is encouraged to make sugggestions on improving or adding features.
+**snpgenie** is a desktop and command line tool for microbial variant calling and phylogenetic analysis from raw read data. It is primarily written to be used with bacterial isolates of MBovis but can be applied to other species. This is in early stages of development. Anyone interested in using the software is encouraged to make sugggestions on improving or adding features.
 
 This software is written in Python and is developed with the Qt toolkit using PySide2. It was made on Ubuntu linux but is designed to also run on Windows 10 with a standalone application.
 
@@ -29,7 +29,7 @@ Current Features
 Links
 =====
 
-http://dmnfarrell.github.io/btbgenie
+http://dmnfarrell.github.io/snpgenie
 
 Installation
 ============

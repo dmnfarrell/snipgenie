@@ -1,5 +1,5 @@
-Using Pathogenie
-================
+Using snpgenie
+==============
 
 The program includes both a command line and graphical interface. Both will produce the same results.
 

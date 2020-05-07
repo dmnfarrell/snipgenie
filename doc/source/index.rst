@@ -1,6 +1,6 @@
 
-Welcome to pathogenie documentation.
-====================================
+Welcome to snpgenie documentation.
+==================================
 
 Contents:
 

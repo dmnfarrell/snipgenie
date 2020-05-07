@@ -1,0 +1,28 @@
+species,variant,rule,pks15/1,RD711,RD4,RD1bcg,RD1mic,RD2seal,RD2bcg,RD12bov,RD12can,RD105,RD207,RD239,RD750,RD181,RD115,RD122,RD174,RD182,RD183,RD193,RD219
+canetii,M. canetii ,RD12can deletion AND no deletion of RD9 AND pks15/1,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0
+africanum I,M. africanum I,RD711 deletion AND no deletion of RD1mic,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+africanum II,M. africanum II,RD711 deletion AND 6 bp deletion of pks15/1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+microti,M. microti,RD1mic deletion ,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+pinnipedii,M. pinnipedii,RD2seal deletion AND 6 bp deletion of pks15/1 AND (no deletion of RD711 OR RD2bcg),1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+caprae,M. caprae ,RD12bov deletion AND 6 bp deletion of pks15/1 AND (no deletion of RD4 OR RD1bcg OR RD2bcg),1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+bovis,M. bovis (classical),RD4 deletion AND no deletion of RD1bcg AND RD2bcg,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+bcg,M. bovis BCG Moreau,RD4 AND RD1bcg  deletion AND no deletion of RD2bcg,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+bcg,M. bovis BCG Merieux,RD4 AND RD1bcg AND RD2bcg deletion,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+mtb,Lineage 1,RD239 deletion,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0
+mtb,Lineage 2.1,RD105 deletion AND (no deletion of RD142 OR RD150 OR RD181 OR RD207),0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0
+mtb,Lineage 2.2.1,RD105 AND RD181 AND RD207 deletion AND (no deletion of RD142 OR RD150),0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0
+mtb,Lineage 2.2.1.1,RD105 AND RD150 AND RD181 AND RD207 deletion AND (no deletion of RD142) ,0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0
+mtb,Lineage 2.2.1.2,RD105 AND RD142 AND RD181 AND RD207 deletion AND (no deletion of RD150),0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0
+mtb,Lineage 2.2.2,RD105 AND RD207 deletion AND (no deletion of RD142 OR RD150 OR RD181 ),0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0
+mtb,Lineage 3,RD750 deletion AND  no deletion of pks15/1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0
+mtb,Lineage 4.1.1.1,RD183 deletion AND 7 bp deletion of pks15/1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0
+mtb,Lineage 4.1.1.3,RD193 deletion AND 7 bp deletion of pks15/1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0
+mtb,Lineage 4.1.2.1,RD182 deletion AND 7 bp deletion of pks15/1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0
+mtb,Lineage 4.3.2.1,RD761 deletion AND 7 bp deletion of pks15/1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+mtb,Lineage 4.3.3,RD115 deletion AND 7 bp deletion of pks15/1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0
+mtb,Lineage 4.3.4 ,RD174 deletion AND 7 bp deletion of pks15/1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0
+mtb,Lineage 4.5,RD122 deletion AND 7 bp deletion of pks15/1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0
+mtb,Lineage 4.6.1 ,RD724 deletion AND 7 bp deletion of pks15/1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+mtb,Lineage 4.6.2 ,RD726 deletion AND 7 bp deletion of pks15/1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+mtb,"Lineage 4.2, 4.4, 4.7 ",7 bp deletion of pks15/1 AND (no deletion of RD115 OR RD122 OR RD174 OR RD182 OR RD183 OR RD193 OR RD219 OR RD724 OR RD726 OR RD761),1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+mtb,Lineage 4.8,RD219 deletion AND 7 bp deletion of pks15/1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1

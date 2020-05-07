@@ -1,7 +1,7 @@
-pathogenie
+snpgenie
 ==========
 
 .. toctree::
    :maxdepth: 4
 
-   pathogenie
+   snpgenie

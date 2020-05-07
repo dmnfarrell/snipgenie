@@ -1,20 +1,20 @@
 from setuptools import setup
 import sys,os
 
-with open('pathogenie/description.txt') as f:
+with open('snpgenie/description.txt') as f:
     long_description = f.read()
 
 setup(
-    name = 'pathogenie',
+    name = 'snpgenie',
     version = '0.1.0',
     description = 'variant calling and phylogenies from NGS data',
     long_description = long_description,
-    url='https://github.com/dmnfarrell/btbgenie',
+    url='https://github.com/dmnfarrell/snpgenie',
     license='GPL v3',
     author = 'Damien Farrell',
     author_email = 'farrell.damien@gmail.com',
-    packages = ['pathogenie'],
-    package_data={'pathogenie': ['data/*.*','logo.png',
+    packages = ['snpgenie'],
+    package_data={'snpgenie': ['data/*.*','logo.png',
                   'description.txt']
                  },
     install_requires=['numpy>=1.10',
@@ -26,8 +26,8 @@ setup(
                       'future'],
     entry_points = {
         'console_scripts': [
-            'pathogenie-gui=pathogenie.gui:main',
-            'pathogenie=pathogenie.app:main']
+            'snpgenie-gui=snpgenie.gui:main',
+            'snpgenie=snpgenie.app:main']
             },
     classifiers = ['Operating System :: OS Independent',
             'Programming Language :: Python :: 2.7',

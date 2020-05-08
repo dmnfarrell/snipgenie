@@ -534,6 +534,9 @@ class App(QMainWindow):
         import pylab as plt
         fig,ax = plt.subplots(2,1, figsize=(7,5), dpi=65, facecolor=(1,1,1), edgecolor=(0,0,0))
         axs=ax.flat
+        if not os.path.exists(data.filename):
+            self.show_info('This file is missing.')
+            return
         tools.plot_fastq_qualities(data.filename, ax=axs[0])
         tools.plot_fastq_gc_content(data.filename, ax=axs[1])
         plt.tight_layout()

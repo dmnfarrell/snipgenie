@@ -55,7 +55,7 @@ if not os.path.exists(config_path):
         os.makedirs(config_path)
 
 defaults = {'threads':4, 'labelsep':'_','quality':25,
-            'reference': None, 'overwrite':False}
+            'reference': None, 'gff_file': None, 'overwrite':False}
 
 def check_platform():
     """See if we are running in Windows"""
@@ -333,7 +333,10 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
         cmd = 'bcftools csq -f {r} -g {g} {f} -Ot -o {o}'.format(r=ref,g=gff_file,f=final,o=csqout)
         print (cmd)
         tmp = subprocess.check_output(cmd,shell=True)
-
+        csqdf = read_csq_file(csqout)
+        #get presence/absence matrix of csq mutations
+        m = get_aa_snp_matrix(csqdf)
+        m.to_csv(os.path.join(outpath,'csq.matrix'))
     return final
 
 def create_bam_labels(filenames):
@@ -417,6 +420,8 @@ class WorkFlow(object):
 
         #this master table tracks our outputs
         samples = self.fastq_table
+        if not os.path.exists(self.outdir):
+            os.makedirs(self.outdir, exist_ok=True)
         write_samples(samples, self.outdir)
         if len(samples)==0:
             print ('no samples found')
@@ -451,20 +456,24 @@ class WorkFlow(object):
         #write out sites matrix as txt file
         smat.to_csv(os.path.join(self.outdir,'core.txt'), sep=' ')
         print ()
-        print ('building tree')
-        print ('-------------')
-        treefile = trees.run_RAXML(outfasta, outpath=self.outdir)
-        print (treefile)
-        #labelmap = dict(zip(sra.filename,sra.geo_loc_name_country))
-        t,ts = trees.create_tree(treefile)#, labelmap)
-        t.render(os.path.join(self.outdir, 'tree.png'))
         #save summary table
         summ = results_summary(samples)
         summ.to_csv(os.path.join(self.outdir,'summary.csv'),index=False)
-        print ()
         print ('Done. Sample summary:')
         print ('---------------------')
         print (summ)
+        print ()
+
+        if len(bam_files) > 2:
+            print ('building tree')
+            print ('-------------')
+            treefile = trees.run_RAXML(outfasta, outpath=self.outdir)
+            print (treefile)
+            #labelmap = dict(zip(sra.filename,sra.geo_loc_name_country))
+            t,ts = trees.create_tree(treefile)#, labelmap)
+            t.render(os.path.join(self.outdir, 'tree.png'))
+        else:
+            print ('Not making tree, too few samples.')
         return
 
 def test_run():

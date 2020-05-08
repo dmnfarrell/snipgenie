@@ -19,7 +19,7 @@ Note for Windows users: a standalone installer will be available.
 
 `pip install -e git+https://github.com/dmnfarrell/snpgenie.git#egg=snpgenie`
 
-(Use pip3 on Ubuntu to ensure you use Python 3)
+(You may need to use pip3 on Ubuntu to ensure you use Python 3)
 
 ## Usage
 

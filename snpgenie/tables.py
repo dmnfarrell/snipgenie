@@ -161,7 +161,8 @@ class DataFrameTable(QTableView):
     def getSelectedRows(self):
         rows=[]
         for idx in self.selectionModel().selectedRows():
-            rows.append(idx.row())
+            if idx.row() not in rows:
+                rows.append(idx.row())
         return rows
 
     def getSelectedColumns(self):
@@ -379,7 +380,7 @@ class FilesTable(DataFrameTable):
         action = menu.exec_(self.mapToGlobal(event.pos()))
         # Map the logical row index to a real index for the source model
         #model = self.model
-
+        rows = self.getSelectedRows()
         if action == fastqqualityAction:
             #print (row)
             self.app.quality_summary(row)
@@ -387,18 +388,24 @@ class FilesTable(DataFrameTable):
             #print (row)
             self.app.show_bam_viewer(row)
         elif action == removeAction:
-            self.deleteRows(row)
+            self.deleteRows(rows)
         return
 
     def refresh(self):
         DataFrameTable.refresh(self)
 
     def resizeColumns(self):
+
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        return
 
     def deleteRows(self, rows):
 
+        answer = QMessageBox.question(self, 'Delete Rows?',
+                             'Are you sure?', QMessageBox.Yes, QMessageBox.No)
+        if answer == QMessageBox.No:
+            return
         idx = self.model.df.index[rows]
         self.model.df = self.model.df.drop(idx)
         self.refresh()

@@ -64,6 +64,7 @@ class App(QMainWindow):
         self.setup_gui()
         #app.copy_ref_genomes()
         self.update_ref_genomes()
+        self.update_annotations()
         self.clear_project()
 
         if platform.system() == 'Windows':
@@ -187,6 +188,7 @@ class App(QMainWindow):
         self.menuBar().addMenu(self.settings_menu)
         self.settings_menu.addAction('&Set Output Folder', self.set_output_folder)
         self.settings_menu.addAction('&Add Reference Sequence', self.add_reference)
+        self.settings_menu.addAction('&Add Annnotation (GFF)', self.add_gff)
 
         self.help_menu = QMenu('&Help', self)
         self.menuBar().addMenu(self.help_menu)
@@ -324,29 +326,52 @@ class App(QMainWindow):
         self.load_fastq_table(filenames)
         return
 
-    def add_reference(self):
-        """Add a reference genome sequence from fasta"""
+    def add_file(self, path, filter="Fasta Files(*.fa *.fna *.fasta)"):
+        """Add a file to the config folders"""
 
-        path = app.sequencedir
         if not os.path.exists(path):
             os.makedirs(path)
-        filename, _ = QFileDialog.getOpenFileName(self, 'Open Fasta', './',
-                                    filter="Fasta Files(*.fa *.fna *.fasta);;All Files(*.*)")
+        filename, _ = QFileDialog.getOpenFileName(self, 'Open File', './',
+                                    filter="%s;;All Files(*.*)" %filter)
         if not filename:
             return
         #copy file
         dest = os.path.join(path, os.path.basename(filename))
         shutil.copy(filename, dest)
-        #update widget
+        self.show_info('added %s' %filename)
+        return
+
+    def add_reference(self):
+
+        self.add_file(app.sequence_path)
         self.update_ref_genomes()
         return
 
     def update_ref_genomes(self):
 
         path = app.sequence_path
-        files = glob.glob(os.path.join(path,'*.f*a'))
+        files = []
+        for ext in ('*.fasta', '*.fa', '*.fna'):
+            files.extend(glob.glob(os.path.join(path,ext)))
         labels = [os.path.basename(i) for i in files]
+        self.opts.widgets['refgenome'].clear()
         self.opts.widgets['refgenome'].addItems(labels)
+        return
+
+    def add_gff(self):
+
+        self.add_file(app.annotation_path, "GFF Files(*.gff *.gff3 *.gb)")
+        self.update_annotations()
+        return
+
+    def update_annotations(self):
+        """Update widget for annotations"""
+
+        path = app.annotation_path
+        files = glob.glob(os.path.join(path,'*.gff*'))
+        labels = [os.path.basename(i) for i in files]
+        self.opts.widgets['annotation'].clear()
+        self.opts.widgets['annotation'].addItems(labels)
         return
 
     def set_output_folder(self):
@@ -462,7 +487,7 @@ class App(QMainWindow):
         self.opts.applyOptions()
         kwds = self.opts.kwds
         vcf_file = self.results['vcf_file']
-        result = app.fasta_alignment_from_vcf('mapped/filtered.vcf.gz', app.ref_genome,
+        result = tools.fasta_alignment_from_vcf('mapped/filtered.vcf.gz', app.ref_genome,
                                                 callback=progress_callback.emit)
         outfile = os.path.join(self.outputdir, 'variants.fa')
         self.results['snp_file'] = outfile

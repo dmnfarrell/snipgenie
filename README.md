@@ -5,9 +5,9 @@
 
 <img align="right" src=snpgenie/logo.png width=180px>
 
-_snpgenie_ is a tool for microbial variant calling and phylogenetic analysis from raw read data. It was primarily written to be used with bacterial isolates of M. Bovis but can be applied to other species. This is in early stages of development. Anyone interested in using the software is encouraged to make sugggestions on improving or adding features.
+_snpgenie_ is a tool for microbial variant calling and phylogenetic analysis from raw read data. It was primarily written to be used with bacterial isolates of M. Bovis but can be applied to other species. Anyone interested in using the software is encouraged to make suggestions on improving or adding features.
 
-This software is written in Python and is developed with the Qt toolkit using PySide2. It was made on Ubuntu linux but is designed to also run on Windows 10 with a standalone application.
+This software is written in Python. It was developed on Ubuntu linux but is designed to also run on Windows 10 with a standalone application. The GUI is made using the Qt toolkit using PySide2.
 
 ## Documentation
 
@@ -19,7 +19,7 @@ Note for Windows users: a standalone installer will be available.
 
 `pip install -e git+https://github.com/dmnfarrell/snpgenie.git#egg=snpgenie`
 
-(You may need to use pip3 on Ubuntu to ensure you use Python 3)
+Notes: You may need to use pip3 on Ubuntu to ensure you use Python 3. Use sudo if installing system-wide.
 
 ## Usage
 
@@ -34,6 +34,7 @@ For Linux installs, you require Python 3 and the following packages. These will 
 * matplotlib
 * biopython
 * pyvcf
+* pyfaidx
 * pyside2 (if using GUI)
 
 Other binaries required:
@@ -42,7 +43,15 @@ Other binaries required:
 * samtools
 * bcftools
 
-The binaries can be installed with apt in Ubuntu. They are downloaded automatically in Windows.
+These binaries can be installed with apt in Ubuntu:
+
+`sudo apt install bwa samtools bcftools`
+
+If you want a tree to be built you should install RaXML:
+
+`sudo apt install raxml`
+
+The binaries are downloaded automatically in Windows.
 
 ## Screenshots
 

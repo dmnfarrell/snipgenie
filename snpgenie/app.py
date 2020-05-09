@@ -42,11 +42,12 @@ config_path = os.path.join(home,'.config','snpgenie')
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
 datadir = os.path.join(module_path, 'data')
 sequence_path = os.path.join(config_path, 'genome')
+annotation_path = os.path.join(config_path, 'annotation')
 ref_genome = os.path.join(sequence_path, 'Mbovis_AF212297.fa')
 ref_gff = os.path.join(datadir, 'Mbovis_csq_format.gff')
 #windows only path to binaries
 bin_path = os.path.join(config_path, 'binaries')
-default_filter = "'QUAL>=40 && INFO/DP>=10 && MQ>40'"
+default_filter = 'QUAL>=40 && INFO/DP>=10 && MQ>40'
 
 if not os.path.exists(config_path):
     try:
@@ -54,7 +55,7 @@ if not os.path.exists(config_path):
     except:
         os.makedirs(config_path)
 
-defaults = {'threads':4, 'labelsep':'_','quality':25,
+defaults = {'threads':4, 'labelsep':'_','quality':25, 'filters': default_filter,
             'reference': None, 'gff_file': None, 'overwrite':False}
 
 def check_platform():
@@ -285,11 +286,11 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
     return rawbcf
 
 def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
-                    callback=None, overwrite=False, filter=None, gff_file=None, **kwargs):
+                    callback=None, overwrite=False, filters=None, gff_file=None, **kwargs):
     """Call variants with bcftools"""
 
-    if filter == None:
-        filter = default_filter
+    if filters == None:
+        filters = default_filter
     rawbcf = os.path.join(outpath,'raw.bcf')
     bcftoolscmd = tools.get_cmd('bcftools')
     if not os.path.exists(rawbcf) or overwrite == True:
@@ -321,11 +322,11 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
 
     #filter variants
     final = os.path.join(outpath,'filtered.vcf.gz')
-    cmd = '{bc} filter -i {f} -o {o} -O z {i}'.format(bc=bcftoolscmd,i=vcfout,o=final,f=filter)
+    cmd = '{bc} filter -i "{f}" -o {o} -O z {i}'.format(bc=bcftoolscmd,i=vcfout,o=final,f=filters)
     print (cmd)
     tmp = subprocess.check_output(cmd,shell=True)
     if callback != None:
-        callback(tmp)
+        callback(cmd)
 
     #consequence calling
     if gff_file != None:
@@ -399,6 +400,9 @@ class WorkFlow(object):
         self.filenames = get_files_from_paths(self.input)
         self.threads = int(self.threads)
         df = get_samples(self.filenames, sep=self.labelsep)
+        if len(df) == 0:
+            print ('no samples provided')
+            return
         df['read_length'] = df.filename.apply(tools.get_fastq_info)
         self.fastq_table = df
         sample_size = len(df['sample'].unique())
@@ -444,7 +448,7 @@ class WorkFlow(object):
         print ('----------------')
         bam_files = list(samples.bam_file.unique())
         self.vcf_file = variant_calling(bam_files, self.reference, self.outdir, threads=self.threads,
-                                        gff_file=self.gff_file,
+                                        gff_file=self.gff_file, filters=self.filters,
                                         overwrite=self.overwrite)
         print (self.vcf_file)
         print ()
@@ -468,6 +472,8 @@ class WorkFlow(object):
             print ('building tree')
             print ('-------------')
             treefile = trees.run_RAXML(outfasta, outpath=self.outdir)
+            if treefile == None:
+                return
             print (treefile)
             #labelmap = dict(zip(sra.filename,sra.geo_loc_name_country))
             t,ts = trees.create_tree(treefile)#, labelmap)
@@ -491,25 +497,25 @@ def main():
 
     import sys, os
     from argparse import ArgumentParser
-    parser = ArgumentParser(description='snpgenie CLI tool. https://github.com/dmnfarrell/btbgenie')
-    #parser.add_argument("-f", "--fasta", dest="filenames",default=[],
-    #                    help="input fasta file", metavar="FILE")
+    parser = ArgumentParser(description='snpgenie CLI tool. https://github.com/dmnfarrell/snpgenie')
     parser.add_argument("-i", "--input", action='append', dest="input", default=[],
                         help="input folder(s)", metavar="FILE")
-    parser.add_argument("-l", "--labels", dest="labels", default=[],
-                        help="sample labels file", metavar="FILE")
+    #parser.add_argument("-l", "--labels", dest="labels", default=[],
+    #                    help="sample labels file, optional", metavar="FILE")
     parser.add_argument("-e", "--labelsep", dest="labelsep", default=',',
-                        help="symbol to split sample labels on")
+                        help="symbol to split the sample labels on")
     parser.add_argument("-r", "--reference", dest="reference", default=None,
                         help="reference genome filename", metavar="FILE")
     parser.add_argument("-g", "--gff", dest="gff_file", default=None,
                         help="reference gff, optional", metavar="FILE")
     parser.add_argument("-w", "--overwrite", dest="overwrite", action="store_true", default=False,
-                        help="overwrite intermediate files" )
+                        help="overwrite intermediate files")
     parser.add_argument("-m", "--trim", dest="trim", action="store_true", default=False,
-                        help="trim fastq files" )
+                        help="whether to trim fastq files" )
     parser.add_argument("-q", "--quality", dest="quality", default=25,
                         help="trim quality" )
+    parser.add_argument("-f", "--filters", dest="filters", default=default_filter,
+                        help="variant calling post-filters" )
     parser.add_argument("-t", "--threads", dest="threads",default=4,
                         help="cpu threads to use")
     parser.add_argument("-o", "--outdir", dest="outdir",
@@ -527,6 +533,11 @@ def main():
         from . import __version__
         print ('snpgenie version %s' %__version__)
         print ('https://github.com/dmnfarrell/btbgenie')
+    elif args['outdir'] == None:
+        print ('No input or output folders provided. These are required.')
+        print ('Example:')
+        print ('snpgenie -r <reference> -i <input folder with fastq.gz files> -o <output folder>')
+        print ('Use -h for more help on options.')
     else:
         W = WorkFlow(**args)
         st = W.setup()

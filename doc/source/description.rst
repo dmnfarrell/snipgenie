@@ -5,16 +5,13 @@ Introduction
 
 This software is written in Python and is developed with the Qt toolkit using PySide2. It was made on Ubuntu linux but is designed to also run on Windows 10 with a standalone application.
 
-The Desktop application
-=======================
+Command line tool
+-----------------
 
-Unlike many other SNP calling pipelines, this tool is designed around a graphical user interface. Though it will also work from the command line and via Python scripts.
-
-.. image:: scr1.png
-     :scale: 45%
+This tool works from the command line and via Python scripts. Unlike many other SNP calling pipelines, it is also designed to have a graphical user interface, which is in development.
 
 Current Features
-================
+----------------
 
 * load multiple fastq files and process together
 * view fastq quality statistics
@@ -27,7 +24,7 @@ Current Features
 * create phylogenetic tree
 
 Links
-=====
+-----
 
 http://dmnfarrell.github.io/snpgenie
 
@@ -37,14 +34,13 @@ Installation
 Linux
 -----
 
-Install dependencies::
+With pip::
 
-  pip install pandas matplotlib biopython pyside2
+  pip install -e git+https://github.com/dmnfarrell/snpgenie.git#egg=snpgenie
+
+Install binary dependencies::
+
   sudo apt install bcftools samtools bwa
-
-Get the current version from github::
-
-  git clone https://github.com/dmnfarrell/btbgenie.git
 
 Windows
 -------
@@ -54,4 +50,4 @@ A standalone installer will be used to deploy on windows.
 Mac OSX
 -------
 
-Use the Linux instructions.
+Not tested. You can try the Linux instructions possibly with bioconda for the binaries.

@@ -95,7 +95,11 @@ def run_RAXML(infile, name='variants', threads=8, outpath='.'):
     cmd = 'raxmlHPC-PTHREADS -f a -N {nb} -T {t} -m {m} -V -p {s1} -x {s2} -n {n} -w {w} -s {i}'\
             .format(t=threads,nb=bootstraps,n=name,i=infile,s1=s1,s2=s2,m=model,w=outpath)
     print (cmd)
-    tmp = subprocess.check_output(cmd, shell=True)
+    try:
+        tmp = subprocess.check_output(cmd, shell=True)
+    except Exception as e:
+        print ('Error building tree. Is raxml installed?')
+        return None
     out = os.path.join(outpath,'RAxML_bipartitions.variants')
     return out
 
@@ -120,5 +124,5 @@ def create_tree(filename, ref=None, labelmap=None, colormap=None):
 
     #format_nodes(t)
     ts = TreeStyle()
-    ts.scale=300    
+    ts.scale=300
     return t, ts

@@ -22,6 +22,7 @@ setup(
                       'matplotlib>=3.0',
                       'biopython>=1.5',
                       'pyvcf>=0.6',
+                      'pyfaidx',
                       'pyside2>=5.1',
                       'future'],
     entry_points = {

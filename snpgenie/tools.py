@@ -293,16 +293,16 @@ def genbank_to_dataframe(infile, cds=False):
     df = records_to_dataframe(recs, cds, nucl_seq=True)
     return df
 
-def gff_to_features(gff_file):
+def gff_to_rec(gff_file):
     """Get features from gff file"""
 
     if gff_file is None or not os.path.exists(gff_file):
         return
     from BCBio import GFF
     in_handle = open(gff_file,'r')
-    rec = list(GFF.parse(in_handle))[0]
+    recs = list(GFF.parse(in_handle))
     in_handle.close()
-    return rec.features
+    return recs
 
 def features_summary(df):
     """Seqfeatures dataframe summary"""
@@ -568,7 +568,7 @@ def gff_bcftools_format(in_file, out_file):
     from copy import copy
 
     #recs = GFF.parse(in_handle)
-    recs = SeqIO.parse(in_file,format='gb')    
+    recs = SeqIO.parse(in_file,format='gb')
     for record in recs:
         #make a copy of the record as we will be changing it during the loop
         new = copy(record)

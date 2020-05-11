@@ -168,7 +168,7 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
         out = os.path.join(outdir,name+'.bam')
         aligners.bwa_align(files[0],files[1], idx=idx, out=out, **kwargs)
         bamidx = out+'.bai'
-        if not os.path.exists(bamidx):
+        if not os.path.exists(bamidx) or kwargs['overwrite']==True:
             cmd = '{s} index {o}'.format(o=out,s=samtoolscmd)
             subprocess.check_output(cmd,shell=True)
             print (cmd)
@@ -275,6 +275,8 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
     cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
             .format(r=ref, reg=regstr, b=bam_files, o=filesstr, a=annotatestr)
     print (cmd)
+    if callback != None:
+        callback(cmd)
     subprocess.check_output(cmd, shell=True)
     #concat files
     cmd = 'bcftools concat {i} -O b -o {o}'.format(i=' '.join(outfiles),o=rawbcf)

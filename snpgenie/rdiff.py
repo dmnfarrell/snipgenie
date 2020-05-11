@@ -55,7 +55,7 @@ def create_rd_index(names=None):
     SeqIO.write(seqs, 'RD.fa', 'fasta')
     aligners.build_bwa_index('RD.fa')
 
-def find_regions(df, path):
+def find_regions(df, path, threads=4, callback=None):
     """Align reads to regions of difference and get coverage stats."""
 
     from io import StringIO
@@ -63,11 +63,13 @@ def find_regions(df, path):
     ref = 'RD.fa'
     rg = Fasta(mtbref)
     res = []
+    if not os.path.exists(path):
+        os.makedirs(path, exist_ok=True)
     for i,g in df.groupby('sample'):
-        out=os.path.join(path,i+'.bam')
+        out = os.path.join(path,i+'.bam')
         f1 = g.iloc[0].filename; f2 = g.iloc[1].filename
         if not os.path.exists(out):
-            aligners.bwa_align(f1, f2, ref, out, threads=4, overwrite=False)
+            aligners.bwa_align(f1, f2, ref, out, threads=threads, overwrite=False)
         #get the average sequencing depth
         cmd = 'zcat %s | paste - - - - | cut -f2 | wc -c' %f1
         tmp = subprocess.check_output(cmd,shell=True)
@@ -80,12 +82,14 @@ def find_regions(df, path):
         #print (s)
         s['ratio'] = s.meandepth/avdepth
         res.append(s)
+        if callback != None:
+            callback(i)
     res = pd.concat(res)
     return res
 
 def get_matrix(res, cutoff=0.15):
     """Get presence/absence matrix for RDs"""
-    
+
     X = pd.pivot_table(res,index='name',columns=['#rname'],values='ratio')
     X=X.clip(lower=cutoff).replace(cutoff,0)
     X=X.clip(upper=cutoff).replace(cutoff,1)
@@ -93,9 +97,9 @@ def get_matrix(res, cutoff=0.15):
     #print (X[:4])
     return X
 
-def apply_rules(x): 
+def apply_rules(x):
     """Identify isolate using RD rules"""
-    
+
     if x.RD239 == 0:
         return 'L1'
     elif x.RD105 == 0:

@@ -34,10 +34,11 @@ from pyfaidx import Fasta
 
 import pylab as plt
 
-def plot_matrix(df, cmap='gist_gray_r', w=15, h=5):
+def plot_matrix(df, cmap='gist_gray_r', w=15, h=5, ax=None):
     """Plot dataframe matrix"""
 
-    fig, ax = plt.subplots(figsize=(w,h))
+    if ax == None:
+        fig, ax = plt.subplots(figsize=(w,h))
     im = ax.pcolor(df, cmap=cmap)
     ax.set_xticks(np.arange(len(df.columns))+0.5)
     ax.set_yticks(np.arange(len(df))+0.5)

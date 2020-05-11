@@ -31,6 +31,7 @@ from PySide2.QtGui import *
 
 import pandas as pd
 import numpy as np
+import pylab as plt
 from Bio import SeqIO
 from . import tools, aligners, app, widgets, tables, plotting, trees
 
@@ -62,10 +63,11 @@ class App(QMainWindow):
         self.main.setFocus()
         self.setCentralWidget(self.main)
         self.setup_gui()
-        #app.copy_ref_genomes()
-        self.update_ref_genomes()
-        self.update_annotations()
-        self.clear_project()
+
+        self.new_project()
+        self.update_ref_genome()
+        self.running = False
+        #self.update_annotations()
 
         if platform.system() == 'Windows':
             app.fetch_binaries()
@@ -74,19 +76,44 @@ class App(QMainWindow):
         self.threadpool = QtCore.QThreadPool()
         return
 
+    def update_ref_genome(self):
+        """Update the ref genome labels"""
+
+        name = os.path.basename(self.ref_genome)
+        self.reflabel.setText(name)
+        name = os.path.basename(self.ref_gff)
+        self.annotlabel.setText(name)
+        return
+
     def setup_gui(self):
         """Add all GUI elements"""
 
         self.m = QSplitter(self.main)
-        #mainlayout = QHBoxLayout(self.m)
+        #left menu
         left = QWidget(self.m)
-        #mainlayout.addWidget(left)
+        l = QVBoxLayout(left)
+        lbl = QLabel("Reference Genome:")
+        l.addWidget(lbl)
+        self.reflabel = QLabel()
+        self.reflabel.setStyleSheet('color: blue')
+        l.addWidget(self.reflabel)
+        lbl = QLabel("Reference Annotation:")
+        l.addWidget(lbl)
+        self.annotlabel = QLabel()
+        self.annotlabel.setStyleSheet('color: blue')
+        l.addWidget(self.annotlabel)
+
+        #create option widgets
         self.opts = AppOptions(parent=self.m)
+        #optionswidget = QWidget(left)
+        #l.addWidget(optionswidget)
         dialog = self.opts.showDialog(left, wrap=1, section_wrap=1)
+        l.addWidget(dialog)
+
+        l.addStretch()
         left.setFixedWidth(250)
 
-        center = QWidget(self.m)#, orientation=QtCore.Qt.Vertical)
-        #mainlayout.addWidget(center)
+        center = QWidget(self.m)
         l = QVBoxLayout(center)
         self.fastq_table = tables.FilesTable(center, app=self, dataframe=pd.DataFrame())
         l.addWidget(self.fastq_table)
@@ -116,12 +143,21 @@ class App(QMainWindow):
         self.statusBar = QStatusBar()
         from . import __version__
         self.projectlabel = QLabel('')
+        self.projectlabel.setStyleSheet('color: blue')
+        self.projectlabel.setAlignment(Qt.AlignLeft)
         self.statusBar.addWidget(self.projectlabel, 1)
+        lbl = QLabel("Output folder:")
+        self.statusBar.addWidget(lbl,1)
+        lbl.setAlignment(Qt.AlignRight)
         self.outdirLabel = QLabel("")
         self.statusBar.addWidget(self.outdirLabel, 1)
+        self.outdirLabel.setAlignment(Qt.AlignLeft)
+        self.outdirLabel.setStyleSheet('color: blue')
+
         self.progressbar = QProgressBar()
         self.progressbar.setRange(0,1)
-        self.statusBar.addWidget(self.progressbar, 2)
+        self.statusBar.addWidget(self.progressbar, 3)
+        self.progressbar.setAlignment(Qt.AlignRight)
         self.setStatusBar(self.statusBar)
         return
 
@@ -132,7 +168,6 @@ class App(QMainWindow):
         #index = self.tabs.currentIndex()
         name = self.tabs.tabText(index)
         self.tabs.removeTab(index)
-        #del self.sheets[name]
         return
 
     @QtCore.Slot(int)
@@ -176,24 +211,41 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.run_trimming, self.processing_completed))
         self.analysis_menu.addAction('&Align Reads',
             lambda: self.run_threaded_process(self.align_files, self.processing_completed))
-        self.analysis_menu.addAction('&Call Variants', self.variant_calling)
+        self.analysis_menu.addAction('&Call Variants',
+            lambda: self.run_threaded_process(self.variant_calling, self.processing_completed))
         self.analysis_menu.addAction('&Create SNP alignment',
             lambda: self.run_threaded_process(self.snp_alignment, self.processing_completed))
-
-        self.analysis_menu.addAction('&Show Annotation', self.show_ref_annotation)
-
         self.analysis_menu.addAction('&Run Workflow', self.run)
+        self.analysis_menu.addSeparator()
+        self.analysis_menu.addAction('&Show Annotation', self.show_ref_annotation)
 
         self.settings_menu = QMenu('&Settings', self)
         self.menuBar().addMenu(self.settings_menu)
         self.settings_menu.addAction('&Set Output Folder', self.set_output_folder)
-        self.settings_menu.addAction('&Add Reference Sequence', self.add_reference)
-        self.settings_menu.addAction('&Add Annnotation (GFF)', self.add_gff)
+        self.settings_menu.addAction('&Set Reference Sequence', self.set_reference)
+        self.settings_menu.addAction('&Set Annnotation (GFF)', self.set_gff)
+
+        self.presets_menu = QMenu('&Load Preset', self)
+        self.menuBar().addMenu(self.presets_menu)
+        self.load_presets_menu()
+
+        self.tools_menu = QMenu('&Tools', self)
+        self.menuBar().addMenu(self.tools_menu)
+        self.tools_menu.addAction('&RD Analysis (MTBC)',
+            lambda: self.run_threaded_process(self.rd_analysis, self.rd_analysis_completed))
 
         self.help_menu = QMenu('&Help', self)
         self.menuBar().addMenu(self.help_menu)
         self.help_menu.addAction('&Help', self.online_documentation)
         self.help_menu.addAction('&About', self.about)
+
+    def load_presets_menu(self):
+        """Add preset genomes to menu"""
+
+        genomes = {'Mbovis AF212297':app.ref_genome}
+        for name in genomes:
+            self.presets_menu.addAction('&%s' %name, lambda: self.set_reference(name))
+        return
 
     def save_project(self):
         """Save project"""
@@ -203,10 +255,14 @@ class App(QMainWindow):
 
         filename = self.proj_file
         data={}
-        data['results'] = self.results
         data['inputs'] = self.fastq_table.getDataFrame()
-        #data['sheets'] = self.sheets
-        data['outputdir'] = self.outputdir
+        #data['results'] = self.results
+        #data['outputdir'] = self.outputdir
+        #data['ref_genome'] = self.ref_genome
+        keys = ['outputdir','results','ref_genome','ref_gff']
+        for k in keys:
+            if hasattr(self, k):
+                data[k] = self.__dict__[k]
 
         self.projectlabel.setText(filename)
         pickle.dump(data, open(filename,'wb'))
@@ -226,14 +282,7 @@ class App(QMainWindow):
             self.save_project()
         return
 
-    def new_project(self):
-        """New project"""
-
-        self.clear_project(ask=True)
-        #self.set_output_folder()
-        return
-
-    def clear_project(self, ask=False):
+    def new_project(self, ask=False):
         """Clear all loaded inputs and results"""
 
         reply=None
@@ -250,6 +299,7 @@ class App(QMainWindow):
         self.fastq_table.setDataFrame(pd.DataFrame({'name':[]}))
         #self.tabs.clear()
         self.ref_genome = app.ref_genome
+        self.ref_gff = app.ref_gff
         self.projectlabel.setText('')
         self.outdirLabel.setText(self.outputdir)
         return
@@ -257,9 +307,9 @@ class App(QMainWindow):
     def load_project(self, filename=None):
         """Load project"""
 
-        self.clear_project()
+        self.new_project()
         data = pickle.load(open(filename,'rb'))
-        keys = ['sheets','outputdir','results']
+        keys = ['sheets','outputdir','results','ref_genome','ref_gff']
         for k in keys:
             if k in data:
                 self.__dict__[k] = data[k]
@@ -267,6 +317,7 @@ class App(QMainWindow):
         ft = self.fastq_table
         ft.setDataFrame(data['inputs'])
         ft.resizeColumns()
+        self.update_ref_genome()
         self.proj_file = filename
         self.projectlabel.setText(self.proj_file)
         self.outdirLabel.setText(self.outputdir)
@@ -290,7 +341,7 @@ class App(QMainWindow):
     def load_test(self):
         """Load test_files"""
 
-        reply = self.clear_project(ask=True)
+        reply = self.new_project(ask=True)
         if reply == False:
             return
         filenames = glob.glob(os.path.join(app.datadir, '*.fa'))
@@ -326,28 +377,47 @@ class App(QMainWindow):
         self.load_fastq_table(filenames)
         return
 
-    def add_file(self, path, filter="Fasta Files(*.fa *.fna *.fasta)"):
-        """Add a file to the config folders"""
+    def set_reference(self):
+        """Reset the reference sequence"""
 
-        if not os.path.exists(path):
-            os.makedirs(path)
+        msg = "This will change the reference genome. You will need to re-run previous alignments. Are you sure?"
+        reply = QMessageBox.question(self, 'Confirm', msg,
+                                        QMessageBox.No | QMessageBox.Yes )
+        if reply == QMessageBox.No:
+            return
+        filter="Fasta Files(*.fa *.fna *.fasta)"
         filename, _ = QFileDialog.getOpenFileName(self, 'Open File', './',
                                     filter="%s;;All Files(*.*)" %filter)
         if not filename:
             return
-        #copy file
-        dest = os.path.join(path, os.path.basename(filename))
-        shutil.copy(filename, dest)
-        self.show_info('added %s' %filename)
+        self.ref_genome = filename
+        self.update_ref_genome()
         return
 
-    def add_reference(self):
+    def set_gff(self):
 
-        self.add_file(app.sequence_path)
-        self.update_ref_genomes()
+        filename = self.add_file("GFF Files(*.gff *.gff3 *.gb)")
+        self.ref_gff = filename
+        self.update_ref_genome()
         return
 
-    def update_ref_genomes(self):
+    def add_file(self, filter="Fasta Files(*.fa *.fna *.fasta)", path=None):
+        """Add a file to the config folders"""
+
+        filename, _ = QFileDialog.getOpenFileName(self, 'Open File', './',
+                                    filter="%s;;All Files(*.*)" %filter)
+        if not filename:
+            return
+        if path != None:
+            #copy file
+            if not os.path.exists(path):
+                os.makedirs(path)
+            dest = os.path.join(path, os.path.basename(filename))
+            shutil.copy(filename, dest)
+            self.show_info('added %s' %filename)
+        return filename
+
+    '''def update_ref_genomes(self):
 
         path = app.sequence_path
         files = []
@@ -358,12 +428,6 @@ class App(QMainWindow):
         self.opts.widgets['refgenome'].addItems(labels)
         return
 
-    def add_gff(self):
-
-        self.add_file(app.annotation_path, "GFF Files(*.gff *.gff3 *.gb)")
-        self.update_annotations()
-        return
-
     def update_annotations(self):
         """Update widget for annotations"""
 
@@ -372,7 +436,7 @@ class App(QMainWindow):
         labels = [os.path.basename(i) for i in files]
         self.opts.widgets['annotation'].clear()
         self.opts.widgets['annotation'].addItems(labels)
-        return
+        return'''
 
     def set_output_folder(self):
         """Set the output folder"""
@@ -439,7 +503,7 @@ class App(QMainWindow):
         #df = df.loc[rows]
         msg = 'Aligning reads..\nThis may take some time.'
         progress_callback.emit(msg)
-        ref = app.ref_genome
+        ref = self.ref_genome
         aligners.build_bwa_index(ref)
 
         progress_callback.emit('Using reference genome: %s' %ref)
@@ -450,7 +514,7 @@ class App(QMainWindow):
                             callback=progress_callback.emit)
         return
 
-    def variant_calling(self):
+    def variant_calling(self, progress_callback=None):
         """Run variant calling for available bam files."""
 
         retval = self.check_output_folder()
@@ -462,14 +526,16 @@ class App(QMainWindow):
         print (kwds)
         overwrite = kwds['overwrite']
         threads = int(kwds['threads'])
+        filters = kwds['filters']
         df = self.fastq_table.model.df
 
         #use trimmed files if present in table
         bam_files = list(df.bam_file.unique())
         path = self.outputdir
-        self.results['vcf_file'] = app.variant_calling(bam_files, app.ref_genome, path, threads=threads,
-                                    overwrite=overwrite, callback=self.progress_fn)
-        #self.show_variants()
+        self.results['vcf_file'] = app.variant_calling(bam_files, self.ref_genome, path, threads=threads,
+                                    overwrite=overwrite, filters=filters,
+                                    callback=progress_callback.emit)
+        csqmat = self.results['csq_matrix'] = os.path.join(self.outputdir, 'csq.matrix')
         return
 
     def show_variants(self):
@@ -478,7 +544,11 @@ class App(QMainWindow):
         vdf = tools.vcf_to_dataframe(vcf_file)
         table = tables.DefaultTable(self.tabs, app=self, dataframe=vdf)
         i = self.tabs.addTab(table, 'variants')
-        self.tabs.setCurrentIndex(i)
+        if 'csq_matrix' in self.results:
+            csqmat = pd.read_csv(self.results['csq_matrix'])
+            table = tables.DefaultTable(self.tabs, app=self, dataframe=csqmat)
+            i = self.tabs.addTab(table, 'csq.matrix')
+            self.tabs.setCurrentIndex(i)
         return
 
     def snp_alignment(self, progress_callback):
@@ -487,12 +557,13 @@ class App(QMainWindow):
         self.opts.applyOptions()
         kwds = self.opts.kwds
         vcf_file = self.results['vcf_file']
-        result = tools.fasta_alignment_from_vcf('mapped/filtered.vcf.gz', app.ref_genome,
+        progress_callback.emit('Making SNP alignment')
+        result, smat = tools.fasta_alignment_from_vcf(vcf_file, self.ref_genome,
                                                 callback=progress_callback.emit)
-        outfile = os.path.join(self.outputdir, 'variants.fa')
+        print (result)
+        outfile = os.path.join(self.outputdir, 'core.fa')
         self.results['snp_file'] = outfile
         SeqIO.write(result, outfile, 'fasta')
-
         return
 
     def view_tree(self):
@@ -516,12 +587,13 @@ class App(QMainWindow):
         """Run all steps"""
 
         self.run_threaded_process(self.run_trimming, self.processing_completed)
-
         return
 
     def run_threaded_process(self, process, on_complete):
         """Execute a function in the background with a worker"""
 
+        if self.running == True:
+            return
         worker = Worker(fn=process)
         self.threadpool.start(worker)
         worker.signals.finished.connect(on_complete)
@@ -537,10 +609,12 @@ class App(QMainWindow):
         return
 
     def show_ref_annotation(self):
+        """Show annotation in table"""
 
-        gff_file = app.ref_gff
-        feats = tools.gff_to_features(gff_file)
-        df = tools.features_to_dataframe(feats)
+        gff_file = self.ref_gff
+        recs = tools.gff_to_rec(gff_file)
+        print(recs)
+        df = tools.records_to_dataframe(recs)
         t = tables.DataFrameTable(self.tabs, dataframe=df)
         i = self.tabs.addTab(t, 'ref_annotation')
         self.tabs.setCurrentIndex(i)
@@ -556,7 +630,6 @@ class App(QMainWindow):
         if name in self.get_tab_names():
             return
         w = widgets.PlotViewer(self)
-        import pylab as plt
         fig,ax = plt.subplots(2,1, figsize=(7,5), dpi=65, facecolor=(1,1,1), edgecolor=(0,0,0))
         axs=ax.flat
         if not os.path.exists(data.filename):
@@ -580,10 +653,47 @@ class App(QMainWindow):
         if name in self.get_tab_names():
             return
         w = widgets.BamViewer(self)
-        w.load_data(data.bam_file, app.ref_genome)
+        w.load_data(data.bam_file, self.ref_genome)
         w.redraw(start=1, end=2000)
         i = self.tabs.addTab(w, name )
         self.tabs.setCurrentIndex(i)
+        return
+
+    def rd_analysis(self, progress_callback):
+        """Run RD analysis for MTBC species"""
+
+        self.running == True
+        self.opts.applyOptions()
+        kwds = self.opts.kwds
+        from . import rdiff
+        rdiff.create_rd_index()
+        df = self.fastq_table.model.df
+        out = os.path.join(self.outputdir,'rd_analysis')
+        res = rdiff.find_regions(df, out, threads=kwds['threads'],
+                                 callback=progress_callback.emit)
+        self.rd_result = res
+        return
+
+    def rd_analysis_completed(self):
+        """Alignment/calling completed"""
+
+        self.info.append("finished")
+        self.progressbar.setRange(0,1)
+        res = self.rd_result
+        from . import rdiff
+        X = rdiff.get_matrix(res, cutoff=0.15)
+        X['ident'] = X.apply(rdiff.apply_rules,1)
+        fig,ax = plt.subplots(1,1)
+        plotting.plot_matrix(X.set_index('ident',append=True), cmap='cubehelix',ax=ax)
+
+        table = tables.DefaultTable(self.tabs, app=self, dataframe=res)
+        self.tabs.addTab(table, 'RD analysis')
+        #add plot
+        w = widgets.PlotViewer(self)
+        w.show_figure(fig)
+        i = self.tabs.addTab(w, 'RD')
+
+        self.running = False
         return
 
     def show_info(self, msg):
@@ -710,21 +820,23 @@ class AppOptions(widgets.BaseOptions):
         aligners = ['bwa','bowtie','bowtie2']
         cpus = [str(i) for i in range(1,os.cpu_count()+1)]
         self.groups = {'general':['threads','overwrite'],
-                        'reference':['refgenome','annotation'],
+                        #'reference':['refgenome','annotation'],
                         'trimming':['quality'],
                         'aligners':['aligner'],
-                       'blast':['db','identity','coverage'],
+                        'variant calling':['filters'],
+                        'blast':['db','identity','coverage'],
                        }
         self.opts = {'threads':{'type':'combobox','default':4,'items':cpus},
                     'overwrite':{'type':'checkbox','default':False},
-                    'refgenome':{'type':'combobox','default':'',
-                    'items':genomes,'label':'genome'},
-                    'annotation':{'type':'combobox','default':'',
-                    'items':[],'label':'annotation'},
+                    #'refgenome':{'type':'combobox','default':'',
+                    #'items':genomes,'label':'genome'},
+                    #'annotation':{'type':'combobox','default':'',
+                    #'items':[],'label':'annotation'},
                     'aligner':{'type':'combobox','default':'bwa',
                     'items':aligners,'label':'aligner'},
                     'db':{'type':'combobox','default':'card',
                     'items':[],'label':'database'},
+                    'filters':{'type':'entry','default':app.default_filter},
                     'identity':{'type':'entry','default':90},
                     'coverage':{'type':'entry','default':50},
                     'quality':{'type':'spinbox','default':30}

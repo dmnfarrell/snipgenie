@@ -6,5 +6,12 @@ CHANGES
 -----
 
 * first version
-* runs cli and gui workflow
-* functions working so far: trimming, alignment, variant calling
+* CLI workflow works for general microbial genomes
+* GUI works for mbovis so far
+* functions working so far: trimming, alignment, variant calling, snp matrix, tree building
+
+
+0.2.0
+-----
+
+* GUI works for any ref genome

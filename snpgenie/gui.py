@@ -65,9 +65,7 @@ class App(QMainWindow):
         self.setup_gui()
 
         self.new_project()
-        self.update_ref_genome()
         self.running = False
-        #self.update_annotations()
 
         if platform.system() == 'Windows':
             app.fetch_binaries()
@@ -79,10 +77,16 @@ class App(QMainWindow):
     def update_ref_genome(self):
         """Update the ref genome labels"""
 
-        name = os.path.basename(self.ref_genome)
-        self.reflabel.setText(name)
-        name = os.path.basename(self.ref_gff)
-        self.annotlabel.setText(name)
+        if self.ref_genome == None:
+            refname=''
+        else:
+            refname = os.path.basename(self.ref_genome)
+        if self.ref_gff == None:
+            gffname=''
+        else:
+            gffname = os.path.basename(self.ref_gff)
+        self.reflabel.setText(refname)
+        self.annotlabel.setText(gffname)
         return
 
     def setup_gui(self):
@@ -188,8 +192,8 @@ class App(QMainWindow):
         #        QtCore.Qt.CTRL + QtCore.Qt.Key_N)
         self.file_menu.addAction('&Add Fastq Files', self.load_fastq_files_dialog,
                 QtCore.Qt.CTRL + QtCore.Qt.Key_F)
-        self.file_menu.addAction('&Load Test Files', self.load_test,
-                QtCore.Qt.CTRL + QtCore.Qt.Key_T)
+        #self.file_menu.addAction('&Load Test Files', self.load_test,
+        #        QtCore.Qt.CTRL + QtCore.Qt.Key_T)
         self.menuBar().addSeparator()
         self.file_menu.addAction('&New Project', self.new_project,
                 QtCore.Qt.CTRL + QtCore.Qt.Key_N)
@@ -242,9 +246,12 @@ class App(QMainWindow):
     def load_presets_menu(self):
         """Add preset genomes to menu"""
 
-        genomes = {'Mbovis AF212297':app.ref_genome}
+        genomes = {'Mbovis AF212297':{'sequence':app.mbovis_genome, 'gff':app.mbovis_gff},
+                   'MTB H37Rv':{'sequence':app.mtb_genome, 'gff':app.mtb_gff}}
         for name in genomes:
-            self.presets_menu.addAction('&%s' %name, lambda: self.set_reference(name))
+            seqname = genomes[name]['sequence']
+            receiver = lambda seqname=seqname: self.set_reference(seqname)
+            self.presets_menu.addAction('&%s' %name, receiver)
         return
 
     def save_project(self):
@@ -256,9 +263,6 @@ class App(QMainWindow):
         filename = self.proj_file
         data={}
         data['inputs'] = self.fastq_table.getDataFrame()
-        #data['results'] = self.results
-        #data['outputdir'] = self.outputdir
-        #data['ref_genome'] = self.ref_genome
         keys = ['outputdir','results','ref_genome','ref_gff']
         for k in keys:
             if hasattr(self, k):
@@ -297,11 +301,12 @@ class App(QMainWindow):
         self.results = {}
         self.proj_file = None
         self.fastq_table.setDataFrame(pd.DataFrame({'name':[]}))
-        #self.tabs.clear()
-        self.ref_genome = app.ref_genome
-        self.ref_gff = app.ref_gff
+        self.tabs.clear()
+        self.ref_genome = None
+        self.ref_gff = None
         self.projectlabel.setText('')
         self.outdirLabel.setText(self.outputdir)
+        self.update_ref_genome()
         return
 
     def load_project(self, filename=None):
@@ -344,7 +349,7 @@ class App(QMainWindow):
         reply = self.new_project(ask=True)
         if reply == False:
             return
-        filenames = glob.glob(os.path.join(app.datadir, '*.fa'))
+        #filenames = glob.glob(os.path.join(app.datadir, '*.fa'))
         self.load_fastq_table(filenames)
         return
 
@@ -377,7 +382,7 @@ class App(QMainWindow):
         self.load_fastq_table(filenames)
         return
 
-    def set_reference(self):
+    def set_reference(self, filename=None):
         """Reset the reference sequence"""
 
         msg = "This will change the reference genome. You will need to re-run previous alignments. Are you sure?"
@@ -385,11 +390,12 @@ class App(QMainWindow):
                                         QMessageBox.No | QMessageBox.Yes )
         if reply == QMessageBox.No:
             return
-        filter="Fasta Files(*.fa *.fna *.fasta)"
-        filename, _ = QFileDialog.getOpenFileName(self, 'Open File', './',
-                                    filter="%s;;All Files(*.*)" %filter)
-        if not filename:
-            return
+        if filename == None:
+            filter="Fasta Files(*.fa *.fna *.fasta)"
+            filename, _ = QFileDialog.getOpenFileName(self, 'Open File', './',
+                                        filter="%s;;All Files(*.*)" %filter)
+            if not filename:
+                return
         self.ref_genome = filename
         self.update_ref_genome()
         return

@@ -43,8 +43,10 @@ module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
 datadir = os.path.join(module_path, 'data')
 sequence_path = os.path.join(config_path, 'genome')
 annotation_path = os.path.join(config_path, 'annotation')
-ref_genome = os.path.join(sequence_path, 'Mbovis_AF212297.fa')
-ref_gff = os.path.join(datadir, 'Mbovis_csq_format.gff')
+mbovis_genome = os.path.join(sequence_path, 'Mbovis_AF212297.fa')
+mtb_genome = os.path.join(sequence_path, 'MTB-H37Rv.fa')
+mbovis_gff = os.path.join(datadir, 'Mbovis_csq_format.gff')
+mtb_gff = None
 #windows only path to binaries
 bin_path = os.path.join(config_path, 'binaries')
 default_filter = 'QUAL>=40 && INFO/DP>=10 && MQ>40'
@@ -69,12 +71,13 @@ def check_platform():
 def copy_ref_genomes():
     """Copy default ref genome files to config dir"""
 
-    src = os.path.join(datadir, 'Mbovis_AF212297.fa')
+    files =  glob.glob(os.path.join(datadir, '*.fa'))
     path = sequence_path
     if not os.path.exists(path):
         os.makedirs(path,exist_ok=True)
-    dest = os.path.join(path, os.path.basename(ref_genome))
-    shutil.copy(src, dest)
+    for src in files:
+        dest = os.path.join(path, os.path.basename(src))
+        shutil.copy(src, dest)
     return
 
 copy_ref_genomes()
@@ -397,8 +400,8 @@ class WorkFlow(object):
         """Setup main parameters"""
 
         if self.reference == None:
-            self.reference = ref_genome
-            self.gff_file = ref_gff
+            self.reference = mbovis_genome
+            self.gff_file = mbovis_gff
         self.filenames = get_files_from_paths(self.input)
         self.threads = int(self.threads)
         df = get_samples(self.filenames, sep=self.labelsep)

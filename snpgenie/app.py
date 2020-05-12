@@ -49,7 +49,7 @@ mbovis_gff = os.path.join(datadir, 'Mbovis_csq_format.gff')
 mtb_gff = None
 #windows only path to binaries
 bin_path = os.path.join(config_path, 'binaries')
-default_filter = 'QUAL>=40 && INFO/DP>=10 && MQ>40'
+default_filter = 'QUAL>=40 && INFO/DP>=30 && DP4>=4 && MQ>35'
 
 if not os.path.exists(config_path):
     try:
@@ -106,7 +106,7 @@ def get_files_from_paths(paths):
         paths = [paths]
     files=[]
     for path in paths:
-        s = glob.glob(os.path.join(path,'*.fastq.gz'))
+        s = glob.glob(os.path.join(path,'**/*.fastq.gz'), recursive=True)
         files.extend(s)
     return files
 
@@ -412,7 +412,7 @@ class WorkFlow(object):
         self.fastq_table = df
         sample_size = len(df['sample'].unique())
         print ('%s samples were loaded:' %sample_size)
-        print ('-------------')
+        print ('----------------------')
         print (df)
         print ()
         s = check_samples_unique(df)
@@ -527,14 +527,14 @@ def main():
                         help="Results folder", metavar="FILE")
     parser.add_argument("-v", "--version", dest="version", action="store_true",
                         help="Get version")
-    parser.add_argument("-s", "--test", dest="test",  action="store_true",
-                        default=False, help="Do test run")
+    parser.add_argument("-d", "--dummy", dest="dummy",  action="store_true",
+                        default=False, help="Setup samples but don't run")
 
     args = vars(parser.parse_args())
     check_platform()
-    if args['test'] == True:
-        test_run()
-    elif args['version'] == True:
+    #if args['test'] == True:
+    #    test_run()
+    if args['version'] == True:
         from . import __version__
         print ('snpgenie version %s' %__version__)
         print ('https://github.com/dmnfarrell/btbgenie')
@@ -546,7 +546,7 @@ def main():
     else:
         W = WorkFlow(**args)
         st = W.setup()
-        if st == True:
+        if st == True and args['dummy'] == False:
             W.run()
 
 if __name__ == '__main__':

@@ -106,7 +106,7 @@ def get_files_from_paths(paths):
         paths = [paths]
     files=[]
     for path in paths:
-        s = glob.glob(os.path.join(path,'**/*.fastq.gz'), recursive=True)
+        s = glob.glob(os.path.join(path,'**/*.f*q.gz'), recursive=True)
         files.extend(s)
     return files
 
@@ -523,6 +523,8 @@ def main():
                         help="variant calling post-filters" )
     parser.add_argument("-t", "--threads", dest="threads",default=4,
                         help="cpu threads to use")
+    parser.add_argument("-b", "--buildtree", dest="buildtree", action="store_true", default=False,
+                        help="whether to try to build a phylogenetic tree" )
     parser.add_argument("-o", "--outdir", dest="outdir",
                         help="Results folder", metavar="FILE")
     parser.add_argument("-v", "--version", dest="version", action="store_true",

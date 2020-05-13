@@ -98,7 +98,7 @@ def run_RAXML(infile, name='variants', threads=8, outpath='.'):
     try:
         tmp = subprocess.check_output(cmd, shell=True)
     except Exception as e:
-        print ('Error building tree. Is raxml installed?')
+        print ('Error building tree. Is RAxML installed?')
         return None
     out = os.path.join(outpath,'RAxML_bipartitions.variants')
     return out

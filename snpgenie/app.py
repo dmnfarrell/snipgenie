@@ -22,7 +22,7 @@
 
 from __future__ import absolute_import, print_function
 import sys,os,subprocess,glob,re
-import time
+import time, datetime
 import platform
 import urllib, hashlib, shutil
 import tempfile
@@ -384,6 +384,43 @@ def get_aa_snp_matrix(df):
     x = x.fillna(0)
     return x
 
+class Logger(object):
+    """
+    This class duplicates sys.stdout to a log file
+    source: https://stackoverflow.com/q/616645
+    """
+    def __init__(self, filename="run.log", mode="a"):
+        self.stdout = sys.stdout
+        self.file = open(filename, mode)
+        sys.stdout = self
+
+    def __del__(self):
+        self.close()
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *args):
+        self.close()
+
+    def write(self, message):
+        self.stdout.write(message)
+        self.file.write(message)
+
+    def flush(self):
+        self.stdout.flush()
+        self.file.flush()
+        os.fsync(self.file.fileno())
+
+    def close(self):
+        if self.stdout != None:
+            sys.stdout = self.stdout
+            self.stdout = None
+
+        if self.file != None:
+            self.file.close()
+            self.file = None
+
 class WorkFlow(object):
     """Class for implementing a prediction workflow from a set of options"""
     def __init__(self, **kwargs):
@@ -399,6 +436,8 @@ class WorkFlow(object):
     def setup(self):
         """Setup main parameters"""
 
+        Log = Logger(os.path.join(self.outdir, 'run.log'))
+        print (datetime.datetime.now())
         if self.reference == None:
             self.reference = mbovis_genome
             self.gff_file = mbovis_gff
@@ -473,9 +512,12 @@ class WorkFlow(object):
         print (summ)
         print ()
 
-        if len(bam_files) > 2:
+        if self.buildtree == True:
             print ('building tree')
             print ('-------------')
+            if len(bam_files) <= 2:
+                print ('Cannot build tree, too few samples.')
+                return
             treefile = trees.run_RAXML(outfasta, outpath=self.outdir)
             if treefile == None:
                 return
@@ -483,8 +525,7 @@ class WorkFlow(object):
             #labelmap = dict(zip(sra.filename,sra.geo_loc_name_country))
             t,ts = trees.create_tree(treefile)#, labelmap)
             t.render(os.path.join(self.outdir, 'tree.png'))
-        else:
-            print ('Not making tree, too few samples.')
+        print ()
         return
 
 def test_run():

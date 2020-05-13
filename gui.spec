@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-    spec file for pathogenie
+    spec file for snpgenie
     Created Nov 2019
     Copyright (C) Damien Farrell
 
@@ -32,8 +32,8 @@ a = Analysis(['main.py'],
              win_private_assemblies=False,
              cipher=block_cipher,
              noarchive=False,
-             datas=[ ('pathogenie/logo.png', 'pathogenie/'),
-                     ('pathogenie/data/*', 'pathogenie/data/')  ])
+             datas=[ ('snpgenie/logo.png', 'snpgenie/'),
+                     ('snpgenie/data/*', 'snpgenie/data/')  ])
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 
@@ -59,7 +59,7 @@ exe = EXE(pyz,
           a.scripts,
           [],
           exclude_binaries=True,
-          name='pathogenie.exe',
+          name='snpgenie.exe',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
@@ -73,4 +73,4 @@ coll = COLLECT(exe,
                strip=False,
                upx=True,
                upx_exclude=[],
-               name='pathogenie')
+               name='snpgenie')

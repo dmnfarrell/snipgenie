@@ -46,12 +46,14 @@ Other binaries required:
 * bwa
 * samtools
 * bcftools
+* tabix
+* parallel
 
 These binaries can be installed with apt in Ubuntu:
 
-`sudo apt install bwa samtools bcftools`
+`sudo apt install bwa samtools bcftools tabix parallel`
 
-If you want a tree to be built you should install RaXML:
+If you want a tree to be built you should install RaXML, but it's optional:
 
 `sudo apt install raxml`
 
@@ -69,7 +71,7 @@ This will run the entire process based on a set of options given at the terminal
 -i FILE, --input FILE
                       input folder(s)
 -e LABELSEP, --labelsep LABELSEP
-                      symbol to split the sample names on
+                      symbol to split the sample labels on
 -r FILE, --reference FILE
                       reference genome filename
 -g FILE, --gff FILE   reference gff, optional
@@ -81,25 +83,25 @@ This will run the entire process based on a set of options given at the terminal
                       variant calling post-filters
 -t THREADS, --threads THREADS
                       cpu threads to use
+-b, --buildtree       whether to try to build a phylogenetic tree
 -o FILE, --outdir FILE
                       Results folder
 -v, --version         Get version
--s, --test            Do test run
+-d, --dummy           Setup samples but don't run
 ```
 
 ### Examples
 
 ```
-snpgenie -r reference.fa -g reference.gff -i data_files -t 8 -o results
+snpgenie -r reference.fa -g reference.gff -i data_files -o results
 ```
 
-Add your own filters:
+Add your own filters and provide threads:
 
 ```
 snpgenie -r reference.fa -g reference.gff -i data_files -t 8 -o results` \
  -f 'QUAL>=40 && INFO/DP>=20 && MQ>40'
 ```
-
 
 ### From Python
 
@@ -115,6 +117,16 @@ W = app.WorkFlow(**args)
 st = W.setup()
 W.run()
 ```
+
+## FAQ
+
+* The run was stopped during execution, can it be resumed?
+
+Yes, by default the program won't overwrite intermediate files when re-run. So just run it again. Make sure there are no old tmp.****.bam files in the mapped folder if an alignment got interrupted.
+
+* My sample files are not being parsed properly.
+
+This may be because your sample names are unusual. The program extracts the unique sample names from the files by using the '_' symbol as delimeter. If your names differ you can supply a different delimeter with the labelsep option.
 
 ## BTBGENIE
 

@@ -57,7 +57,7 @@ if not os.path.exists(config_path):
     except:
         os.makedirs(config_path)
 
-defaults = {'threads':4, 'labelsep':'_','quality':25, 'filters': default_filter,
+defaults = {'threads':None, 'labelsep':'_','quality':25, 'filters': default_filter,
             'reference': None, 'gff_file': None, 'overwrite':False}
 
 def check_platform():
@@ -379,8 +379,9 @@ def read_csq_file(filename):
 def get_aa_snp_matrix(df):
     """Get presence/absence matrix from csq calls table"""
 
+    df=df.drop_duplicates(['gene','aa','sample'])
     x = df.set_index(['gene','aa','sample'])['start'].unstack('sample')
-    x[x.notna()]=1
+    x[x.notna()] = 1
     x = x.fillna(0)
     return x
 
@@ -425,24 +426,29 @@ class WorkFlow(object):
     """Class for implementing a prediction workflow from a set of options"""
     def __init__(self, **kwargs):
         for i in kwargs:
-            print (i, kwargs[i])
             self.__dict__[i] = kwargs[i]
         for i in defaults:
             if i not in self.__dict__:
                 self.__dict__[i] = defaults[i]
-                print (i, defaults[i])
+        print ('options')
+        print ('-------')
+        for i in self.__dict__:
+            print (i, ':', self.__dict__[i])
         return
 
     def setup(self):
         """Setup main parameters"""
 
-        Log = Logger(os.path.join(self.outdir, 'run.log'))
         print (datetime.datetime.now())
         if self.reference == None:
             self.reference = mbovis_genome
             self.gff_file = mbovis_gff
         self.filenames = get_files_from_paths(self.input)
-        self.threads = int(self.threads)
+        if self.threads == None:
+            import multiprocessing
+            self.threads = multiprocessing.cpu_count()
+        else:
+            self.threads = int(self.threads)
         df = get_samples(self.filenames, sep=self.labelsep)
         if len(df) == 0:
             print ('no samples provided')
@@ -562,7 +568,7 @@ def main():
                         help="trim quality" )
     parser.add_argument("-f", "--filters", dest="filters", default=default_filter,
                         help="variant calling post-filters" )
-    parser.add_argument("-t", "--threads", dest="threads",default=4,
+    parser.add_argument("-t", "--threads", dest="threads", default=None,
                         help="cpu threads to use")
     parser.add_argument("-b", "--buildtree", dest="buildtree", action="store_true", default=False,
                         help="whether to try to build a phylogenetic tree" )
@@ -575,12 +581,13 @@ def main():
 
     args = vars(parser.parse_args())
     check_platform()
+    #Log = Logger(os.path.join(args['outdir'], 'run.log'))
     #if args['test'] == True:
     #    test_run()
     if args['version'] == True:
         from . import __version__
         print ('snpgenie version %s' %__version__)
-        print ('https://github.com/dmnfarrell/btbgenie')
+        print ('https://github.com/dmnfarrell/snpgenie')
     elif args['outdir'] == None:
         print ('No input or output folders provided. These are required.')
         print ('Example:')

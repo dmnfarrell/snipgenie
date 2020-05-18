@@ -19,7 +19,7 @@
 """
 
 from __future__ import print_function
-import sys,os,subprocess,glob,shutil,re,random
+import sys,os,subprocess,glob,shutil,re,random,time
 import platform
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
@@ -467,8 +467,7 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
         ref: the reference sequence
         callback: optional function to direct output
     """
-
-    st = time.time()
+    
     if not os.path.exists(vcf_file):
         print ('no such file %s' %vcf_file)
         return
@@ -515,6 +514,7 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
     sites_matrix['ref'] = list(refrec)
     #iterate over variants in each sample
     for sample in samples:
+        print (sample)
         seq=[]
         variant = FastaVariant(ref, vcf_file,
                                sample=sample, het=True, hom=True)
@@ -532,7 +532,7 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
     #smat is a dataframe matrix of the positions and genotype
     smat = pd.DataFrame(sites_matrix)
     smat.index = sites
-    print ('took %s seconds' %str(round(time.time()-st,0)))
+
     return result, smat
 
 def get_bam_depth(filename, how='mean'):

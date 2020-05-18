@@ -123,6 +123,17 @@ Filenames are parsed and a sample name extracted for each pair (if paired end). 
 
 You can run a workflow from within Python by importing the snpgenie package and invoking the `WorkFlow` class. You need to provide the options in a dictionary with the same keywords as the command line. Notice in this example we are loading files from two folders.
 
+```python
+import sngenie
+args = {'threads':8, 'outdir': 'results', 'labelsep':'-',
+        'input':['/my/folder/',
+                 '/my/other/folder'],
+        'reference': None, 'overwrite':False}
+W = snpgenie.app.WorkFlow(**args)
+W.setup()
+W.run()
+```
+
 ## FAQ
 
 _The run was stopped during execution, can it be resumed?_

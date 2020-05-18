@@ -257,8 +257,9 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
     tmpdir = '/tmp'
     chr = tools.get_chrom(ref)
     length = tools.get_fasta_length(ref)
-    bsize = int(length/(threads-1))
-    x = np.linspace(1,length,threads,dtype=int)
+    x = np.linspace(1,length,threads+1,dtype=int)
+    print (x)
+    #split genome into blocks
     blocks=[]
     for i in range(len(x)):
         if i < len(x)-1:
@@ -294,14 +295,16 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
                     callback=None, overwrite=False, filters=None, gff_file=None, **kwargs):
     """Call variants with bcftools"""
 
+    st = time.time()
     if filters == None:
         filters = default_filter
     rawbcf = os.path.join(outpath,'raw.bcf')
     bcftoolscmd = tools.get_cmd('bcftools')
     if not os.path.exists(rawbcf) or overwrite == True:
-        if platform.system() == 'Windows':
+        if platform.system() == 'Windows' or threads == 1:
             bam_files = ' '.join(bam_files)
             cmd = '{bc} mpileup -O b --min-MQ 60 -o {o} -f {r} {b}'.format(bc=bcftoolscmd,r=ref, b=bam_files, o=rawbcf)
+            print (cmd)
             subprocess.check_output(cmd, shell=True)
         #if linux use mpileup in parallel to speed up
         else:
@@ -343,6 +346,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
         #get presence/absence matrix of csq mutations
         m = get_aa_snp_matrix(csqdf)
         m.to_csv(os.path.join(outpath,'csq.matrix'))
+    print ('took %s seconds' %str(round(time.time()-st,0)))
     return final
 
 def create_bam_labels(filenames):

@@ -23,7 +23,6 @@ setup(
                       'biopython>=1.5',
                       'pyvcf>=0.6',
                       'pyfaidx',
-                      'pysam>=0.13',
                       'pyside2>=5.1',
                       'future'],
     entry_points = {

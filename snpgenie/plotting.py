@@ -31,8 +31,8 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Align import MultipleSeqAlignment
 from Bio import AlignIO, SeqIO
 from pyfaidx import Fasta
-
 import pylab as plt
+from . import tools
 
 def plot_matrix(df, cmap='gist_gray_r', w=15, h=5, ax=None):
     """Plot dataframe matrix"""
@@ -154,7 +154,8 @@ def plot_coverage(df, plot_width=800, plot_height=60, xaxis=True, ax=None):
         ax.get_xaxis().set_visible(False)
     return
 
-def plot_bam_alignment(bam_file, chr, start, end, height=1, fill_color='#459ECF', ax=None):
+def plot_bam_alignment(bam_file, chr, xstart, xend, ystart=0, yend=100,
+                        rect_height=.6, fill_color='gray', ax=None):
     """bam alignments plotter.
     Args:
         bam_file: name of a sorted bam file
@@ -162,28 +163,76 @@ def plot_bam_alignment(bam_file, chr, start, end, height=1, fill_color='#459ECF'
         end: end of range
     """
 
-    h=.6
+    h = rect_height
     #cover the visible range from start-end
-    o = (end-start)/2
+    o = (xend-xstart)/2
     #get reads in range into a dataframe
-    df = get_bam_aln(bam_file, chr, start-o, end+o)
+    df = get_bam_aln(bam_file, chr, xstart-o, xend+o)
+    #print (df[:4])
     df['x'] = df.start+df.length/2
+    df['y'] = df.y*(h+1)
     #set colors by quality
     df['color'] = df.apply(lambda x: 'red' if x.mapq==0 else fill_color ,1)
     df['span'] = df.apply(lambda x: str(x.start)+':'+str(x.end),1)
-    #print (df[:3])
+
     if ax==None:
         fig,ax = plt.subplots(1,1,figsize=(15,3))
     from matplotlib.collections import PatchCollection
     patches=[]
     for i,r in df.iterrows():
-        rect = plt.Rectangle((r.x, r.y),
-                              r.length,
-                              h, facecolor=r.color,
-                              edgecolor='black', linewidth=0)
+        rect = plt.Rectangle((r.x, r.y), r.length, h,
+                                alpha=.6, linewidth=.5,
+                                edgecolor='black', facecolor=r.color)
         patches.append(rect)
-    ax.add_collection(PatchCollection(patches))
-    ax.set_ylim(0,df.y.max())
-    ax.set_xlim(start, end)
+
+    #cmap = ListedColormap(list(df.color))
+    ax.add_collection(PatchCollection(patches, match_original=True))
+    ax.set_ylim(ystart,yend)
+    ax.set_xlim(xstart, xend)
+    plt.yticks([])
     plt.tight_layout()
+    return
+
+def plot_features(rec, ax, rows=3, xstart=0, xend=30000):
+
+    h=1
+    df = tools.records_to_dataframe([rec])
+    df = df[(df.feat_type!='region') & (df['feat_type']!='source')]
+    df = df[(df.start>xstart) & (df.end<xend)]
+    df['length'] = df.end-df.start
+    y = list(range(1,rows)) * len(df)
+    df['y'] = y[:len(df)]
+    df['color'] = 'blue'
+    df = df.fillna('')
+    #print (df)
+
+    from matplotlib.collections import PatchCollection
+    import matplotlib.patches as mpatches
+
+    patches=[]
+    for i,r in df.iterrows():
+        if r.strand == 1:
+            x = r.start
+            dx = r.length
+        else:
+            x = r.end
+            dx = -r.length
+        arrow = mpatches.Arrow(x, r.y, dx, 0, alpha=.7, width=.3,
+                               edgecolor='black')
+        txt = ax.text(r.start, r.y-h/2, r.gene, size=16)
+        patches.append(arrow)
+
+    ax.add_collection(PatchCollection(patches, match_original=True))
+    ax.set_xlim(xstart, xend)
+    ax.set_ylim(.4,rows-.5)
+    plt.yticks([])
+    plt.tight_layout()
+
+    def onclick(event):
+        print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
+              ('double' if event.dblclick else 'single', event.button,
+               event.x, event.y, event.xdata, event.ydata))
+        ax.text(event.x, event.y, 'HI!')
+        ax.figure.canvas.draw()
+    #cid = ax.figure.canvas.mpl_connect('button_press_event', onclick)
     return

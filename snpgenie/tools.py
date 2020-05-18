@@ -293,7 +293,7 @@ def genbank_to_dataframe(infile, cds=False):
     df = records_to_dataframe(recs, cds, nucl_seq=True)
     return df
 
-def gff_to_rec(gff_file):
+def gff_to_records(gff_file):
     """Get features from gff file"""
 
     if gff_file is None or not os.path.exists(gff_file):
@@ -468,6 +468,10 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
         callback: optional function to direct output
     """
 
+    st = time.time()
+    if not os.path.exists(vcf_file):
+        print ('no such file %s' %vcf_file)
+        return
     from pyfaidx import Fasta
     from pyfaidx import FastaVariant
     #index vcf
@@ -528,6 +532,7 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
     #smat is a dataframe matrix of the positions and genotype
     smat = pd.DataFrame(sites_matrix)
     smat.index = sites
+    print ('took %s seconds' %str(round(time.time()-st,0)))
     return result, smat
 
 def get_bam_depth(filename, how='mean'):

@@ -376,7 +376,7 @@ class App(QMainWindow):
 
         options = QFileDialog.Options()
         filenames, _ = QFileDialog.getOpenFileNames(self, 'Open File', './',
-                                                    filter="Fastq Files(*.fq *.fastq *.fastq.gz);;All Files(*.*)")
+                                                    filter="Fastq Files(*.fq *.fastq *.fq.gz *.fastq.gz);;All Files(*.*)")
         if not filenames:
             return
         self.load_fastq_table(filenames)
@@ -385,8 +385,8 @@ class App(QMainWindow):
     def set_reference(self, filename=None):
         """Reset the reference sequence"""
 
-        msg = "This will change the reference genome. You will need to re-run previous alignments. Are you sure?"
-        reply = QMessageBox.question(self, 'Confirm', msg,
+        msg = "This will change the reference genome. You will need to re-run any previous alignments. Are you sure?"
+        reply = QMessageBox.question(self, 'Warning!', msg,
                                         QMessageBox.No | QMessageBox.Yes )
         if reply == QMessageBox.No:
             return
@@ -659,8 +659,8 @@ class App(QMainWindow):
         if name in self.get_tab_names():
             return
         w = widgets.BamViewer(self)
-        w.load_data(data.bam_file, self.ref_genome)
-        w.redraw(start=1, end=2000)
+        w.load_data(data.bam_file, self.ref_genome, self.ref_gff)
+        w.redraw(xstart=1, xend=2000)
         i = self.tabs.addTab(w, name )
         self.tabs.setCurrentIndex(i)
         return

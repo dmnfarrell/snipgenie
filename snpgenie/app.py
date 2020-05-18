@@ -58,7 +58,7 @@ if not os.path.exists(config_path):
         os.makedirs(config_path)
 
 defaults = {'threads':None, 'labelsep':'_','quality':25, 'filters': default_filter,
-            'reference': None, 'gff_file': None, 'overwrite':False}
+            'reference': None, 'gff_file': None, 'overwrite':False, 'buildtree':False}
 
 def check_platform():
     """See if we are running in Windows"""
@@ -275,7 +275,7 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
     regstr = ' '.join(regions)
     filesstr = ' '.join(outfiles)
     annotatestr = '"AD,ADF,ADR,DP,SP,INFO/AD,INFO/ADF,INFO/ADR"'
-    cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
+    cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b  --min-MQ 60 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
             .format(r=ref, reg=regstr, b=bam_files, o=filesstr, a=annotatestr)
     print (cmd)
     if callback != None:
@@ -301,7 +301,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     if not os.path.exists(rawbcf) or overwrite == True:
         if platform.system() == 'Windows':
             bam_files = ' '.join(bam_files)
-            cmd = '{bc} mpileup -O b -o {o} -f {r} {b}'.format(bc=bcftoolscmd,r=ref, b=bam_files, o=rawbcf)
+            cmd = '{bc} mpileup -O b --min-MQ 60 -o {o} -f {r} {b}'.format(bc=bcftoolscmd,r=ref, b=bam_files, o=rawbcf)
             subprocess.check_output(cmd, shell=True)
         #if linux use mpileup in parallel to speed up
         else:
@@ -434,12 +434,12 @@ class WorkFlow(object):
         print ('-------')
         for i in self.__dict__:
             print (i, ':', self.__dict__[i])
+        print ()
         return
 
     def setup(self):
         """Setup main parameters"""
 
-        print (datetime.datetime.now())
         if self.reference == None:
             self.reference = mbovis_genome
             self.gff_file = mbovis_gff
@@ -581,6 +581,7 @@ def main():
 
     args = vars(parser.parse_args())
     check_platform()
+    print (datetime.datetime.now())
     #Log = Logger(os.path.join(args['outdir'], 'run.log'))
     #if args['test'] == True:
     #    test_run()

@@ -424,7 +424,8 @@ class BamViewer(QDialog):
         fig = plt.figure(figsize=(15,2))
         spec = fig.add_gridspec(ncols=1, nrows=4)
         self.ax1 = fig.add_subplot(spec[0, 0])
-        self.ax2 = fig.add_subplot(spec[1:, 0])
+        self.ax2 = fig.add_subplot(spec[1:3, 0])
+        self.ax3 = fig.add_subplot(spec[3, 0])
         self.canvas = FigureCanvas(fig)
         self.fig = fig
         l.addWidget(self.canvas)
@@ -437,11 +438,12 @@ class BamViewer(QDialog):
         bl2.addWidget(self.loclbl)
         return
 
-    def load_data(self, bam_file, ref_file, vcf_file=None):
+    def load_data(self, bam_file, ref_file, gff_file=None, vcf_file=None):
         """Load reference seq and get contig/chrom names"""
 
         self.ref_file = ref_file
         self.bam_file = bam_file
+        self.gff_file = gff_file
         chromnames = plotting.get_fasta_names(ref_file)
         length = plotting.get_fasta_length(ref_file)
         self.chrom = chromnames[0]
@@ -512,27 +514,30 @@ class BamViewer(QDialog):
         self.redraw(start, end)
         return
 
-    def redraw(self, start=1, end=2000):
+    def redraw(self, xstart=1, xend=2000):
         """Plot the features"""
 
-        #axs=self.axs
+        h = 5
         self.ax1.clear()
         self.ax2.clear()
         length = self.length
-        if start<0:
-            start=1
-        if end <= 0:
-            end = start+2000
-        if end-start > 10000:
-            end = start+10000
-        if end > length:
-            end = length
+        if xstart<0:
+            xstart=1
+        if xend <= 0:
+            xend = xstart+2000
+        if xend-xstart > 10000:
+            xend = xstart+10000
+        if xend > length:
+            xend = length
 
         #print (start, end)
-        cov = plotting.get_coverage(self.bam_file, self.chrom, start, end)
+        cov = plotting.get_coverage(self.bam_file, self.chrom, xstart, xend)
         plotting.plot_coverage(cov,ax=self.ax1,xaxis=False)
-        plotting.plot_bam_alignment(self.bam_file, self.chrom, start, end, ax=self.ax2)
+        plotting.plot_bam_alignment(self.bam_file, self.chrom, xstart, xend, ax=self.ax2)
+        if self.gff_file != None:
+            recs = tools.gff_to_records(self.gff_file)
+            plotting.plot_features(recs[0], self.ax3, xstart=xstart, xend=xend)
         self.canvas.draw()
-        self.view_range = end-start
-        self.loclbl.setText(str(start)+'-'+str(end))
+        self.view_range = xend-xstart
+        self.loclbl.setText(str(xstart)+'-'+str(xend))
         return

@@ -103,28 +103,33 @@ snpgenie -r reference.fa -g reference.gff -i data_files -t 8 -o results` \
  -f 'QUAL>=40 && INFO/DP>=20 && MQ>40'
 ```
 
-### From Python
+## Inputs
 
-You can run a workflow from within Python:
+Folders are searched recursively for inputs with extensions `*.f*q.gz`. So be careful you don't have files in the folders you don't want included. So the following file structure will load both sets of files if you provide the parent folder as input.
 
-```python
-from sngenie import app
-args = {'threads':8, 'outdir': 'results', 'labelsep':'-',
-        'input':['/my/folder/',
-                 '/my/other/folder'],
-        'reference': None, 'overwrite':False}
-W = app.WorkFlow(**args)
-st = W.setup()
-W.run()
 ```
+data/
+├── ERR1588781
+│   ├── ERR1588781_1.fq.gz
+│   └── ERR1588781_2.fq.gz
+└── ERR1588785
+    ├── ERR1588785_1.fastq.gz
+    └── ERR1588785_2.fastq.gz
+```
+
+Filenames are parsed and a sample name extracted for each pair (if paired end). This is simply done by splitting on the _ symbol. So a file called /path/13-11594_S85_L001-4_R1_001.fastq.gz will be given a sample name 13-11594. As long as the sample names are unique this is ok. If you had a file names like A_2_L001-4_R1_001,  A_3_L001-4_R1_001 you should split on '-' instead. You can specify this in the labelsep option.
+
+## Use from Python
+
+You can run a workflow from within Python by importing the snpgenie package and invoking the `WorkFlow` class. You need to provide the options in a dictionary with the same keywords as the command line. Notice in this example we are loading files from two folders.
 
 ## FAQ
 
-* The run was stopped during execution, can it be resumed?
+_The run was stopped during execution, can it be resumed?_
 
 Yes, by default the program won't overwrite intermediate files when re-run. So just run it again. Make sure there are no old tmp.****.bam files in the mapped folder if an alignment got interrupted.
 
-* My sample files are not being parsed properly.
+_My sample files are not being parsed properly._
 
 This may be because your sample names are unusual. The program extracts the unique sample names from the files by using the '_' symbol as delimeter. If your names differ you can supply a different delimeter with the labelsep option.
 

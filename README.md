@@ -96,6 +96,12 @@ This will run the entire process based on a set of options given at the terminal
 snpgenie -r reference.fa -g reference.gff -i data_files -o results
 ```
 
+Provide more than one folder:
+
+```
+snpgenie -r reference.fa -g reference.gff -i data_files1 -i data_files2 -o results
+```
+
 Add your own filters and provide threads:
 
 ```
@@ -143,6 +149,10 @@ Yes, by default the program won't overwrite intermediate files when re-run. So j
 _My sample files are not being parsed properly._
 
 This may be because your sample names are unusual. The program extracts the unique sample names from the files by using the '_' symbol as delimeter. If your names differ you can supply a different delimeter with the labelsep option.
+
+_I added new files and tried to re-run but it failed._
+
+This is because the samples don't match the previous variant call output. You might see a `different number of samples` warning. By default the results of mpileup are not overwritten as this is the slowest step. You should first delete the file `raw.bcf` in the output folder and run again.
 
 ## BTBGENIE
 

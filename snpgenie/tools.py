@@ -459,7 +459,7 @@ def plot_fastq_gc_content(filename, ax=None, limit=50000):
     ax.set_title('GC content',size=15)
     return
 
-def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
+def fasta_alignment_from_vcf(vcf_file, ref, chrom=None, callback=None):
     """Get a fasta alignment for all snp sites in a multi sample
     vcf file.
     Args:
@@ -467,7 +467,7 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
         ref: the reference sequence
         callback: optional function to direct output
     """
-    
+
     if not os.path.exists(vcf_file):
         print ('no such file %s' %vcf_file)
         return
@@ -485,9 +485,11 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
 
     #reference sequence
     reference = Fasta(ref)
-    chrom = list(reference.keys())[0]
+    if chrom == None:
+        chrom = list(reference.keys())[0]
 
     #get the set of all sites first
+    print ('finding all sites')
     sites=[]
     for sample in samples:
         #print (sample)
@@ -518,7 +520,6 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
         seq=[]
         variant = FastaVariant(ref, vcf_file,
                                sample=sample, het=True, hom=True)
-        #for p in variant[chrom].variant_sites:
         for p in sites:
             rec = variant[chrom][p-1:p]
             #print (p,rec)
@@ -535,6 +536,21 @@ def fasta_alignment_from_vcf(vcf_file, ref, callback=None):
 
     return result, smat
 
+def samtools_flagstats(filename):
+    """Parse samtools flagstat output into dictionary"""
+
+    cmd = 'samtools flagstat %s' %filename
+    tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
+    x = tmp.split('\n')
+    x = [int(i.split('+')[0]) for i in x[:-1]]
+    #print (x)
+    cols = ['total','secondary','supplementary','duplicates','mapped',
+            'paired','read1','read2','properly paired','with itself','singletons']
+    d = {}
+    for c,v in zip(cols,x):
+        d[c] = v
+    return d
+    
 def get_bam_depth(filename, how='mean'):
     """Get depth from bam file"""
 

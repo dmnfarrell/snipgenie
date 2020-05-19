@@ -138,7 +138,7 @@ def check_samples_unique(samples):
         return False
 
 def results_summary(df):
-    return df.groupby('sample').first()[['name','bam_file','read_length']].reset_index()
+    return df.groupby('sample').first()[['name','bam_file','read_length','perc_mapped']].reset_index()
 
 def write_samples(df, path):
     filename = os.path.join(path, 'samples.txt')
@@ -180,6 +180,10 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
         #find mean depth
         #depth = tools.get_bam_depth(out)
         #samples.loc[index,'depth'] = depth
+        #get mapping info and add to samples samples table
+        stat = tools.samtools_flagstats(out)
+        perc = stat['mapped']/stat['total']*100
+        samples.loc[index,'perc_mapped'] = perc
         if callback != None:
             callback(out)
     return samples
@@ -268,7 +272,7 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
     outfiles = []
     regions = []
     for start,end in blocks:
-        region = '{c}:{s}-{e}'.format(c=chr,s=start,e=end)
+        region = '"{c}":{s}-{e}'.format(c=chr,s=start,e=end)
         regions.append(region)
         out = '{o}/{s}.bcf'.format(o=tmpdir,s=start)
         outfiles.append(out)

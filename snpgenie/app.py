@@ -513,7 +513,7 @@ class WorkFlow(object):
         print ()
         print ('making SNP matrix')
         print ('-----------------')
-        snprecs, smat = tools.fasta_alignment_from_vcf(self.vcf_file, self.reference, threads=self.threads)
+        snprecs, smat = tools.fasta_alignment_from_vcf(self.vcf_file)
         outfasta = os.path.join(self.outdir, 'core.fa')
         SeqIO.write(snprecs, outfasta, 'fasta')
         #write out sites matrix as txt file

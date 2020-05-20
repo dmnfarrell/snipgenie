@@ -466,121 +466,38 @@ def concat_seqrecords(recs):
         concated += r.seq
     return SeqRecord(concated, id=recs[0].id)
 
-def get_sites_sequence(vcf_file, ref, sample, chrom, sites):
-    """Get site position sequences from a vcf"""
+def fasta_alignment_from_vcf(vcf_file):
+    """Get snp site alt bases as sequences from all samples in a vcf file"""
 
-    from pyfaidx import FastaVariant
-    seq=[]
-    variant = FastaVariant(ref, vcf_file,
-                           sample=sample, het=True, hom=True)
-    for p in sites:
-        #print (p, end='\r')
-        rec = variant[chrom][p-1:p]
-        seq.append(rec.seq)
-    seq = ''.join(seq)
-
-    #seq = ''.join([variant[chrom][p-1:p].seq for p in sites])
-    seqrec = SeqRecord(Seq(seq),id=sample)
-    return seqrec
-
-def get_sites_sequence_multiprocess(vcf_file, ref, sample, chrom, sites, threads=4):
-    #split sites into chunks and run in parallel for long jobs
-
-    import multiprocessing as mp
-    blocks = np.array_split(np.array(sites),threads)
-    #print (sample)
-    srecs=[]
-    funclist = []
-    pool = mp.Pool(threads)
-    for subset in blocks:
-        f = pool.apply_async(get_sites_sequence, [vcf_file, ref, sample, chrom, subset])
-        #print (len(sr))
-        #srecs.append(sr)
-        funclist.append(f)
-    try:
-        for f in funclist:
-            srec = f.get(timeout=None)
-            if len(srec)>0:
-                srecs.append(srec)
-    except KeyboardInterrupt:
-        print ('process interrupted')
-        pool.terminate()
-        sys.exit(0)
-
-    pool.close()
-    pool.join()
-    seqrec = concat_seqrecords(srecs)
-    return seqrec
-
-def fasta_alignment_from_vcf(vcf_file, ref, chrom=None, threads=4, callback=None):
-    """Get a fasta alignment for all snp sites in a multi sample
-    vcf file.
-    Args:
-        vcf_file: input vcf
-        ref: the reference sequence
-        callback: optional function to direct output
-    """
-
-    if not os.path.exists(vcf_file):
-        print ('no such file %s' %vcf_file)
-        return
-    from pyfaidx import Fasta
-    from pyfaidx import FastaVariant
-    #index vcf
-    cmd = 'tabix -p vcf -f {i}'.format(i=vcf_file)
-    tmp = subprocess.check_output(cmd,shell=True)
-    #get samples?
     import vcf
+    from collections import defaultdict
     vcf_reader = vcf.Reader(open(vcf_file, 'rb'))
-    samples = vcf_reader.samples
-    print ('%s samples' %len(samples))
-    result = []
+    #print (vcf_reader.samples)
+    def default():
+        return []
+    result = defaultdict(default)
+    sites = []
+    for record in vcf_reader:
+        ref = record.REF
+        result['ref'].append(record.REF)
+        sites.append(record.POS)
+        for sample in record.samples:
+            name = sample.sample
+            if sample.gt_bases != None:
+                result[name].append(sample.gt_bases)
+            else:
+                result[name].append(record.REF)
+    print ('found %s sites' %len(sites))
+    recs = []
+    for sample in result:
+        seq = ''.join(result[sample])
+        seqrec = SeqRecord(Seq(seq),id=sample)
+        recs.append(seqrec)
+        #print (len(seqrec))
 
-    #reference sequence
-    reference = Fasta(ref)
-    if chrom == None:
-        chrom = list(reference.keys())[0]
-
-    #get the set of all sites first
-    print ('finding all sites')
-    sites=[]
-    for sample in samples:
-        print (sample, end='\r')
-        variant = FastaVariant(ref, vcf_file,
-                                 sample=sample, het=True, hom=True)
-        pos = list(variant[chrom].variant_sites)
-        sites.extend(pos)
-        #print (sample)
-        #print (pos[:20])
-    sites = sorted(set(sites))
-    print ('using %s sites' %len(sites))
-    if callback != None:
-        callback('using %s sites' %len(sites))
-    #get reference sequence for site positions
-    refseq=[]
-    for p in sites:
-        refseq.append(reference[chrom][p-1].seq)
-    refseq = ''.join(refseq)
-    refrec = SeqRecord(Seq(refseq),id='ref')
-    result.append(refrec)
-
-    sites_matrix = {}
-    sites_matrix['ref'] = list(refrec)
-    #iterate over variants in each sample
-    for sample in samples:
-        print (sample)
-        if threads == 1:
-            seqrec = get_sites_sequences(vcf_file, ref, sample, chrom, sites)
-        else:
-            seqrec = get_sites_sequence_multiprocess(vcf_file, ref, sample, chrom, sites, threads)
-        result.append(seqrec)
-        sites_matrix[sample] = list(seqrec.seq)
-
-    #smat is a dataframe matrix of the positions and genotype
-    smat = pd.DataFrame(sites_matrix)
+    smat = pd.DataFrame(result)
     smat.index = sites
-
-    return result, smat
+    return recs, smat
 
 def samtools_flagstats(filename):
     """Parse samtools flagstat output into dictionary"""

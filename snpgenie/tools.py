@@ -459,7 +459,60 @@ def plot_fastq_gc_content(filename, ax=None, limit=50000):
     ax.set_title('GC content',size=15)
     return
 
-def fasta_alignment_from_vcf(vcf_file, ref, chrom=None, callback=None):
+def concat_seqrecords(recs):
+    """Join seqrecords together"""
+    concated = Seq("")
+    for r in recs:
+        concated += r.seq
+    return SeqRecord(concated, id=recs[0].id)
+
+def get_sites_sequence(vcf_file, ref, sample, chrom, sites):
+    """Get site position sequences from a vcf"""
+
+    from pyfaidx import FastaVariant
+    seq=[]
+    variant = FastaVariant(ref, vcf_file,
+                           sample=sample, het=True, hom=True)
+    for p in sites:
+        #print (p, end='\r')
+        rec = variant[chrom][p-1:p]
+        seq.append(rec.seq)
+    seq = ''.join(seq)
+
+    #seq = ''.join([variant[chrom][p-1:p].seq for p in sites])
+    seqrec = SeqRecord(Seq(seq),id=sample)
+    return seqrec
+
+def get_sites_sequence_multiprocess(vcf_file, ref, sample, chrom, sites, threads=4):
+    #split sites into chunks and run in parallel for long jobs
+
+    import multiprocessing as mp
+    blocks = np.array_split(np.array(sites),threads)
+    #print (sample)
+    srecs=[]
+    funclist = []
+    pool = mp.Pool(threads)
+    for subset in blocks:
+        f = pool.apply_async(get_sites_sequence, [vcf_file, ref, sample, chrom, subset])
+        #print (len(sr))
+        #srecs.append(sr)
+        funclist.append(f)
+    try:
+        for f in funclist:
+            srec = f.get(timeout=None)
+            if len(srec)>0:
+                srecs.append(srec)
+    except KeyboardInterrupt:
+        print ('process interrupted')
+        pool.terminate()
+        sys.exit(0)
+
+    pool.close()
+    pool.join()
+    seqrec = concat_seqrecords(srecs)
+    return seqrec
+
+def fasta_alignment_from_vcf(vcf_file, ref, chrom=None, threads=4, callback=None):
     """Get a fasta alignment for all snp sites in a multi sample
     vcf file.
     Args:
@@ -492,7 +545,7 @@ def fasta_alignment_from_vcf(vcf_file, ref, chrom=None, callback=None):
     print ('finding all sites')
     sites=[]
     for sample in samples:
-        #print (sample)
+        print (sample, end='\r')
         variant = FastaVariant(ref, vcf_file,
                                  sample=sample, het=True, hom=True)
         pos = list(variant[chrom].variant_sites)
@@ -508,7 +561,6 @@ def fasta_alignment_from_vcf(vcf_file, ref, chrom=None, callback=None):
     for p in sites:
         refseq.append(reference[chrom][p-1].seq)
     refseq = ''.join(refseq)
-    #print (refseq)
     refrec = SeqRecord(Seq(refseq),id='ref')
     result.append(refrec)
 
@@ -517,18 +569,12 @@ def fasta_alignment_from_vcf(vcf_file, ref, chrom=None, callback=None):
     #iterate over variants in each sample
     for sample in samples:
         print (sample)
-        seq=[]
-        variant = FastaVariant(ref, vcf_file,
-                               sample=sample, het=True, hom=True)
-        for p in sites:
-            rec = variant[chrom][p-1:p]
-            #print (p,rec)
-            seq.append(rec.seq)
-        seq = ''.join(seq)
-        #print (seq)
-        seqrec = SeqRecord(Seq(seq),id=sample)
+        if threads == 1:
+            seqrec = get_sites_sequences(vcf_file, ref, sample, chrom, sites)
+        else:
+            seqrec = get_sites_sequence_multiprocess(vcf_file, ref, sample, chrom, sites, threads)
         result.append(seqrec)
-        sites_matrix[sample] = list(seqrec)
+        sites_matrix[sample] = list(seqrec.seq)
 
     #smat is a dataframe matrix of the positions and genotype
     smat = pd.DataFrame(sites_matrix)
@@ -550,7 +596,7 @@ def samtools_flagstats(filename):
     for c,v in zip(cols,x):
         d[c] = v
     return d
-    
+
 def get_bam_depth(filename, how='mean'):
     """Get depth from bam file"""
 

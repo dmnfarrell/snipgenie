@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-    snpgenie methods for pipeline and cmd line tool.
+    snpgenie methods for cmd line tool.
     Created Nov 2019
     Copyright (C) Damien Farrell
 
@@ -57,7 +57,7 @@ if not os.path.exists(config_path):
     except:
         os.makedirs(config_path)
 
-defaults = {'threads':None, 'labelsep':'_','quality':25, 'filters': default_filter,
+defaults = {'threads':None, 'labelsep':'_','trim':False, 'quality':25, 'filters': default_filter,
             'reference': None, 'gff_file': None, 'overwrite':False, 'buildtree':False}
 
 def check_platform():
@@ -489,12 +489,13 @@ class WorkFlow(object):
             print ('no samples found')
             return
 
-        print ('trimming fastq files')
-        print ('--------------------')
-        trimmed_path = os.path.join(self.outdir, 'trimmed')
-        samples = trim_files(samples, trimmed_path, self.overwrite,
-                              quality=self.quality, threads=self.threads)
-        print ()
+        if self.trim == True:
+            print ('trimming fastq files')
+            print ('--------------------')
+            trimmed_path = os.path.join(self.outdir, 'trimmed')
+            samples = trim_files(samples, trimmed_path, self.overwrite,
+                                  quality=self.quality, threads=self.threads)
+            print ()
         print ('aligning files')
         print ('--------------')
         print ('Using reference genome: %s' %self.reference)
@@ -512,7 +513,7 @@ class WorkFlow(object):
         print ()
         print ('making SNP matrix')
         print ('-----------------')
-        snprecs, smat = tools.fasta_alignment_from_vcf(self.vcf_file, self.reference)
+        snprecs, smat = tools.fasta_alignment_from_vcf(self.vcf_file, self.reference, threads=self.threads)
         outfasta = os.path.join(self.outdir, 'core.fa')
         SeqIO.write(snprecs, outfasta, 'fasta')
         #write out sites matrix as txt file

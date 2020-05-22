@@ -30,7 +30,7 @@ import pandas as pd
 from gzip import open as gzopen
 
 home = os.path.expanduser("~")
-config_path = os.path.join(home,'.config','pathogenie')
+config_path = os.path.join(home,'.config','snpgenie')
 bin_path = os.path.join(config_path, 'binaries')
 
 def resource_path(relative_path):
@@ -497,6 +497,7 @@ def fasta_alignment_from_vcf(vcf_file):
 
     smat = pd.DataFrame(result)
     smat.index = sites
+    smat.index.rename('pos', inplace=True)
     return recs, smat
 
 def samtools_flagstats(filename):

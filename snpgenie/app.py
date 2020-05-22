@@ -49,7 +49,9 @@ mbovis_gff = os.path.join(datadir, 'Mbovis_csq_format.gff')
 mtb_gff = None
 #windows only path to binaries
 bin_path = os.path.join(config_path, 'binaries')
-default_filter = 'QUAL>=40 && INFO/DP>=30 && DP4>=4 && MQ>35'
+#this is a custom filter
+default_filter = 'QUAL>=40 && FORMAT/DP>=30 && DP4>=4 && MQ>35'
+annotatestr = '"AD,ADF,ADR,DP,SP,INFO/AD,INFO/ADF,INFO/ADR"'
 
 if not os.path.exists(config_path):
     try:
@@ -57,7 +59,8 @@ if not os.path.exists(config_path):
     except:
         os.makedirs(config_path)
 
-defaults = {'threads':None, 'labelsep':'_','trim':False, 'quality':25, 'filters': default_filter,
+defaults = {'threads':None, 'labelsep':'_','trim':False, 'quality':25,
+            'filters': default_filter, 'custom_filters': False,
             'reference': None, 'gff_file': None, 'overwrite':False, 'buildtree':False}
 
 def check_platform():
@@ -138,7 +141,7 @@ def check_samples_unique(samples):
         return False
 
 def results_summary(df):
-    return df.groupby('sample').first()[['name','bam_file','read_length','perc_mapped']].reset_index()
+    return df.groupby('sample').first()[['name','bam_file','read_length']].reset_index()
 
 def write_samples(df, path):
     filename = os.path.join(path, 'samples.txt')
@@ -181,9 +184,9 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
         #depth = tools.get_bam_depth(out)
         #samples.loc[index,'depth'] = depth
         #get mapping info and add to samples samples table
-        stat = tools.samtools_flagstats(out)
-        perc = stat['mapped']/stat['total']*100
-        samples.loc[index,'perc_mapped'] = perc
+        #stat = tools.samtools_flagstats(out)
+        #perc = stat['mapped']/stat['total']*100
+        #samples.loc[index,'perc_mapped'] = perc
         if callback != None:
             callback(out)
     return samples
@@ -279,7 +282,6 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
 
     regstr = ' '.join(regions)
     filesstr = ' '.join(outfiles)
-    annotatestr = '"AD,ADF,ADR,DP,SP,INFO/AD,INFO/ADF,INFO/ADR"'
     cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b  --min-MQ 60 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
             .format(r=ref, reg=regstr, b=bam_files, o=filesstr, a=annotatestr)
     print (cmd)
@@ -296,7 +298,8 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
     return rawbcf
 
 def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
-                    callback=None, overwrite=False, filters=None, gff_file=None, **kwargs):
+                    callback=None, overwrite=False, filters=None, gff_file=None,
+                    custom_filters=False, **kwargs):
     """Call variants with bcftools"""
 
     st = time.time()
@@ -307,7 +310,8 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     if not os.path.exists(rawbcf) or overwrite == True:
         if platform.system() == 'Windows' or threads == 1:
             bam_files = ' '.join(bam_files)
-            cmd = '{bc} mpileup -O b --min-MQ 60 -o {o} -f {r} {b}'.format(bc=bcftoolscmd,r=ref, b=bam_files, o=rawbcf)
+            cmd = '{bc} mpileup -a {a} -O b --min-MQ 60 -o {o} -f {r} {b}'\
+                .format(bc=bcftoolscmd,r=ref, b=bam_files, o=rawbcf, a=annotatestr)
             print (cmd)
             subprocess.check_output(cmd, shell=True)
         #if linux use mpileup in parallel to speed up
@@ -327,7 +331,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     if relabel == True:
         sample_file = os.path.join(outpath,'samples.txt')
         rlout = os.path.join(tempdir,'calls.vcf')
-        cmd = 'bcftools reheader --samples {s} -o {o} {v}'.format(o=rlout,v=vcfout,s=sample_file)
+        cmd = '{bc} reheader --samples {s} -o {o} {v}'.format(bc=bcftoolscmd,o=rlout,v=vcfout,s=sample_file)
         print(cmd)
         tmp = subprocess.check_output(cmd,shell=True)
         shutil.copy(rlout, vcfout)
@@ -339,6 +343,10 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     tmp = subprocess.check_output(cmd,shell=True)
     if callback != None:
         callback(cmd)
+
+    #custom filters
+    if custom_filters == True:
+        site_proximity_filter(final, outdir=outpath)
 
     #consequence calling
     if gff_file != None:
@@ -352,6 +360,37 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
         m.to_csv(os.path.join(outpath,'csq.matrix'))
     print ('took %s seconds' %str(round(time.time()-st,0)))
     return final
+
+def site_proximity_filter(vcf_file, dist=10, outdir=None):
+    """Remove any pairs of sites within dist of each other"""
+
+    import vcf
+    vcf_reader = vcf.Reader(open(vcf_file, 'rb'))
+    sites = [record.POS for record in vcf_reader]
+    #print (sites)
+    found = []
+    for i in range(len(sites)-1):
+        if sites[i+1] - sites[i] <= dist:
+            #print (sites[i], sites[i+1],'close')
+            found.extend([sites[i], sites[i+1]])
+    #print (found)
+    new = sorted(list(set(sites) - set(found)))
+    print ('proximity filter found %s/%s sites' %(len(new),len(sites)))
+    if outdir == None:
+        outdir = tempfile.gettempdir()
+    out = os.path.join(outdir,'temp.vcf')
+    vcf_reader = vcf.Reader(open(vcf_file, 'rb'))
+    vcf_writer = vcf.Writer(open(out, 'w'), vcf_reader)
+    for record in vcf_reader:
+        if record.POS in new:
+            #print (record)
+            vcf_writer.write_record(record)
+    vcf_writer.close()
+    #overwrite input vcf
+    bcftoolscmd = tools.get_cmd('bcftools')
+    cmd = 'bcftools view {o} -O z -o {gz}'.format(o=out,gz=vcf_file)
+    tmp = subprocess.check_output(cmd,shell=True)
+    return
 
 def create_bam_labels(filenames):
 
@@ -508,6 +547,7 @@ class WorkFlow(object):
         bam_files = list(samples.bam_file.unique())
         self.vcf_file = variant_calling(bam_files, self.reference, self.outdir, threads=self.threads,
                                         gff_file=self.gff_file, filters=self.filters,
+                                        custom_filters=self.custom_filters,
                                         overwrite=self.overwrite)
         print (self.vcf_file)
         print ()
@@ -577,6 +617,8 @@ def main():
                         help="trim quality" )
     parser.add_argument("-f", "--filters", dest="filters", default=default_filter,
                         help="variant calling post-filters" )
+    parser.add_argument("-c", "--custom", dest="custom_filters", action="store_true", default=False,
+                        help="apply custom filters" )
     parser.add_argument("-t", "--threads", dest="threads", default=None,
                         help="cpu threads to use")
     parser.add_argument("-b", "--buildtree", dest="buildtree", action="store_true", default=False,

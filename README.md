@@ -67,7 +67,6 @@ Run `snpgenie` for the cli or `snpgenie-gui` for the desktop version. You requir
 
 This will run the entire process based on a set of options given at the terminal::
 ```
--h, --help            show this help message and exit
 -i FILE, --input FILE
                       input folder(s)
 -e LABELSEP, --labelsep LABELSEP
@@ -81,6 +80,7 @@ This will run the entire process based on a set of options given at the terminal
                       trim quality
 -f FILTERS, --filters FILTERS
                       variant calling post-filters
+-c, --custom          apply custom filters
 -t THREADS, --threads THREADS
                       cpu threads to use
 -b, --buildtree       whether to try to build a phylogenetic tree
@@ -93,19 +93,25 @@ This will run the entire process based on a set of options given at the terminal
 ### Examples
 
 ```
+snpgenie -r reference.fa -i data_files -o results
+```
+
+Provide gff file:
+
+```
 snpgenie -r reference.fa -g reference.gff -i data_files -o results
 ```
 
 Provide more than one folder:
 
 ```
-snpgenie -r reference.fa -g reference.gff -i data_files1 -i data_files2 -o results
+snpgenie -r reference.fa -i data_files1 -i data_files2 -o results
 ```
 
 Add your own filters and provide threads:
 
 ```
-snpgenie -r reference.fa -g reference.gff -i data_files -t 8 -o results` \
+snpgenie -r reference.fa -i data_files -t 8 -o results` \
  -f 'QUAL>=40 && INFO/DP>=20 && MQ>40'
 ```
 

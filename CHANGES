@@ -2,6 +2,13 @@
 CHANGES
 =======
 
+0.2.0
+-----
+
+* GUI works for any ref genome
+* improved vcf to fasta sites method
+* added proximity filter
+
 0.1.0
 -----
 
@@ -9,9 +16,3 @@ CHANGES
 * CLI workflow works for general microbial genomes
 * GUI works for mbovis so far
 * functions working so far: trimming, alignment, variant calling, snp matrix, tree building
-
-
-0.2.0
------
-
-* GUI works for any ref genome

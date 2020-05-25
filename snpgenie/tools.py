@@ -85,22 +85,18 @@ def get_fasta_length(filename):
     return l
 
 def get_chrom(filename):
+    """Get chromosome name from fasta file"""
+
     rec = list(SeqIO.parse(filename, 'fasta'))[0]
     return rec.id
 
 def get_fastq_info(filename):
+    """Return fastq mean read length"""
 
     df = fastq_to_dataframe(filename)
     name = os.path.basename(filename).split('.')[0]
     rl = int(df.length.mean())
     return rl
-
-def align_info(bamfile):
-
-    cmd = 'samtools flagstat %s' %bamfile
-    temp=subprocess.check_output(cmd, shell=True)
-    print (temp)
-    return
 
 def clustal_alignment(filename=None, seqs=None, command="clustalw"):
     """Align 2 sequences with clustal"""
@@ -305,7 +301,7 @@ def gff_to_records(gff_file):
     return recs
 
 def features_summary(df):
-    """Seqfeatures dataframe summary"""
+    """SeqFeatures dataframe summary"""
 
     def hypo(val):
         val = val.lower()
@@ -375,6 +371,7 @@ def trim_reads(filename, outfile, adapter=None, quality=20,
     return
 
 def vcf_to_dataframe(vcf_file, quality=30):
+    """Convert vcf to dataframe"""
 
     import vcf
     ext = os.path.splitext(vcf_file)[1]
@@ -399,6 +396,7 @@ def vcf_to_dataframe(vcf_file, quality=30):
     return res
 
 def plot_fastq_qualities(filename, ax=None, limit=10000):
+    """Plot fastq qualities"""
 
     if not os.path.exists(filename):
         return
@@ -436,6 +434,8 @@ def plot_fastq_qualities(filename, ax=None, limit=10000):
     return
 
 def normpdf(x, mean, sd):
+    """Normal distribution function"""
+
     import math
     var = float(sd)**2
     denom = (2*math.pi*var)**.5
@@ -443,6 +443,7 @@ def normpdf(x, mean, sd):
     return num/denom
 
 def plot_fastq_gc_content(filename, ax=None, limit=50000):
+    """Plot fastq gc conent"""
 
     from Bio.SeqUtils import GC
     if ax==None:

@@ -50,7 +50,7 @@ mtb_gff = None
 #windows only path to binaries
 bin_path = os.path.join(config_path, 'binaries')
 #this is a custom filter
-default_filter = 'QUAL>=40 && FORMAT/DP>=30 && DP4>=4 && MQ>35'
+default_filter = 'QUAL>=40 && FORMAT/DP>=30 && DP4>=4 && MQ>30'
 annotatestr = '"AD,ADF,ADR,DP,SP,INFO/AD,INFO/ADF,INFO/ADR"'
 
 if not os.path.exists(config_path):
@@ -316,7 +316,6 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
             subprocess.check_output(cmd, shell=True)
         #if linux use mpileup in parallel to speed up
         else:
-            #rawbcf = mpileup_multiprocess(bam_files, ref, outpath, threads=threads, callback=callback)
             rawbcf = mpileup_gnuparallel(bam_files, ref, outpath, threads=threads, callback=callback)
 
     #find snps
@@ -351,7 +350,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     #consequence calling
     if gff_file != None:
         csqout = os.path.join(outpath, 'csq.tsv')
-        cmd = 'bcftools csq -f {r} -g {g} {f} -Ot -o {o}'.format(r=ref,g=gff_file,f=final,o=csqout)
+        cmd = '{bc} csq -f {r} -g {g} {f} -Ot -o {o}'.format(bc=bcftoolscmd,r=ref,g=gff_file,f=final,o=csqout)
         print (cmd)
         tmp = subprocess.check_output(cmd,shell=True)
         csqdf = read_csq_file(csqout)
@@ -614,7 +613,7 @@ def main():
     parser.add_argument("-m", "--trim", dest="trim", action="store_true", default=False,
                         help="whether to trim fastq files" )
     parser.add_argument("-q", "--quality", dest="quality", default=25,
-                        help="trim quality" )
+                        help="right trim quality, default 25")
     parser.add_argument("-f", "--filters", dest="filters", default=default_filter,
                         help="variant calling post-filters" )
     parser.add_argument("-c", "--custom", dest="custom_filters", action="store_true", default=False,

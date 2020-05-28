@@ -45,8 +45,8 @@ sequence_path = os.path.join(config_path, 'genome')
 annotation_path = os.path.join(config_path, 'annotation')
 mbovis_genome = os.path.join(sequence_path, 'Mbovis_AF212297.fa')
 mtb_genome = os.path.join(sequence_path, 'MTB-H37Rv.fa')
-mbovis_gff = os.path.join(datadir, 'Mbovis_csq_format.gff')
-mtb_gff = None
+mbovis_gb = os.path.join(datadir, 'Mbovis_AF212297.gb')
+mtb_gb = None
 #windows only path to binaries
 bin_path = os.path.join(config_path, 'binaries')
 #this is a custom filter
@@ -61,7 +61,7 @@ if not os.path.exists(config_path):
 
 defaults = {'threads':None, 'labelsep':'_','trim':False, 'quality':25,
             'filters': default_filter, 'custom_filters': False,
-            'reference': None, 'gff_file': None, 'overwrite':False, 'buildtree':False}
+            'reference': None, 'gb_file': None, 'overwrite':False, 'buildtree':False}
 
 def check_platform():
     """See if we are running in Windows"""
@@ -488,7 +488,7 @@ class WorkFlow(object):
 
         if self.reference == None:
             self.reference = mbovis_genome
-            self.gff_file = mbovis_gff
+            self.gb_file = mbovis_gb
         self.filenames = get_files_from_paths(self.input)
         if self.threads == None:
             import multiprocessing
@@ -512,6 +512,12 @@ class WorkFlow(object):
             return False
         print ('building index')
         aligners.build_bwa_index(self.reference)
+        if self.gb_file != None:
+            #convert annotation to gff for consequence calling
+            self.gff_file = os.path.join(self.outdir, self.gb_file+'.gff')
+            tools.gff_bcftools_format(self.gb_file, self.gff_file)
+        else:
+            self.gff_file = None
         time.sleep(1)
         return True
 
@@ -606,8 +612,8 @@ def main():
                         help="symbol to split the sample labels on")
     parser.add_argument("-r", "--reference", dest="reference", default=None,
                         help="reference genome filename", metavar="FILE")
-    parser.add_argument("-g", "--gff", dest="gff_file", default=None,
-                        help="reference gff, optional", metavar="FILE")
+    parser.add_argument("-g", "--genbank_file", dest="gb_file", default=None,
+                        help="annotation file, optional", metavar="FILE")
     parser.add_argument("-w", "--overwrite", dest="overwrite", action="store_true", default=False,
                         help="overwrite intermediate files")
     parser.add_argument("-m", "--trim", dest="trim", action="store_true", default=False,
@@ -627,7 +633,7 @@ def main():
     parser.add_argument("-v", "--version", dest="version", action="store_true",
                         help="Get version")
     parser.add_argument("-d", "--dummy", dest="dummy",  action="store_true",
-                        default=False, help="Setup samples but don't run")
+                        default=False, help="Check samples but don't run")
 
     args = vars(parser.parse_args())
     check_platform()

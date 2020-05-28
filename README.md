@@ -73,7 +73,8 @@ This will run the entire process based on a set of options given at the terminal
                       symbol to split the sample labels on
 -r FILE, --reference FILE
                       reference genome filename
--g FILE, --gff FILE   reference gff, optional
+-g FILE, --genbank_file FILE
+                        annotation file, optional
 -w, --overwrite       overwrite intermediate files
 -m, --trim            whether to trim fastq files
 -q QUALITY, --quality QUALITY
@@ -95,17 +96,16 @@ This will run the entire process based on a set of options given at the terminal
 ```
 snpgenie -r reference.fa -i data_files -o results
 ```
-
-Provide gff file:
-
-```
-snpgenie -r reference.fa -g reference.gff -i data_files -o results
-```
-
 Provide more than one folder:
 
 ```
 snpgenie -r reference.fa -i data_files1 -i data_files2 -o results
+```
+
+Provide an annotation (genbank format) for consequence calling:
+
+```
+snpgenie -r reference.fa -g reference.gb -i data_files -o results
 ```
 
 Add your own filters and provide threads:
@@ -117,7 +117,7 @@ snpgenie -r reference.fa -i data_files -t 8 -o results` \
 
 ## Inputs
 
-Folders are searched recursively for inputs with extensions `*.f*q.gz`. So be careful you don't have files in the folders you don't want included. So the following file structure will load both sets of files if you provide the parent folder as input.
+Folders are searched recursively for inputs with extensions `*.f*q.gz`. So be careful you don't have files in the folders you don't want included. The following file structure will load both sets of files if you provide the parent folder as input. You can also provide multiple separate folders using -i as shown above.
 
 ```
 data/
@@ -129,7 +129,7 @@ data/
     └── ERR1588785_2.fastq.gz
 ```
 
-Filenames are parsed and a sample name extracted for each pair (if paired end). This is simply done by splitting on the _ symbol. So a file called /path/13-11594_S85_L001-4_R1_001.fastq.gz will be given a sample name 13-11594. As long as the sample names are unique this is ok. If you had a file names like A_2_L001-4_R1_001,  A_3_L001-4_R1_001 you should split on '-' instead. You can specify this in the labelsep option.
+Filenames are parsed and a sample name is extracted for each pair (if paired end). This is simply done by splitting on the _ symbol. So a file called /path/13-11594_S85_L001-4_R1_001.fastq.gz will be given a sample name 13-11594. As long as the sample names are unique this is ok. If you had a file names like A_2_L001-4_R1_001, A_3_L001-4_R1_001 you should split on '-' instead. You can specify this in the labelsep option. The workflow won't run unless sample names are unique.
 
 ## Use from Python
 

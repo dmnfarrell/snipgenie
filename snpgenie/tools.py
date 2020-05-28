@@ -516,13 +516,28 @@ def samtools_flagstats(filename):
         d[c] = v
     return d
 
-def get_bam_depth(filename, how='mean'):
+def samtools_tview(bam_file, chrom, pos, width=200, ref='', display='T'):
+    """View bam alignment with samtools"""
+
+    cmd = 'COLUMNS={w} samtools tview {b} -p {c}:{p} -d {d} {r}'\
+            .format(b=bam_file,c=chrom,p=pos,d=display,r=ref,w=width)
+    #print (cmd)
+    tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
+    return tmp
+
+def samtools_depth(bam_file, chrom, start, end):
     """Get depth from bam file"""
 
-    cmd = 'samtools depth %s ' %filename
-    tmp=subprocess.check_output(cmd, shell=True)
+    cmd = 'samtools depth -r {c}:{s}-{e} {b}'.format(b=bam_file,c=chrom,s=start,e=end)
+    tmp=subprocess.check_output(cmd, shell=True, universal_newlines=True)
     from io import StringIO
-    c = pd.read_csv(StringIO(tmp.decode()),sep='\t',names=['chr','pos','depth'])
+    c = pd.read_csv(StringIO(tmp),sep='\t',names=['chr','pos','depth'])
+    return c
+
+def get_mean_depth(filename, chrom, start, end, how='mean'):
+    """Get mean depth from bam file"""
+
+    c = samtools_depth(bam_file, chrom, start, end)
     if how == 'mean':
         return c.depth.mean().round(2)
     else:

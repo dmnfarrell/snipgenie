@@ -374,8 +374,199 @@ class PlotViewer(QDialog):
         #self.ax = ax
         return
 
-class BamViewer(QDialog):
+class SimpleBamViewer(QDialog):
     """Sequence records features viewer using dna_features_viewer"""
+    def __init__(self, parent=None, filename=None):
+
+        super(SimpleBamViewer, self).__init__(parent)
+        #self.setWindowTitle('Bam File View')
+        self.setGeometry(QtCore.QRect(200, 200, 1000, 300))
+        self.setMinimumHeight(150)
+        self.fontsize = 8
+        self.add_widgets()
+        return
+
+    def add_widgets(self):
+        """Add widgets"""
+
+        l = QVBoxLayout(self)
+        self.setLayout(l)
+        val=0
+        navpanel = QWidget()
+        navpanel.setMaximumHeight(60)
+        l.addWidget(navpanel)
+        bl = QHBoxLayout(navpanel)
+        slider = QSlider(QtCore.Qt.Horizontal)
+        slider.setTickPosition(slider.TicksBothSides)
+        slider.setTickInterval(1000)
+        slider.setPageStep(200)
+        slider.setValue(1)
+        #slider.sliderReleased.connect(self.value_changed)
+        slider.valueChanged.connect(self.value_changed)
+        self.slider = slider
+        bl.addWidget(slider)
+
+        backbtn = QPushButton('<')
+        backbtn.setMaximumWidth(50)
+        bl.addWidget(backbtn)
+        backbtn.clicked.connect(self.prev_page)
+        nextbtn = QPushButton('>')
+        nextbtn.setMaximumWidth(50)
+        bl.addWidget(nextbtn)
+        nextbtn.clicked.connect(self.next_page)
+
+        zoomoutbtn = QPushButton('-')
+        zoomoutbtn.setMaximumWidth(50)
+        bl.addWidget(zoomoutbtn)
+        zoomoutbtn.clicked.connect(self.zoom_out)
+        zoominbtn = QPushButton('+')
+        zoominbtn.setMaximumWidth(50)
+        bl.addWidget(zoominbtn)
+        zoominbtn.clicked.connect(self.zoom_in)
+
+        self.geneselect = QComboBox()
+        self.geneselect.currentIndexChanged.connect(self.find_gene)
+        bl.addWidget(self.geneselect)
+
+        self.chromselect = QComboBox()
+        self.chromselect.currentIndexChanged.connect(self.update_chrom)
+        bl.addWidget(self.chromselect)
+        self.textview = QTextEdit(readOnly=True)
+        self.font = QFont("Monospace")
+        self.font.setPointSize(self.fontsize)
+        self.font.setStyleHint(QFont.TypeWriter)
+        self.textview.setFont(self.font)
+        #self.textview.setAutoFillBackground(True)
+        #self.textview.setStyleSheet("QTextEdit { background-color: rgb(0, 0, 0); }")
+        l.addWidget(self.textview)
+
+        bottom = QWidget()
+        bottom.setMaximumHeight(50)
+        l.addWidget(bottom)
+        bl2 = QHBoxLayout(bottom)
+        self.loclbl = QLabel('')
+        bl2.addWidget(self.loclbl)
+        return
+
+    def load_data(self, bam_file, ref_file, gb_file=None, vcf_file=None):
+        """Load reference seq and get contig/chrom names"""
+
+        self.ref_file = ref_file
+        self.bam_file = bam_file
+        self.gb_file = gb_file
+        chromnames = plotting.get_fasta_names(ref_file)
+        length = plotting.get_fasta_length(ref_file)
+        if self.gb_file != None:
+            df = tools.genbank_to_dataframe(gb_file)
+            df.loc[df["gene"].isnull(),'gene'] = df.locus_tag
+            genes = df.gene.unique()
+            self.annot = df
+            self.geneselect.addItems(genes)
+            self.geneselect.setStyleSheet("QComboBox { combobox-popup: 0; }");
+            self.geneselect.setMaxVisibleItems(10)
+        self.chrom = chromnames[0]
+        self.chromselect.addItems(chromnames)
+        self.chromselect.setStyleSheet("QComboBox { combobox-popup: 0; }");
+        self.chromselect.setMaxVisibleItems(10)
+        sl = self.slider
+        sl.setMinimum(1)
+        sl.setMaximum(length)
+        sl.setTickInterval(length/20)
+        return
+
+    def set_chrom(self, chrom):
+        """Set the selected record which also updates the plot"""
+
+        index = self.chromselect.findText(chrom)
+        self.chromselect.setCurrentIndex(index)
+        return
+
+    def update_chrom(self, chrom=None):
+        """Update after chromosome selection changed"""
+
+        recname = self.chromselect.currentText()
+        length = self.length = plotting.get_fasta_length(self.ref_file, key=chrom)
+        sl = self.slider
+        sl.setMinimum(1)
+        sl.setMaximum(length)
+        sl.setTickInterval(length/20)
+        self.redraw()
+        return
+
+    def find_gene(self):
+        """Go to selected gene if annotation present"""
+
+        gene = self.geneselect.currentText()
+        df = self.annot
+        df = df[df.gene==gene]
+        if len(df) == 0:
+            return
+        f = df.iloc[0]
+        self.redraw(f.start)
+        return
+
+    def value_changed(self):
+        """Callback for widgets"""
+
+        length = self.length
+        #r = self.view_range
+        start = int(self.slider.value())
+        self.redraw(start)
+        return
+
+    def redraw(self, xstart=1):
+        """Plot the features"""
+
+        h = 5
+        length = self.length
+        if xstart<0:
+            xstart=1
+        ref = self.ref_file
+        txt = tools.samtools_tview(self.bam_file, self.chrom, xstart, 500, ref, 'H')
+        self.textview.setText(txt)
+        self.loclbl.setText(str(xstart))
+        return
+
+    def prev_page(self):
+        """ """
+        start = int(self.slider.value())
+        start -= 500
+        if start<0:
+            return
+        self.redraw(start)
+        self.slider.setValue(start)
+        return
+
+    def next_page(self):
+        """ """
+        start = int(self.slider.value())
+        start += 500
+        self.redraw(start)
+        self.slider.setValue(start)
+        return
+
+    def zoom_in(self):
+        """Zoom in"""
+
+        self.fontsize = self.fontsize+1
+        self.font.setPointSize(self.fontsize)
+        self.textview.setFont(self.font)
+        self.redraw()
+        return
+
+    def zoom_out(self):
+        """Zoom out"""
+
+        if self.fontsize <= 2:
+            return
+        self.fontsize = self.fontsize-1
+        self.font.setPointSize(self.fontsize)
+        self.textview.setFont(self.font)
+        self.redraw()
+        return
+
+class GraphicalBamViewer(QDialog):
+    """Alignment viewer with pylab"""
     def __init__(self, parent=None, filename=None):
 
         super(BamViewer, self).__init__(parent)
@@ -438,12 +629,12 @@ class BamViewer(QDialog):
         bl2.addWidget(self.loclbl)
         return
 
-    def load_data(self, bam_file, ref_file, gff_file=None, vcf_file=None):
+    def load_data(self, bam_file, ref_file, gb_file=None, vcf_file=None):
         """Load reference seq and get contig/chrom names"""
 
         self.ref_file = ref_file
         self.bam_file = bam_file
-        self.gff_file = gff_file
+        self.gb_file = gb_file
         chromnames = plotting.get_fasta_names(ref_file)
         length = plotting.get_fasta_length(ref_file)
         self.chrom = chromnames[0]
@@ -534,9 +725,10 @@ class BamViewer(QDialog):
         cov = plotting.get_coverage(self.bam_file, self.chrom, xstart, xend)
         plotting.plot_coverage(cov,ax=self.ax1,xaxis=False)
         plotting.plot_bam_alignment(self.bam_file, self.chrom, xstart, xend, ax=self.ax2)
-        if self.gff_file != None:
-            recs = tools.gff_to_records(self.gff_file)
+        if self.gb_file != None:
+            recs = tools.gb_to_records(self.gb_file)
             plotting.plot_features(recs[0], self.ax3, xstart=xstart, xend=xend)
+
         self.canvas.draw()
         self.view_range = xend-xstart
         self.loclbl.setText(str(xstart)+'-'+str(xend))

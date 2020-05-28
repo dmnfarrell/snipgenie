@@ -81,12 +81,12 @@ class App(QMainWindow):
             refname=''
         else:
             refname = os.path.basename(self.ref_genome)
-        if self.ref_gff == None:
-            gffname=''
+        if self.ref_gb == None:
+            gbname = ''
         else:
-            gffname = os.path.basename(self.ref_gff)
+            gbname = os.path.basename(self.ref_gb)
         self.reflabel.setText(refname)
-        self.annotlabel.setText(gffname)
+        self.annotlabel.setText(gbname)
         return
 
     def setup_gui(self):
@@ -124,6 +124,7 @@ class App(QMainWindow):
 
         self.tabs = QTabWidget(center)
         self.tabs.setTabsClosable(True)
+        self.tabs.setMovable(True)
         self.tabs.tabCloseRequested.connect(self.close_tab)
         l.addWidget(self.tabs)
 
@@ -227,7 +228,8 @@ class App(QMainWindow):
         self.menuBar().addMenu(self.settings_menu)
         self.settings_menu.addAction('&Set Output Folder', self.set_output_folder)
         self.settings_menu.addAction('&Set Reference Sequence', self.set_reference)
-        self.settings_menu.addAction('&Set Annnotation (GFF)', self.set_gff)
+        self.settings_menu.addAction('&Set Annnotation (genbank)', self.set_annotation)
+        self.settings_menu.addAction('&Clean Up', self.clean_up)
 
         self.presets_menu = QMenu('&Load Preset', self)
         self.menuBar().addMenu(self.presets_menu)
@@ -246,11 +248,15 @@ class App(QMainWindow):
     def load_presets_menu(self):
         """Add preset genomes to menu"""
 
-        genomes = {'Mbovis AF212297':{'sequence':app.mbovis_genome, 'gff':app.mbovis_gff},
-                   'MTB H37Rv':{'sequence':app.mtb_genome, 'gff':app.mtb_gff}}
+        genomes = {'Mbovis AF212297':{'sequence':app.mbovis_genome, 'gb':app.mbovis_gb},
+                   'MTB H37Rv':{'sequence':app.mtb_genome, 'gb':app.mtb_gb}}
         for name in genomes:
             seqname = genomes[name]['sequence']
-            receiver = lambda seqname=seqname: self.set_reference(seqname)
+            gbfile = genomes[name]['gb']
+            def func(seqname,gbfile):
+                self.set_reference(seqname)
+                self.set_annotation(gbfile)
+            receiver = lambda seqname=seqname, gb=gbfile: func(seqname, gb)
             self.presets_menu.addAction('&%s' %name, receiver)
         return
 
@@ -263,7 +269,7 @@ class App(QMainWindow):
         filename = self.proj_file
         data={}
         data['inputs'] = self.fastq_table.getDataFrame()
-        keys = ['outputdir','results','ref_genome','ref_gff']
+        keys = ['outputdir','results','ref_genome','ref_gb']
         for k in keys:
             if hasattr(self, k):
                 data[k] = self.__dict__[k]
@@ -303,7 +309,7 @@ class App(QMainWindow):
         self.fastq_table.setDataFrame(pd.DataFrame({'name':[]}))
         self.tabs.clear()
         self.ref_genome = None
-        self.ref_gff = None
+        self.ref_gb = None
         self.projectlabel.setText('')
         self.outdirLabel.setText(self.outputdir)
         self.update_ref_genome()
@@ -314,7 +320,7 @@ class App(QMainWindow):
 
         self.new_project()
         data = pickle.load(open(filename,'rb'))
-        keys = ['sheets','outputdir','results','ref_genome','ref_gff']
+        keys = ['sheets','outputdir','results','ref_genome','ref_gb']
         for k in keys:
             if k in data:
                 self.__dict__[k] = data[k]
@@ -351,6 +357,11 @@ class App(QMainWindow):
             return
         #filenames = glob.glob(os.path.join(app.datadir, '*.fa'))
         self.load_fastq_table(filenames)
+        return
+
+    def clean_up(self):
+        """Clean up intermediate files"""
+
         return
 
     def load_fastq_table(self, filenames):
@@ -400,10 +411,13 @@ class App(QMainWindow):
         self.update_ref_genome()
         return
 
-    def set_gff(self):
+    def set_annotation(self, filename=None):
 
-        filename = self.add_file("GFF Files(*.gff *.gff3 *.gb)")
-        self.ref_gff = filename
+        if filename == None:
+            filename = self.add_file("Genbank Files(*.gb *.gbk *.gbff)")
+        self.ref_gb = filename
+        #put annotation in a dataframe
+        self.annot = tools.genbank_to_dataframe(self.ref_gb)
         self.update_ref_genome()
         return
 
@@ -422,27 +436,6 @@ class App(QMainWindow):
             shutil.copy(filename, dest)
             self.show_info('added %s' %filename)
         return filename
-
-    '''def update_ref_genomes(self):
-
-        path = app.sequence_path
-        files = []
-        for ext in ('*.fasta', '*.fa', '*.fna'):
-            files.extend(glob.glob(os.path.join(path,ext)))
-        labels = [os.path.basename(i) for i in files]
-        self.opts.widgets['refgenome'].clear()
-        self.opts.widgets['refgenome'].addItems(labels)
-        return
-
-    def update_annotations(self):
-        """Update widget for annotations"""
-
-        path = app.annotation_path
-        files = glob.glob(os.path.join(path,'*.gff*'))
-        labels = [os.path.basename(i) for i in files]
-        self.opts.widgets['annotation'].clear()
-        self.opts.widgets['annotation'].addItems(labels)
-        return'''
 
     def set_output_folder(self):
         """Set the output folder"""
@@ -529,17 +522,22 @@ class App(QMainWindow):
         self.running = True
         self.opts.applyOptions()
         kwds = self.opts.kwds
-        print (kwds)
+        #print (kwds)
         overwrite = kwds['overwrite']
         threads = int(kwds['threads'])
         filters = kwds['filters']
         df = self.fastq_table.model.df
+        path = self.outputdir
 
+        gff_file = os.path.join(path, self.ref_gb+'.gff')
+        tools.gff_bcftools_format(self.ref_gb, gff_file)
         #use trimmed files if present in table
         bam_files = list(df.bam_file.unique())
-        path = self.outputdir
-        self.results['vcf_file'] = app.variant_calling(bam_files, self.ref_genome, path, threads=threads,
+
+        self.results['vcf_file'] = app.variant_calling(bam_files, self.ref_genome, path,
+                                    threads=threads,
                                     overwrite=overwrite, filters=filters,
+                                    gff_file=gff_file,
                                     callback=progress_callback.emit)
         csqmat = self.results['csq_matrix'] = os.path.join(self.outputdir, 'csq.matrix')
         return
@@ -617,10 +615,8 @@ class App(QMainWindow):
     def show_ref_annotation(self):
         """Show annotation in table"""
 
-        gff_file = self.ref_gff
-        recs = tools.gff_to_rec(gff_file)
-        print(recs)
-        df = tools.records_to_dataframe(recs)
+        gb_file = self.ref_gb
+        df = tools.genbank_to_dataframe(gb_file)
         t = tables.DataFrameTable(self.tabs, dataframe=df)
         i = self.tabs.addTab(t, 'ref_annotation')
         self.tabs.setCurrentIndex(i)
@@ -658,9 +654,10 @@ class App(QMainWindow):
         name = 'aln:'+data['name']
         if name in self.get_tab_names():
             return
-        w = widgets.BamViewer(self)
-        w.load_data(data.bam_file, self.ref_genome, self.ref_gff)
-        w.redraw(xstart=1, xend=2000)
+        #text view using samtools tview
+        w = widgets.SimpleBamViewer(self)
+        w.load_data(data.bam_file, self.ref_genome, self.ref_gb)
+        w.redraw(xstart=1)
         i = self.tabs.addTab(w, name )
         self.tabs.setCurrentIndex(i)
         return

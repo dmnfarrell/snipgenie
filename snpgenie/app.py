@@ -46,7 +46,7 @@ annotation_path = os.path.join(config_path, 'annotation')
 mbovis_genome = os.path.join(sequence_path, 'Mbovis_AF212297.fa')
 mtb_genome = os.path.join(sequence_path, 'MTB-H37Rv.fa')
 mbovis_gb = os.path.join(datadir, 'Mbovis_AF212297.gb')
-mtb_gb = None
+mtb_gb = os.path.join(datadir, 'MTB-H37Rv.gb')
 #windows only path to binaries
 bin_path = os.path.join(config_path, 'binaries')
 #this is a custom filter
@@ -131,6 +131,7 @@ def get_samples(filenames, sep='-'):
     df = df.sort_values(['name','sample']).reset_index(drop=True)
     df['pair'] = df.groupby('sample').cumcount()+1
     #df = df.sort_values(['name','sample','pair']).reset_index(drop=True)
+    df = df.drop_duplicates('filename')
     return df
 
 def check_samples_unique(samples):

@@ -191,12 +191,14 @@ class App(QMainWindow):
         self.file_menu = QMenu('&File', self)
         #self.file_menu.addAction('&New', self.newProject,
         #        QtCore.Qt.CTRL + QtCore.Qt.Key_N)
-        self.file_menu.addAction('&Add Fastq Files', self.load_fastq_files_dialog,
+        self.file_menu.addAction('&Add Folder', self.load_fastq_folder_dialog,
                 QtCore.Qt.CTRL + QtCore.Qt.Key_F)
+        self.file_menu.addAction('&Add Fastq Files', self.load_fastq_files_dialog,
+                QtCore.Qt.CTRL + QtCore.Qt.Key_A)
         #self.file_menu.addAction('&Load Test Files', self.load_test,
         #        QtCore.Qt.CTRL + QtCore.Qt.Key_T)
         self.menuBar().addSeparator()
-        self.file_menu.addAction('&New Project', self.new_project,
+        self.file_menu.addAction('&New Project', lambda: self.new_project(ask=True),
                 QtCore.Qt.CTRL + QtCore.Qt.Key_N)
         self.file_menu.addAction('&Open Project', self.load_project_dialog,
                 QtCore.Qt.CTRL + QtCore.Qt.Key_O)
@@ -215,7 +217,7 @@ class App(QMainWindow):
         self.analysis_menu.addAction('&Trim Reads',
             lambda: self.run_threaded_process(self.run_trimming, self.processing_completed))
         self.analysis_menu.addAction('&Align Reads',
-            lambda: self.run_threaded_process(self.align_files, self.processing_completed))
+            lambda: self.run_threaded_process(self.align_files, self.alignment_completed))
         self.analysis_menu.addAction('&Call Variants',
             lambda: self.run_threaded_process(self.variant_calling, self.processing_completed))
         self.analysis_menu.addAction('&Create SNP alignment',
@@ -229,7 +231,7 @@ class App(QMainWindow):
         self.settings_menu.addAction('&Set Output Folder', self.set_output_folder)
         self.settings_menu.addAction('&Set Reference Sequence', self.set_reference)
         self.settings_menu.addAction('&Set Annnotation (genbank)', self.set_annotation)
-        self.settings_menu.addAction('&Clean Up', self.clean_up)
+        self.settings_menu.addAction('&Clean Up Files', self.clean_up)
 
         self.presets_menu = QMenu('&Load Preset', self)
         self.menuBar().addMenu(self.presets_menu)
@@ -237,6 +239,7 @@ class App(QMainWindow):
 
         self.tools_menu = QMenu('&Tools', self)
         self.menuBar().addMenu(self.tools_menu)
+        self.tools_menu.addAction('&Fastq Qualities Report', self.fastq_quality_report)
         self.tools_menu.addAction('&RD Analysis (MTBC)',
             lambda: self.run_threaded_process(self.rd_analysis, self.rd_analysis_completed))
 
@@ -283,11 +286,11 @@ class App(QMainWindow):
 
         options = QFileDialog.Options()
         filename, _ = QFileDialog.getSaveFileName(self,"Save Project",
-                                                  "","Project files (*.proj);;All files (*.*)",
+                                                  "","Project files (*.snpg);;All files (*.*)",
                                                   options=options)
         if filename:
-            if not os.path.splitext(filename)[1] == '.proj':
-                filename += '.proj'
+            if not os.path.splitext(filename)[1] == '.snpg':
+                filename += '.snpg'
             self.proj_file = filename
             self.save_project()
         return
@@ -341,7 +344,7 @@ class App(QMainWindow):
         """Load project"""
 
         filename, _ = QFileDialog.getOpenFileName(self, 'Open Project', './',
-                                        filter="Project Files(*.proj);;All Files(*.*)")
+                                        filter="Project Files(*.snpg);;All Files(*.*)")
         if not filename:
             return
         if not os.path.exists(filename):
@@ -359,9 +362,32 @@ class App(QMainWindow):
         self.load_fastq_table(filenames)
         return
 
+    def check_missing_files(self):
+        """Check folders for missing files"""
+
+        folders = ['mapped','trimmed']
+        #for f in folders:
+
+        return
+
     def clean_up(self):
         """Clean up intermediate files"""
 
+        msg = 'This will remove all intermediate files in the output folder. Proceed?'
+        reply = QMessageBox.question(self, 'Warning!', msg,
+                                        QMessageBox.No | QMessageBox.Yes )
+        if reply == QMessageBox.No:
+            return
+
+        folders = ['mapped','trimmed']
+        for l in folders:
+            files = glob.glob(os.path.join(self.outputdir, l, '*'))
+            print (files)
+            for f in files:
+                os.remove(f)
+        bcf = os.path.join(self.outputdir, 'raw.bcf')
+        if os.path.exists(bcf):
+             os.remove(bcf)
         return
 
     def load_fastq_table(self, filenames):
@@ -371,21 +397,29 @@ class App(QMainWindow):
             return
 
         df = self.fastq_table.model.df
-
         new = app.get_samples(filenames)
         new['read_length'] = new.filename.apply(tools.get_fastq_info)
-        #print (new)
 
         if len(df)>0:
             new = pd.concat([df,new],sort=False).reset_index(drop=True)
+            new = new.drop_duplicates('filename')
         self.fastq_table.setDataFrame(new)
         self.fastq_table.resizeColumns()
         return
 
-    def load_fastq_files_dialog(self):
-        """Load fasta files"""
+    def load_fastq_folder_dialog(self):
+        """Load fastq folder"""
 
-        options = QFileDialog.Options()
+        path = QFileDialog.getExistingDirectory(self, 'Add Input Folder', './')
+        if not path:
+            return
+        filenames = app.get_files_from_paths(path)
+        self.load_fastq_table(filenames)
+        return
+
+    def load_fastq_files_dialog(self):
+        """Load fastq files"""
+
         filenames, _ = QFileDialog.getOpenFileNames(self, 'Open File', './',
                                                     filter="Fastq Files(*.fq *.fastq *.fq.gz *.fastq.gz);;All Files(*.*)")
         if not filenames:
@@ -493,6 +527,9 @@ class App(QMainWindow):
         retval = self.check_output_folder()
         if retval == 0:
             return
+        if self.ref_genome == None:
+            self.show_info('no reference genome!')
+            return
         self.running = True
         self.opts.applyOptions()
         kwds = self.opts.kwds
@@ -578,6 +615,14 @@ class App(QMainWindow):
         return
 
     def processing_completed(self):
+        """Generic process completed"""
+
+        self.info.append("finished")
+        self.progressbar.setRange(0,1)
+        self.running = False
+        return
+
+    def alignment_completed(self):
         """Alignment/calling completed"""
 
         self.info.append("finished")
@@ -623,7 +668,7 @@ class App(QMainWindow):
         return
 
     def quality_summary(self, row):
-        """Summary of features"""
+        """Summary of a single fastq file"""
 
         df = self.fastq_table.model.df
         row = self.fastq_table.getSelectedRows()[0]
@@ -660,6 +705,26 @@ class App(QMainWindow):
         w.redraw(xstart=1)
         i = self.tabs.addTab(w, name )
         self.tabs.setCurrentIndex(i)
+        return
+
+    def fastq_quality_report(self):
+        """Make fastq quality report as pdf"""
+
+        if self.running == True:
+            print ('another process running')
+            return
+        self.running == True
+        df = self.fastq_table.model.df
+        out = os.path.join(self.outputdir,'qc_report.pdf')
+        if not os.path.exists(out):
+            def func(progress_callback):
+                tools.pdf_reports(df.filename, out)
+                import webbrowser
+                webbrowser.open_new(out)
+            self.run_threaded_process(func, self.processing_completed)
+        else:
+                import webbrowser
+                webbrowser.open_new(out)
         return
 
     def rd_analysis(self, progress_callback):
@@ -855,7 +920,7 @@ def main():
     parser.add_argument("-f", "--fasta", dest="filenames",default=[],
                         help="input fasta file", metavar="FILE")
     parser.add_argument("-p", "--proj", dest="project",default=None,
-                        help="load .proj project file", metavar="FILE")
+                        help="load .snpg project file", metavar="FILE")
     args = vars(parser.parse_args())
 
     app = QApplication(sys.argv)

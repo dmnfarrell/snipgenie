@@ -27,6 +27,7 @@ from Bio import SeqIO
 from Bio import Phylo, AlignIO
 import numpy as np
 import pandas as pd
+import pylab as plt
 from gzip import open as gzopen
 
 home = os.path.expanduser("~")
@@ -401,6 +402,7 @@ def plot_fastq_qualities(filename, ax=None, limit=10000):
     if not os.path.exists(filename):
         return
     import matplotlib.patches as patches
+    import pylab as plt
     fastq_parser = SeqIO.parse(gzopen(filename, "rt"), "fastq")
     res=[]
     c=0
@@ -411,6 +413,8 @@ def plot_fastq_qualities(filename, ax=None, limit=10000):
         if c>limit:
             break
     df = pd.DataFrame(res)
+    n = int(len(df.columns)/50)
+    df = df[df.columns[::n]]
     l = len(df.T)+1
 
     if ax==None:
@@ -425,8 +429,10 @@ def plot_fastq_qualities(filename, ax=None, limit=10000):
     boxprops = dict(linestyle='-', linewidth=1, color='black')
     df.plot(kind='box', ax=ax, grid=False, showfliers=False,
             color=dict(boxes='black',whiskers='black')  )
-    ax.set_xticks(np.arange(0, l, 5))
-    ax.set_xticklabels(np.arange(0, l, 5))
+    n = int(l/10)
+    ax.set_xticks(np.arange(0, l, n))
+    ax.set_xticklabels(np.arange(0, l, n))
+
     ax.set_xlabel('position(bp)')
     ax.set_xlim((0,l))
     ax.set_ylim((0,40))
@@ -460,6 +466,29 @@ def plot_fastq_gc_content(filename, ax=None, limit=50000):
     ax.set_title('GC content',size=15)
     return
 
+def fastq_quality_report(filename, figsize=(7,5), **kwargs):
+    """Fastq quality plots"""
+
+    fig,ax = plt.subplots(2,1, figsize=figsize, dpi=100, facecolor=(1,1,1), edgecolor=(0,0,0))
+    axs = ax.flat
+    plot_fastq_qualities(filename, ax=axs[0], **kwargs)
+    plot_fastq_gc_content(filename, ax=axs[1])
+    plt.tight_layout()
+    return fig
+
+def pdf_reports(filenames, outfile='qc_report.pdf'):
+    """Save pdf reports of fasqt file quality info"""
+
+    from matplotlib.backends.backend_pdf import PdfPages
+    with PdfPages(outfile) as pdf:
+        for f in filenames:
+            print (f)
+            fig = fastq_quality_report(f)
+            fig.subplots_adjust(top=.9)
+            fig.suptitle(f)
+            pdf.savefig(fig)
+            plt.clf()
+
 def concat_seqrecords(recs):
     """Join seqrecords together"""
     concated = Seq("")
@@ -467,7 +496,7 @@ def concat_seqrecords(recs):
         concated += r.seq
     return SeqRecord(concated, id=recs[0].id)
 
-def fasta_alignment_from_vcf(vcf_file):
+def fasta_alignment_from_vcf(vcf_file, callback=None):
     """Get snp site alt bases as sequences from all samples in a vcf file"""
 
     import vcf
@@ -519,8 +548,9 @@ def samtools_flagstats(filename):
 def samtools_tview(bam_file, chrom, pos, width=200, ref='', display='T'):
     """View bam alignment with samtools"""
 
-    cmd = 'COLUMNS={w} samtools tview {b} -p {c}:{p} -d {d} {r}'\
-            .format(b=bam_file,c=chrom,p=pos,d=display,r=ref,w=width)
+    samtoolscmd = get_cmd('samtools')
+    cmd = 'COLUMNS={w} {sc} tview {b} -p {c}:{p} -d {d} {r}'\
+            .format(b=bam_file,c=chrom,p=pos,d=display,r=ref,w=width,sc=samtoolscmd)
     #print (cmd)
     tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
     return tmp
@@ -528,7 +558,8 @@ def samtools_tview(bam_file, chrom, pos, width=200, ref='', display='T'):
 def samtools_depth(bam_file, chrom, start, end):
     """Get depth from bam file"""
 
-    cmd = 'samtools depth -r {c}:{s}-{e} {b}'.format(b=bam_file,c=chrom,s=start,e=end)
+    samtoolscmd = get_cmd('samtools')
+    cmd = '{sc} depth -r {c}:{s}-{e} {b}'.format(b=bam_file,c=chrom,s=start,e=end,sc=samtoolscmd)
     tmp=subprocess.check_output(cmd, shell=True, universal_newlines=True)
     from io import StringIO
     c = pd.read_csv(StringIO(tmp),sep='\t',names=['chr','pos','depth'])

@@ -5,9 +5,15 @@ CHANGES
 0.2.0
 -----
 
-* GUI works for any ref genome
 * improved vcf to fasta sites method
+* renamed to snpgenie
+* use genbank as annotation file
 * added proximity filter
+* GUI works for any ref genome
+* text bam alignment viewer
+* add folders in gui
+* clean up files option
+* fastq quality report
 
 0.1.0
 -----

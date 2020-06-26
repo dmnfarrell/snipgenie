@@ -27,7 +27,7 @@ from Bio import SeqIO
 from Bio import Phylo, AlignIO
 import numpy as np
 import pandas as pd
-import pylab as plt
+#import pylab as plt
 from gzip import open as gzopen
 
 home = os.path.expanduser("~")

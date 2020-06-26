@@ -27,7 +27,7 @@ from Bio import SeqIO
 from Bio import Phylo, AlignIO
 import numpy as np
 import pandas as pd
-sys.path.append('ete')
+#sys.path.append('ete')
 
 def set_tiplabels(t, labelmap):
     for l in t.iter_leaves():

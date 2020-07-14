@@ -60,7 +60,7 @@ if not os.path.exists(config_path):
         os.makedirs(config_path)
 
 defaults = {'threads':None, 'labelsep':'_','trim':False, 'quality':25,
-            'filters': default_filter, 'custom_filters': False,
+            'filters': default_filter, 'custom_filters': False, 'mask':None,
             'reference': None, 'gb_file': None, 'overwrite':False, 'buildtree':False}
 
 def check_platform():
@@ -300,6 +300,7 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
 
 def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
                     callback=None, overwrite=False, filters=None, gff_file=None,
+                    mask=None,
                     custom_filters=False, **kwargs):
     """Call variants with bcftools"""
 
@@ -344,6 +345,10 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     if callback != None:
         callback(cmd)
 
+    #apply mask if required
+    if mask != None:
+        mask_filter(final, mask)
+
     #custom filters
     if custom_filters == True:
         site_proximity_filter(final, outdir=outpath)
@@ -360,6 +365,44 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
         m.to_csv(os.path.join(outpath,'csq.matrix'))
     print ('took %s seconds' %str(round(time.time()-st,0)))
     return final
+
+def mask_filter(vcf_file, mask_file):
+    """Remove any masked sites using a bed file, overwrites input"""
+
+    print('using mask bed file', mask_file)
+    mask = pd.read_csv(mask_file,sep='\t',names=['chrom','start','end'])
+    #print (mask)
+    def do_mask(x,i):
+        #print (x.start, x.end, i)
+        if (x.start<=i) & (x.end>=i):
+            return 1
+    import vcf
+    vcf_reader = vcf.Reader(open(vcf_file, 'rb'))
+    sites = [record.POS for record in vcf_reader]
+    found = []
+    for i in sites:
+        m = mask.apply( lambda x: do_mask(x,i),1)
+        m = m[m==1]
+        if len(m)>0:
+            #print (i)
+            found.append(i)
+    print('found %s sites in masked regions' %len(found))
+    new = sorted(list(set(sites) - set(found)))
+
+    tempdir = tempfile.gettempdir()
+    out = os.path.join(tempdir,'temp.vcf')
+    vcf_reader = vcf.Reader(open(vcf_file, 'rb'))
+    vcf_writer = vcf.Writer(open(out, 'w'), vcf_reader)
+    for record in vcf_reader:
+        if record.POS in new:
+            #print (record)
+            vcf_writer.write_record(record)
+    vcf_writer.close()
+    #overwrite input vcf
+    bcftoolscmd = tools.get_cmd('bcftools')
+    cmd = 'bcftools view {o} -O z -o {gz}'.format(o=out,gz=vcf_file)
+    tmp = subprocess.check_output(cmd,shell=True)
+    return
 
 def site_proximity_filter(vcf_file, dist=10, outdir=None):
     """Remove any pairs of sites within dist of each other"""
@@ -553,6 +596,7 @@ class WorkFlow(object):
         bam_files = list(samples.bam_file.unique())
         self.vcf_file = variant_calling(bam_files, self.reference, self.outdir, threads=self.threads,
                                         gff_file=self.gff_file, filters=self.filters,
+                                        mask=self.mask,
                                         custom_filters=self.custom_filters,
                                         overwrite=self.overwrite)
         print (self.vcf_file)
@@ -617,15 +661,17 @@ def main():
                         help="annotation file, optional", metavar="FILE")
     parser.add_argument("-w", "--overwrite", dest="overwrite", action="store_true", default=False,
                         help="overwrite intermediate files")
-    parser.add_argument("-m", "--trim", dest="trim", action="store_true", default=False,
+    parser.add_argument("-t", "--trim", dest="trim", action="store_true", default=False,
                         help="whether to trim fastq files" )
     parser.add_argument("-q", "--quality", dest="quality", default=25,
                         help="right trim quality, default 25")
     parser.add_argument("-f", "--filters", dest="filters", default=default_filter,
                         help="variant calling post-filters" )
+    parser.add_argument("-m", "--mask", dest="mask", default=None,
+                        help="mask regions with bed file" )
     parser.add_argument("-c", "--custom", dest="custom_filters", action="store_true", default=False,
                         help="apply custom filters" )
-    parser.add_argument("-t", "--threads", dest="threads", default=None,
+    parser.add_argument("-T", "--threads", dest="threads", default=None,
                         help="cpu threads to use")
     parser.add_argument("-b", "--buildtree", dest="buildtree", action="store_true", default=False,
                         help="whether to try to build a phylogenetic tree" )

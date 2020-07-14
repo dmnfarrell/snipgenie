@@ -67,6 +67,7 @@ Run `snpgenie` for the cli or `snpgenie-gui` for the desktop version. You requir
 
 This will run the entire process based on a set of options given at the terminal::
 ```
+-h, --help            show this help message and exit
 -i FILE, --input FILE
                       input folder(s)
 -e LABELSEP, --labelsep LABELSEP
@@ -74,21 +75,22 @@ This will run the entire process based on a set of options given at the terminal
 -r FILE, --reference FILE
                       reference genome filename
 -g FILE, --genbank_file FILE
-                        annotation file, optional
+                      annotation file, optional
 -w, --overwrite       overwrite intermediate files
--m, --trim            whether to trim fastq files
+-t, --trim            whether to trim fastq files
 -q QUALITY, --quality QUALITY
-                      trim quality
+                      right trim quality, default 25
 -f FILTERS, --filters FILTERS
                       variant calling post-filters
+-m MASK, --mask MASK  mask regions with bed file
 -c, --custom          apply custom filters
--t THREADS, --threads THREADS
+-T THREADS, --threads THREADS
                       cpu threads to use
 -b, --buildtree       whether to try to build a phylogenetic tree
 -o FILE, --outdir FILE
                       Results folder
 -v, --version         Get version
--d, --dummy           Setup samples but don't run
+-d, --dummy           Check samples but don't run
 ```
 
 ### Examples
@@ -113,6 +115,17 @@ Add your own filters and provide threads:
 ```
 snpgenie -r reference.fa -i data_files -t 8 -o results` \
  -f 'QUAL>=40 && INFO/DP>=20 && MQ>40'
+```
+
+### Mask file
+
+You can selectively mask snp sites such as those contained in repetitive regions from being included in the output. You need to provide a bed file with the following columns: chromosome name, start and end coordinates of the regions.
+
+```
+LT708304.1 	 105359 	 106751
+LT708304.1 	 131419 	 132910
+LT708304.1 	 149570 	 151187
+LT708304.1 	 306201 	 307872
 ```
 
 ## Inputs

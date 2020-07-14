@@ -497,7 +497,7 @@ def concat_seqrecords(recs):
     return SeqRecord(concated, id=recs[0].id)
 
 def fasta_alignment_from_vcf(vcf_file, callback=None):
-    """Get snp site alt bases as sequences from all samples in a vcf file"""
+    """Get core snp site calls as sequences from all samples in a vcf file"""
 
     import vcf
     from collections import defaultdict
@@ -507,16 +507,18 @@ def fasta_alignment_from_vcf(vcf_file, callback=None):
         return []
     result = defaultdict(default)
     sites = []
+    result['ref'] = []
     for record in vcf_reader:
-        ref = record.REF
+        S = {sample.sample: sample.gt_bases for sample in record.samples}
+        #if any missing samples at the site we don't add
+        if None in S.values():
+            continue
         result['ref'].append(record.REF)
+        for name in S:
+            result[name].append(S[name])
         sites.append(record.POS)
-        for sample in record.samples:
-            name = sample.sample
-            if sample.gt_bases != None:
-                result[name].append(sample.gt_bases)
-            else:
-                result[name].append(record.REF)
+
+    #print (result)
     print ('found %s sites' %len(sites))
     recs = []
     for sample in result:

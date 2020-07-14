@@ -6,6 +6,7 @@ CHANGES
 -----
 
 * can mask sites with bed file
+* fix to use only core snps
 
 0.2.0
 -----

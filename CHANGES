@@ -7,6 +7,8 @@ CHANGES
 
 * can mask sites with bed file
 * fix to use only core snps
+* can remove uninformative sites from core
+* can create qc report from cmd line
 
 0.2.0
 -----

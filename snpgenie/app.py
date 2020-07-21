@@ -663,7 +663,7 @@ def main():
                         help="overwrite intermediate files")
     parser.add_argument("-t", "--trim", dest="trim", action="store_true", default=False,
                         help="whether to trim fastq files" )
-    parser.add_argument("-q", "--quality", dest="quality", default=25,
+    parser.add_argument("-Q", "--quality", dest="quality", default=25,
                         help="right trim quality, default 25")
     parser.add_argument("-f", "--filters", dest="filters", default=default_filter,
                         help="variant calling post-filters" )
@@ -677,6 +677,8 @@ def main():
                         help="whether to try to build a phylogenetic tree" )
     parser.add_argument("-o", "--outdir", dest="outdir",
                         help="Results folder", metavar="FILE")
+    parser.add_argument("-q", "--qc", dest="qc", action="store_true",
+                        help="Get version")
     parser.add_argument("-v", "--version", dest="version", action="store_true",
                         help="Get version")
     parser.add_argument("-d", "--dummy", dest="dummy",  action="store_true",
@@ -692,6 +694,11 @@ def main():
         from . import __version__
         print ('snpgenie version %s' %__version__)
         print ('https://github.com/dmnfarrell/snpgenie')
+    elif args['qc'] == True:
+        print ('Running qc report')
+        qcfile = 'qc_report.pdf'
+        filenames = get_files_from_paths(args['input'])
+        tools.pdf_qc_reports(filenames, qcfile)
     elif args['outdir'] == None:
         print ('No input or output folders provided. These are required.')
         print ('Example:')

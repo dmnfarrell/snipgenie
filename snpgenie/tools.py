@@ -469,6 +469,7 @@ def plot_fastq_gc_content(filename, ax=None, limit=50000):
 def fastq_quality_report(filename, figsize=(7,5), **kwargs):
     """Fastq quality plots"""
 
+    import pylab as plt
     fig,ax = plt.subplots(2,1, figsize=figsize, dpi=100, facecolor=(1,1,1), edgecolor=(0,0,0))
     axs = ax.flat
     plot_fastq_qualities(filename, ax=axs[0], **kwargs)
@@ -476,9 +477,10 @@ def fastq_quality_report(filename, figsize=(7,5), **kwargs):
     plt.tight_layout()
     return fig
 
-def pdf_reports(filenames, outfile='qc_report.pdf'):
-    """Save pdf reports of fasqt file quality info"""
+def pdf_qc_reports(filenames, outfile='qc_report.pdf'):
+    """Save pdf reports of fastq file quality info"""
 
+    import pylab as plt
     from matplotlib.backends.backend_pdf import PdfPages
     with PdfPages(outfile) as pdf:
         for f in filenames:
@@ -496,7 +498,7 @@ def concat_seqrecords(recs):
         concated += r.seq
     return SeqRecord(concated, id=recs[0].id)
 
-def fasta_alignment_from_vcf(vcf_file, callback=None):
+def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False):
     """Get core snp site calls as sequences from all samples in a vcf file"""
 
     import vcf
@@ -512,7 +514,12 @@ def fasta_alignment_from_vcf(vcf_file, callback=None):
         S = {sample.sample: sample.gt_bases for sample in record.samples}
         #if any missing samples at the site we don't add
         if None in S.values():
+            #print (S)
             continue
+        if uninformative == False:
+            u = set(S.values())
+            if len(u) == 1:
+                continue
         result['ref'].append(record.REF)
         for name in S:
             result[name].append(S[name])

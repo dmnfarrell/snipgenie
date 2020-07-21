@@ -286,11 +286,11 @@ class App(QMainWindow):
 
         options = QFileDialog.Options()
         filename, _ = QFileDialog.getSaveFileName(self,"Save Project",
-                                                  "","Project files (*.snpg);;All files (*.*)",
+                                                  "","Project files (*.snpgenie);;All files (*.*)",
                                                   options=options)
         if filename:
-            if not os.path.splitext(filename)[1] == '.snpg':
-                filename += '.snpg'
+            if not os.path.splitext(filename)[1] == '.snpgenie':
+                filename += '.snpgenie'
             self.proj_file = filename
             self.save_project()
         return
@@ -344,7 +344,7 @@ class App(QMainWindow):
         """Load project"""
 
         filename, _ = QFileDialog.getOpenFileName(self, 'Open Project', './',
-                                        filter="Project Files(*.snpg);;All Files(*.*)")
+                                        filter="Project Files(*.snpgenie);;All Files(*.*)")
         if not filename:
             return
         if not os.path.exists(filename):
@@ -718,7 +718,7 @@ class App(QMainWindow):
         out = os.path.join(self.outputdir,'qc_report.pdf')
         if not os.path.exists(out):
             def func(progress_callback):
-                tools.pdf_reports(df.filename, out)
+                tools.pdf_qc_reports(df.filename, out)
                 import webbrowser
                 webbrowser.open_new(out)
             self.run_threaded_process(func, self.processing_completed)
@@ -750,9 +750,9 @@ class App(QMainWindow):
         res = self.rd_result
         from . import rdiff
         X = rdiff.get_matrix(res, cutoff=0.15)
-        X['ident'] = X.apply(rdiff.apply_rules,1)
+        X['species'] = X.apply(rdiff.apply_rules,1)
         fig,ax = plt.subplots(1,1)
-        plotting.plot_matrix(X.set_index('ident',append=True), cmap='cubehelix',ax=ax)
+        plotting.plot_matrix(X.set_index('species',append=True), cmap='cubehelix',ax=ax)
 
         table = tables.DefaultTable(self.tabs, app=self, dataframe=res)
         self.tabs.addTab(table, 'RD analysis')
@@ -920,7 +920,7 @@ def main():
     parser.add_argument("-f", "--fasta", dest="filenames",default=[],
                         help="input fasta file", metavar="FILE")
     parser.add_argument("-p", "--proj", dest="project",default=None,
-                        help="load .snpg project file", metavar="FILE")
+                        help="load .snpgenie project file", metavar="FILE")
     args = vars(parser.parse_args())
 
     app = QApplication(sys.argv)

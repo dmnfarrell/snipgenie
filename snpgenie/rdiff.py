@@ -62,6 +62,7 @@ def find_regions(df, path, threads=4, callback=None):
     from pyfaidx import Fasta
     ref = 'RD.fa'
     rg = Fasta(mtbref)
+    k = list(rg.keys())[0]
     res = []
     if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)
@@ -73,7 +74,8 @@ def find_regions(df, path, threads=4, callback=None):
         #get the average sequencing depth
         cmd = 'zcat %s | paste - - - - | cut -f2 | wc -c' %f1
         tmp = subprocess.check_output(cmd,shell=True)
-        avdepth = int(tmp)*2/len(rg)
+        print (rg)
+        avdepth = int(tmp)*2/len(rg[k])
         print (avdepth)
         cmd = 'samtools coverage --min-BQ 0 %s' %out
         tmp = subprocess.check_output(cmd,shell=True)

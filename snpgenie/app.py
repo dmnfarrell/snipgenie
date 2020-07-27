@@ -558,7 +558,7 @@ class WorkFlow(object):
         aligners.build_bwa_index(self.reference)
         if self.gb_file != None:
             #convert annotation to gff for consequence calling
-            self.gff_file = os.path.join(self.outdir, self.gb_file+'.gff')
+            self.gff_file = os.path.join(self.outdir, os.path.basename(self.gb_file)+'.gff')
             tools.gff_bcftools_format(self.gb_file, self.gff_file)
         else:
             self.gff_file = None

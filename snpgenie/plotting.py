@@ -34,7 +34,7 @@ from pyfaidx import Fasta
 import pylab as plt
 from . import tools
 
-def plot_matrix(df, cmap='gist_gray_r', w=15, h=5, ax=None):
+def heatmap(df, cmap='gist_gray_r', w=15, h=5, ax=None):
     """Plot dataframe matrix"""
 
     if ax == None:

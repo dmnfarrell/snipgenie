@@ -76,6 +76,33 @@ def batch_iterator(iterator, batch_size):
         if batch:
             yield batch
 
+def diffseqs(seq1,seq2):
+    """Diff two sequences"""
+
+    c=0
+    for i in range(len(seq1)):
+        if seq1[i] != seq2[i]:
+            c+=1
+    return c
+
+def snp_dist_matrix(aln):
+    """Get pairwise snps distances from biopython
+       Multiple Sequence Alignment object.
+       returns: pandas dataframe
+    """
+
+    names=[s.id for s in aln]
+    m = []
+    for i in aln:
+        x=[]
+        for j in aln:
+            d = diffseqs(i,j)
+            x.append(d)
+        #print (x)
+        m.append(x)
+    m = pd.DataFrame(m,index=names,columns=names)
+    return m
+
 def get_fasta_length(filename):
     """Get length of reference sequence"""
 
@@ -483,11 +510,11 @@ def pdf_qc_reports(filenames, outfile='qc_report.pdf'):
     import pylab as plt
     from matplotlib.backends.backend_pdf import PdfPages
     with PdfPages(outfile) as pdf:
-        for f in filenames:
+        for f in sorted(filenames):
             print (f)
             fig = fastq_quality_report(f)
             fig.subplots_adjust(top=.9)
-            fig.suptitle(f)
+            fig.suptitle(os.path.basename(f))
             pdf.savefig(fig)
             plt.clf()
 

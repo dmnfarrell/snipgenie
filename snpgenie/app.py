@@ -30,9 +30,9 @@ import pandas as pd
 import numpy as np
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
-from Bio import SeqIO
+from Bio import SeqIO, AlignIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
-from Bio.Alphabet import generic_dna
+#from Bio.Alphabet import generic_dna
 from . import tools, aligners, trees
 import multiprocessing as mp
 
@@ -609,6 +609,11 @@ class WorkFlow(object):
         #write out sites matrix as txt file
         smat.to_csv(os.path.join(self.outdir,'core.txt'), sep=' ')
         print ()
+        #write out pairwise snp distances
+        aln = AlignIO.read(outfasta, 'fasta')
+        snp_dist = tools.snp_dist_matrix(aln)
+        snp_dist.to_csv(os.path.join(self.outdir,'snpdist.csv'), sep=',')
+
         #save summary table
         summ = results_summary(samples)
         summ.to_csv(os.path.join(self.outdir,'summary.csv'),index=False)

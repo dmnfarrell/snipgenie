@@ -135,7 +135,7 @@ class App(QMainWindow):
         self.right_tabs.setTabsClosable(True)
         self.right_tabs.tabCloseRequested.connect(self.close_right_tab)
         l2.addWidget(self.right_tabs)
-        self.info = QTextEdit(right, readOnly=True)
+        self.info = widgets.Editor(right, readOnly=True)
         font = QFont("Monospace")
         font.setPointSize(9)
         font.setStyleHint(QFont.TypeWriter)
@@ -231,6 +231,7 @@ class App(QMainWindow):
         self.settings_menu.addAction('&Set Output Folder', self.set_output_folder)
         self.settings_menu.addAction('&Set Reference Sequence', self.set_reference)
         self.settings_menu.addAction('&Set Annnotation (genbank)', self.set_annotation)
+        self.settings_menu.addAction('&Add Sample Meta Data', self.merge_meta_data)
         self.settings_menu.addAction('&Clean Up Files', self.clean_up)
 
         self.presets_menu = QMenu('&Load Preset', self)
@@ -453,6 +454,22 @@ class App(QMainWindow):
         #put annotation in a dataframe
         self.annot = tools.genbank_to_dataframe(self.ref_gb)
         self.update_ref_genome()
+        return
+
+    def merge_meta_data(self):
+        """Add sample meta data by merging with file table"""
+
+        filename, _ = QFileDialog.getOpenFileName(self, 'Open File', './',
+                                    filter="Text Files(*.csv *.txt *.tsv);;All Files(*.*)")
+        if not filename:
+            return
+
+        df = self.fastq_table.model.df
+        meta = pd.read_csv(filename)
+
+
+        new = df.merge(meta, left_on='sample', right_on='ACCESSION',how='left')
+        self.fastq_table.setDataFrame(new)
         return
 
     def add_file(self, filter="Fasta Files(*.fa *.fna *.fasta)", path=None):

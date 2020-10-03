@@ -53,11 +53,11 @@ class DataFrameTable(QTableView):
     """
     QTableView with pandas DataFrame as model.
     """
-    def __init__(self, parent=None, dataframe=None, *args):
-        #super(DataFrameTable, self).__init__()
+    def __init__(self, parent=None, dataframe=None, fontsize=12, *args):
+
         QTableView.__init__(self)
         self.clicked.connect(self.showSelection)
-        self.doubleClicked.connect(self.handleDoubleClick)
+        #self.doubleClicked.connect(self.handleDoubleClick)
         self.setSelectionBehavior(QTableView.SelectRows)
         #self.setSelectionBehavior(QTableView.SelectColumns)
         #self.horizontalHeader = ColumnHeader()
@@ -65,9 +65,12 @@ class DataFrameTable(QTableView):
         #header.setResizeMode(QHeaderView.ResizeToContents)
         vh = self.verticalHeader()
         vh.setVisible(True)
+        vh.setDefaultSectionSize(28)
         hh = self.horizontalHeader()
         hh.setVisible(True)
         #hh.setStretchLastSection(True)
+        #hh.setSectionResizeMode(QHeaderView.Interactive)
+        hh.setSectionsMovable(True)
         hh.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         hh.customContextMenuRequested.connect(self.columnHeaderMenu)
         hh.sectionClicked.connect(self.columnClicked)
@@ -79,8 +82,9 @@ class DataFrameTable(QTableView):
         self.setCornerButtonEnabled(True)
         self.setSortingEnabled(True)
 
-        font = QFont("Arial", 12)
-        self.setFont(font)
+        self.font = QFont("Arial", fontsize)
+        #print (fontsize)
+        self.setFont(self.font)
         tm = DataFrameModel(dataframe)
         self.setModel(tm)
         self.model = tm
@@ -115,6 +119,32 @@ class DataFrameTable(QTableView):
     def paste(self):
         return
 
+    def zoomIn(self, fontsize=None):
+
+        if fontsize == None:
+            s = self.font.pointSize()+1
+        else:
+            s = fontsize
+        self.font.setPointSize(s)
+        self.setFont(self.font)
+        vh = self.verticalHeader()
+        h = vh.defaultSectionSize()
+        vh.setDefaultSectionSize(h+2)
+        return
+
+    def zoomOut(self, fontsize=None):
+
+        if fontsize == None:
+            s = self.font.pointSize()-1
+        else:
+            s = fontsize
+        self.font.setPointSize(s)
+        self.setFont(self.font)
+        vh = self.verticalHeader()
+        h = vh.defaultSectionSize()
+        vh.setDefaultSectionSize(h-2)
+        return
+
     def importFile(self, filename=None, dialog=False, **kwargs):
 
         if dialog is True:
@@ -122,31 +152,15 @@ class DataFrameTable(QTableView):
             filename, _ = QFileDialog.getOpenFileName(self,"Import File",
                                                       "","All Files (*);;Text Files (*.txt);;CSV files (*.csv)",
                                                       options=options)
-
-
             df = pd.read_csv(filename, **kwargs)
             self.table.model.df = df
         return
-
-    def plot(self):
-        self.table.pf.replot()
-        return
-
-    def createPlotViewer(self, parent):
-        """Create a plot widget attached to this table"""
-
-        if self.pf == None:
-            self.pf = plotting.PlotViewer(table=self.table, parent=parent)
-        return self.pf
 
     def info(self):
 
         buf = io.StringIO()
         self.table.model.df.info(verbose=True,buf=buf,memory_usage=True)
         td = dialogs.TextDialog(self, buf.getvalue(), 'Info')
-        return
-
-    def showasText(self):
         return
 
     def showSelection(self, item):
@@ -161,8 +175,7 @@ class DataFrameTable(QTableView):
     def getSelectedRows(self):
         rows=[]
         for idx in self.selectionModel().selectedRows():
-            if idx.row() not in rows:
-                rows.append(idx.row())
+            rows.append(idx.row())
         return rows
 
     def getSelectedColumns(self):
@@ -183,7 +196,8 @@ class DataFrameTable(QTableView):
     def handleDoubleClick(self, item):
 
         cellContent = item.data()
-        print (item)
+        if item.column() != 0:
+            return
         return
 
     def columnClicked(self, col):
@@ -222,17 +236,22 @@ class DataFrameTable(QTableView):
     def columnHeaderMenu(self, pos):
 
         hheader = self.horizontalHeader()
-        column = hheader.logicalIndexAt(hheader.mapFromGlobal(pos))
-        print (column)
-        model = self.model
+        idx = hheader.logicalIndexAt(pos)
+        column = self.model.df.columns[idx]
+        #model = self.model
         menu = QMenu(self)
-        setIndexAction = menu.addAction("Set as Index")
+        #setIndexAction = menu.addAction("Set as Index")
+        deleteColumnAction = menu.addAction("Delete Column")
+        renameColumnAction = menu.addAction("Rename Column")
+        addColumnAction = menu.addAction("Add Column")
         #sortAction = menu.addAction("Sort By")
         action = menu.exec_(self.mapToGlobal(pos))
-        if action == setIndexAction:
-            self.setIndex()
-        #elif action == sortAction:
-        #    self.sort(column)
+        if action == deleteColumnAction:
+            self.deleteColumn(column)
+        elif action == renameColumnAction:
+            self.renameColumn(column)
+        elif action == addColumnAction:
+            self.addColumn()
         return
 
     def keyPressEvent(self, event):
@@ -250,10 +269,8 @@ class DataFrameTable(QTableView):
         position = event.globalPos()
         row = vheader.logicalIndexAt(vheader.mapFromGlobal(position))
         column = hheader.logicalIndexAt(hheader.mapFromGlobal(position))
-
         if row == -1:
             return
-
         # Show a context menu for empty space at bottom of table...
         self.menu = QMenu(self)
         self.addActions(event, row)
@@ -263,9 +280,13 @@ class DataFrameTable(QTableView):
 
         menu = self.menu
         copyAction = menu.addAction("Copy")
+        exportAction = menu.addAction("Export Table")
         action = menu.exec_(self.mapToGlobal(event.pos()))
         if action == copyAction:
             self.copy()
+        elif action == exportAction:
+            self.exportTable()
+        return
 
     def setIndex(self):
         return
@@ -285,6 +306,57 @@ class DataFrameTable(QTableView):
         dialogs.ImportDialog(self)
         return
 
+    def exportTable(self):
+        filename, _ = QFileDialog.getSaveFileName(self, "Export",
+                                                  "","csv files (*.csv);;All files (*.*)")
+        if filename:
+            self.model.df.to_csv(filename)
+        return
+
+    def addColumn(self):
+        """Add a  column"""
+
+        df = self.model.df
+        name, ok = QInputDialog().getText(self, "Enter Column Name",
+                                             "Name:", QLineEdit.Normal)
+        if ok and name:
+            if name in df.columns:
+                return
+            df[name] = pd.Series()
+            self.refresh()
+        return
+
+    def deleteColumn(self, column=None):
+
+        reply = QMessageBox.question(self, 'Delete Rows?',
+                             'Are you sure?', QMessageBox.Yes, QMessageBox.No)
+        if reply == QMessageBox.No:
+            return False
+        self.model.df = self.model.df.drop(columns=[column])
+        self.refresh()
+        return
+
+    def deleteRows(self):
+
+        rows = self.getSelectedRows()
+        reply = QMessageBox.question(self, 'Delete Rows?',
+                             'Are you sure?', QMessageBox.Yes, QMessageBox.No)
+        if reply == QMessageBox.No:
+            return False
+        idx = self.model.df.index[rows]
+        self.model.df = self.model.df.drop(idx)
+        self.refresh()
+        return
+
+    def renameColumn(self, column=None):
+
+        name, ok = QInputDialog().getText(self, "Enter New Column Name",
+                                             "Name:", QLineEdit.Normal)
+        if ok and name:
+            self.model.df.rename(columns={column:name},inplace=True)
+            self.refresh()
+        return
+
 class DataFrameModel(QtCore.QAbstractTableModel):
     def __init__(self, dataframe=None, *args):
         super(DataFrameModel, self).__init__()
@@ -296,7 +368,7 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         return
 
     def update(self, df):
-        print('Updating Model')
+        #print('Updating Model')
         self.df = df
 
     def rowCount(self, parent=QtCore.QModelIndex()):
@@ -306,28 +378,31 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         return len(self.df.columns.values)
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
-        #types = [int, np.int64, float]
+
+        i = index.row()
+        j = index.column()
         if role == QtCore.Qt.DisplayRole:
-            i = index.row()
-            j = index.column()
             value = self.df.iloc[i, j]
             if type(value) != str and np.isnan(value):
                 return ''
             else:
                 return '{0}'.format(value)
-
+        elif (role == QtCore.Qt.EditRole):
+            value = self.df.iloc[i, j]
+            if type(value) != str and np.isnan(value):
+                return ''
+            else:
+                return value
         elif role == QtCore.Qt.BackgroundRole:
             return QColor(self.bg)
 
     def headerData(self, col, orientation, role):
+
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             return self.df.columns[col]
         if orientation == QtCore.Qt.Vertical and role == QtCore.Qt.DisplayRole:
             return self.df.index[col]
         return None
-
-    def flags(self, index):
-        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
 
     def sort(self, Ncol, order):
         """Sort table by given column number """
@@ -338,8 +413,24 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         self.layoutChanged.emit()
         return
 
-    def setData(self):
-        self.dataChanged.emit()
+    def setData(self, index, value, role=QtCore.Qt.EditRole):
+        """Set data upon edits"""
+
+        #print (index)
+        i = index.row()
+        j = index.column()
+        curr = self.df.iloc[i,j]
+        #print (curr, value)
+        self.df.iloc[i,j] = value
+        #self.dataChanged.emit()
+        return True
+
+    def onDataChanged(self):
+        #print (self.df)
+        return
+
+    def flags(self, index):
+            return Qt.ItemIsSelectable|Qt.ItemIsEnabled|Qt.ItemIsEditable
 
 class DefaultTable(DataFrameTable):
     """
@@ -349,16 +440,6 @@ class DefaultTable(DataFrameTable):
         DataFrameTable.__init__(self, parent, dataframe)
         self.app = app
         self.setWordWrap(False)
-
-    def addActions(self, event, row):
-
-        menu = self.menu
-        #showSequencesAction = menu.addAction("Show sequences")
-        #action = menu.exec_(self.mapToGlobal(event.pos()))
-        #if action == showSequencesAction:
-        #    self.app.show_fasta_sequences(row)
-
-        return
 
 class FilesTable(DataFrameTable):
     """
@@ -377,6 +458,7 @@ class FilesTable(DataFrameTable):
         fastqqualityAction = menu.addAction("Quality Summary")
         plotbamAction = menu.addAction("Show Read Alignments")
         removeAction = menu.addAction("Remove Selected")
+        exportAction = menu.addAction("Export Table")
         action = menu.exec_(self.mapToGlobal(event.pos()))
         # Map the logical row index to a real index for the source model
         #model = self.model
@@ -389,7 +471,18 @@ class FilesTable(DataFrameTable):
             self.app.show_bam_viewer(row)
         elif action == removeAction:
             self.deleteRows(rows)
+        elif action == exportAction:
+            self.exportTable()
         return
+
+    def edit(self, index, trigger, event):
+        """Override edit to disable editing of first two columns"""
+
+        if index.column() < 5:
+            return False
+        else:
+            QTableView.edit(self, index, trigger, event)
+        return True
 
     def refresh(self):
         DataFrameTable.refresh(self)

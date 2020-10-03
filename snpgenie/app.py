@@ -530,6 +530,8 @@ class WorkFlow(object):
     def setup(self):
         """Setup main parameters"""
 
+        if not os.path.exists(self.outdir):
+            os.makedirs(self.outdir, exist_ok=True)
         if self.reference == None:
             self.reference = mbovis_genome
             self.gb_file = mbovis_gb

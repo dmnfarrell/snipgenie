@@ -313,6 +313,65 @@ class DynamicDialog(QDialog):
         kwds = self.opts.kwds
         return kwds
 
+class Editor(QTextEdit):
+    def __init__(self, parent=None, **kwargs):
+        super(Editor, self).__init__(parent, **kwargs)
+
+    def zoom(self, delta):
+        if delta < 0:
+            self.zoomOut(1)
+        elif delta > 0:
+            self.zoomIn(1)
+
+    def contextMenuEvent(self, event):
+
+        menu = QMenu(self)
+        copyAction = menu.addAction("Copy")
+        clearAction = menu.addAction("Clear")
+        zoominAction = menu.addAction("Zoom In")
+        zoomoutAction = menu.addAction("Zoom Out")
+        action = menu.exec_(self.mapToGlobal(event.pos()))
+        if action == copyAction:
+            self.copy()
+        elif action == clearAction:
+            self.clear()
+        elif action == zoominAction:
+            self.zoom(1)
+        elif action == zoomoutAction:
+            self.zoom(-1)
+
+class PlainTextEditor(QPlainTextEdit):
+    def __init__(self, parent=None, **kwargs):
+        super(PlainTextEditor, self).__init__(parent, **kwargs)
+        font = QFont("Monospace")
+        font.setPointSize(10)
+        font.setStyleHint(QFont.TypeWriter)
+        self.setFont(font)
+        return
+
+    def zoom(self, delta):
+        if delta < 0:
+            self.zoomOut(1)
+        elif delta > 0:
+            self.zoomIn(1)
+
+    def contextMenuEvent(self, event):
+
+        menu = QMenu(self)
+        copyAction = menu.addAction("Copy")
+        clearAction = menu.addAction("Clear")
+        zoominAction = menu.addAction("Zoom In")
+        zoomoutAction = menu.addAction("Zoom Out")
+        action = menu.exec_(self.mapToGlobal(event.pos()))
+        if action == copyAction:
+            self.copy()
+        elif action == clearAction:
+            self.clear()
+        elif action == zoominAction:
+            self.zoom(1)
+        elif action == zoomoutAction:
+            self.zoom(-1)
+            
 class FileViewer(QDialog):
     """Sequence records features viewer"""
     def __init__(self, parent=None, filename=None):

@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-    spec file for snpgenie
+    snpgenie spec file for pyinstaller.
     Created Nov 2019
     Copyright (C) Damien Farrell
 
@@ -24,10 +24,10 @@ block_cipher = None
 
 a = Analysis(['main.py'],
              binaries=[('win_binaries/*', 'bin')],
-             hiddenimports=[''],
+             hiddenimports=['Bio.SearchIO.HmmerIO'],
              hookspath=[],
              runtime_hooks=[],
-             excludes=['tkinter','pywin.debugger', 'pywin.debugger.dbgcon'],
+             excludes=['PIL','lib2to3','pywin.debugger', 'pywin.debugger.dbgcon'],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher,

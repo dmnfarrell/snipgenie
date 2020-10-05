@@ -14,7 +14,6 @@ jobs:
 
     - name: Package Application
       uses: JackMcKew/pyinstaller-action-windows@main
-      spec: gui.spec
       with:
         path: .
 

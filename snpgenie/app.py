@@ -60,7 +60,8 @@ if not os.path.exists(config_path):
         os.makedirs(config_path)
 
 defaults = {'threads':None, 'labelsep':'_','trim':False, 'quality':25,
-            'filters': default_filter, 'custom_filters': False, 'mask':None,
+            'aligner': 'bwa',
+            'filters': default_filter, 'custom_filters': False, 'mask': None,
             'reference': None, 'gb_file': None, 'overwrite':False, 'buildtree':False}
 
 def check_platform():
@@ -109,6 +110,8 @@ def get_files_from_paths(paths):
         paths = [paths]
     files=[]
     for path in paths:
+        if not os.path.exists(path):
+            print ('the folder %s does not exist' %path)
         s = glob.glob(os.path.join(path,'**/*.f*q.gz'), recursive=True)
         files.extend(s)
     return files
@@ -148,7 +151,7 @@ def write_samples(df, path):
     filename = os.path.join(path, 'samples.txt')
     df.drop_duplicates('sample')['sample'].to_csv(filename,index=False,header=False)
 
-def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
+def align_reads(samples, idx, outdir='mapped', callback=None, aligner='bwa', **kwargs):
     """
     Align multiple files. Requires a dataframe with a 'sample' column to indicate
     paired files grouping. If a trimmed column is present these files will align_reads
@@ -173,7 +176,10 @@ def align_reads(samples, idx, outdir='mapped', callback=None, **kwargs):
             #unpaired reads
             files.append(None)
         out = os.path.join(outdir,name+'.bam')
-        aligners.bwa_align(files[0],files[1], idx=idx, out=out, **kwargs)
+        if aligner == 'bwa':
+            aligners.bwa_align(files[0],files[1], idx=idx, out=out, **kwargs)
+        elif aligner == 'bowtie':
+            aligners.bowtie_align(files[0],files[1], ref, outfile=out, **kwargs)
         bamidx = out+'.bai'
         if not os.path.exists(bamidx) or kwargs['overwrite']==True:
             cmd = '{s} index {o}'.format(o=out,s=samtoolscmd)
@@ -557,7 +563,10 @@ class WorkFlow(object):
             print ('samples names are not unique! try a different labelsep value.')
             return False
         print ('building index')
-        aligners.build_bwa_index(self.reference)
+        if self.aligner == 'bwa':
+            aligners.build_bwa_index(self.reference)
+        elif self.aligner == 'bowtie':
+            aligners.build_bowtie_index(self.reference)
         if self.gb_file != None:
             #convert annotation to gff for consequence calling
             self.gff_file = os.path.join(self.outdir, os.path.basename(self.gb_file)+'.gff')
@@ -591,7 +600,8 @@ class WorkFlow(object):
         print ('Using reference genome: %s' %self.reference)
         path = os.path.join(self.outdir, 'mapped')
         samples = align_reads(samples, idx=self.reference, outdir=path,
-                    threads=self.threads, overwrite=self.overwrite)
+                        aligner=self.aligner,
+                        threads=self.threads, overwrite=self.overwrite)
         print ()
         print ('calling variants')
         print ('----------------')
@@ -680,6 +690,8 @@ def main():
                         help="apply custom filters" )
     parser.add_argument("-T", "--threads", dest="threads", default=None,
                         help="cpu threads to use")
+    parser.add_argument("-a", "--aligner", dest="aligner", default='bwa',
+                        help="aligner to use")
     parser.add_argument("-b", "--buildtree", dest="buildtree", action="store_true", default=False,
                         help="whether to try to build a phylogenetic tree" )
     parser.add_argument("-o", "--outdir", dest="outdir",

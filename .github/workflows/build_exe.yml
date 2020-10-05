@@ -20,4 +20,4 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: snpgenie-gui
-        path: windows_dist
+        path: dist/windows

@@ -585,8 +585,9 @@ def samtools_tview(bam_file, chrom, pos, width=200, ref='', display='T'):
     """View bam alignment with samtools"""
 
     samtoolscmd = get_cmd('samtools')
-    cmd = 'COLUMNS={w} {sc} tview {b} -p {c}:{p} -d {d} {r}'\
-            .format(b=bam_file,c=chrom,p=pos,d=display,r=ref,w=width,sc=samtoolscmd)
+    os.environ["COLUMNS"] = str(width)
+    cmd = '{sc} tview {b} -p {c}:{p} -d {d} {r}'\
+            .format(b=bam_file,c=chrom,p=pos,d=display,r=ref,sc=samtoolscmd)
     #print (cmd)
     tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
     return tmp

@@ -1,0 +1,24 @@
+name: Build GUI exe with Pyinstaller
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Package Application
+      uses: JackMcKew/pyinstaller-action-windows@main
+      spec: gui.spec
+      with:
+        path: .
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: snpgenie-gui
+        path: windows_dist

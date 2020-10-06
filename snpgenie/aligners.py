@@ -20,13 +20,17 @@
 
 from __future__ import absolute_import, print_function
 import sys, os, string, types, re
-import platform
+import platform, tempfile
 import shutil, glob, collections
 import itertools
 import subprocess
 import numpy as np
 import pandas as pd
 from . import tools
+
+tempdir = tempfile.gettempdir()
+module_path = os.path.dirname(os.path.abspath(__file__))
+BOWTIE_INDEXES = os.path.join(tempdir, 'bowtie_index')
 
 def build_bwa_index(fastafile, path=None):
     """Build a bwa index"""
@@ -63,6 +67,8 @@ def build_bowtie_index(fastafile, path=None):
         path: folder to place index files
     """
 
+    if path == None:
+        path = BOWTIE_INDEXES
     name = os.path.splitext(os.path.basename(fastafile))[0]
     name = os.path.join(path, name)
     if not os.path.exists(path):
@@ -75,6 +81,36 @@ def build_bowtie_index(fastafile, path=None):
         return
     print ('built bowtie index for %s' %fastafile)
     return
+
+def bowtie_align(file1, file2, ref, outfile=None, remaining=None, threads=2, verbose=True):
+    """Map reads using bowtie"""
+
+    bowtiecmd = tools.get_cmd('bowtie')
+    label = os.path.splitext(os.path.basename(infile))[0]
+    outpath = os.path.dirname(os.path.abspath(infile))
+    if outfile == None:
+        outfile = label+'_'+ref+'_bowtie.sam'
+
+    if BOWTIE_INDEXES == None:
+        print ('aligners.BOWTIE_INDEXES variable not set')
+        return
+    os.environ["BOWTIE_INDEXES"] = BOWTIE_INDEXES
+    params = '-v 1 --best'
+    if remaining == None:
+        remaining = os.path.join(outpath, label+'_r.fa')
+    cmd = '{c} -f -p {p} -S %s {f1} {f2} > %s'.format(c=bowtiecmd,t=threads,
+                f1=file1,f2=file2,p=params,r=ref,i=infile,o=outfile)
+    print (cmd)
+    if verbose == True:
+        print (cmd)
+    try:
+        result = subprocess.check_output(cmd, shell=True, executable='/bin/bash',
+                                         stderr= subprocess.STDOUT)
+        if verbose == True:
+            print (result.decode())
+    except subprocess.CalledProcessError as e:
+        print (str(e.output))
+    return remaining
 
 def build_subread_index(fastafile, path):
     """Build an index for subread"""
@@ -90,31 +126,3 @@ def build_subread_index(fastafile, path):
     files = [name+i for i in exts]
     utils.move_files(files, path)
     return
-
-def bowtie_align(infile, ref, outfile=None, remaining=None, threads=2, verbose=True):
-    """Map reads using bowtie"""
-
-    label = os.path.splitext(os.path.basename(infile))[0]
-    outpath = os.path.dirname(os.path.abspath(infile))
-    if outfile == None:
-        outfile = label+'_'+ref+'_bowtie.sam'
-
-    if BOWTIE_INDEXES == None:
-        print ('aligners.BOWTIE_INDEXES variable not set')
-        return
-    os.environ["BOWTIE_INDEXES"] = BOWTIE_INDEXES
-    #print (BOWTIE_INDEXES)
-    params = BOWTIE_PARAMS
-    if remaining == None:
-        remaining = os.path.join(outpath, label+'_r.fa')
-    cmd = 'bowtie -f -p %s -S %s --un %s %s %s > %s' %(threads,params,remaining,ref,infile,outfile)
-    if verbose == True:
-        print (cmd)
-    try:
-        result = subprocess.check_output(cmd, shell=True, executable='/bin/bash',
-                                         stderr= subprocess.STDOUT)
-        if verbose == True:
-            print (result.decode())
-    except subprocess.CalledProcessError as e:
-        print (str(e.output))
-    return remaining

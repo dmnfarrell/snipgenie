@@ -902,7 +902,7 @@ class AppOptions(widgets.BaseOptions):
         self.parent = parent
         self.kwds = {}
         genomes = []
-        aligners = ['bwa','bowtie','bowtie2']
+        aligners = ['bwa','bowtie']
         cpus = [str(i) for i in range(1,os.cpu_count()+1)]
         self.groups = {'general':['threads','overwrite'],
                         #'reference':['refgenome','annotation'],

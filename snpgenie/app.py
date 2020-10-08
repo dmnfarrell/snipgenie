@@ -179,7 +179,8 @@ def align_reads(samples, idx, outdir='mapped', callback=None, aligner='bwa', **k
         if aligner == 'bwa':
             aligners.bwa_align(files[0],files[1], idx=idx, out=out, **kwargs)
         elif aligner == 'bowtie':
-            aligners.bowtie_align(files[0],files[1], ref, outfile=out, **kwargs)
+            idx = os.path.splitext(os.path.basename(idx))[0]
+            aligners.bowtie_align(files[0],files[1], idx=idx, out=out, **kwargs)
         bamidx = out+'.bai'
         if not os.path.exists(bamidx) or kwargs['overwrite']==True:
             cmd = '{s} index {o}'.format(o=out,s=samtoolscmd)
@@ -551,6 +552,7 @@ class WorkFlow(object):
         if len(df) == 0:
             print ('no samples provided')
             return
+
         df['read_length'] = df.filename.apply(tools.get_fastq_info)
         self.fastq_table = df
         sample_size = len(df['sample'].unique())
@@ -653,11 +655,15 @@ class WorkFlow(object):
 def test_run():
     """Test run"""
 
-    args = {'threads':8, 'outdir': 'testing', 'input':'mbovis_sra',
-            'reference': None, 'overwrite':False}
+    testdatadir = os.path.join(module_path, 'testing')
+    out = os.path.join(tempdir, 'snpgenie_tests')
+    args = {'threads':8, 'outdir': out, 'input': testdatadir,
+            'aligner':'bowtie',
+            'reference': None, 'overwrite':True}
     W = WorkFlow(**args)
     st = W.setup()
-    W.run()
+    if st == True:
+        W.run()
     return
 
 def main():
@@ -698,18 +704,20 @@ def main():
                         help="Results folder", metavar="FILE")
     parser.add_argument("-q", "--qc", dest="qc", action="store_true",
                         help="Get version")
-    parser.add_argument("-v", "--version", dest="version", action="store_true",
-                        help="Get version")
     parser.add_argument("-d", "--dummy", dest="dummy",  action="store_true",
                         default=False, help="Check samples but don't run")
+    parser.add_argument("-x", "--test", dest="test",  action="store_true",
+                        default=False, help="Test run")
+    parser.add_argument("-v", "--version", dest="version", action="store_true",
+                        help="Get version")
 
     args = vars(parser.parse_args())
     check_platform()
     print (datetime.datetime.now())
     #Log = Logger(os.path.join(args['outdir'], 'run.log'))
-    #if args['test'] == True:
-    #    test_run()
-    if args['version'] == True:
+    if args['test'] == True:
+        test_run()
+    elif args['version'] == True:
         from . import __version__
         print ('snpgenie version %s' %__version__)
         print ('https://github.com/dmnfarrell/snpgenie')

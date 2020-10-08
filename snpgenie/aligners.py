@@ -29,8 +29,10 @@ import pandas as pd
 from . import tools
 
 tempdir = tempfile.gettempdir()
+home = os.path.expanduser("~")
+config_path = os.path.join(home,'.config','snpgenie')
 module_path = os.path.dirname(os.path.abspath(__file__))
-BOWTIE_INDEXES = os.path.join(tempdir, 'bowtie_index')
+BOWTIE_INDEXES = os.path.join(config_path, 'genome')
 
 def build_bwa_index(fastafile, path=None):
     """Build a bwa index"""
@@ -69,6 +71,7 @@ def build_bowtie_index(fastafile, path=None):
 
     if path == None:
         path = BOWTIE_INDEXES
+
     name = os.path.splitext(os.path.basename(fastafile))[0]
     name = os.path.join(path, name)
     if not os.path.exists(path):
@@ -80,29 +83,33 @@ def build_bowtie_index(fastafile, path=None):
         print (str(e.output))
         return
     print ('built bowtie index for %s' %fastafile)
-    return
+    return name
 
-def bowtie_align(file1, file2, ref, outfile=None, remaining=None, threads=2, verbose=True):
+def bowtie_align(file1, file2, idx, out=None, remaining=None, threads=2,
+                overwrite=False, verbose=True):
     """Map reads using bowtie"""
 
     bowtiecmd = tools.get_cmd('bowtie')
-    label = os.path.splitext(os.path.basename(infile))[0]
-    outpath = os.path.dirname(os.path.abspath(infile))
-    if outfile == None:
-        outfile = label+'_'+ref+'_bowtie.sam'
+    samtoolscmd = tools.get_cmd('samtools')
+    #label = os.path.splitext(os.path.basename(infile))[0]
+    #outpath = os.path.dirname(os.path.abspath(infile))
+    #if out == None:
+    #    out = ref+'_bowtie.sam'
 
     if BOWTIE_INDEXES == None:
         print ('aligners.BOWTIE_INDEXES variable not set')
         return
     os.environ["BOWTIE_INDEXES"] = BOWTIE_INDEXES
     params = '-v 1 --best'
-    if remaining == None:
-        remaining = os.path.join(outpath, label+'_r.fa')
-    cmd = '{c} -f -p {p} -S %s {f1} {f2} > %s'.format(c=bowtiecmd,t=threads,
-                f1=file1,f2=file2,p=params,r=ref,i=infile,o=outfile)
+    #if remaining == None:
+    #    remaining = os.path.join(outpath, label+'_r.fa')
+    cmd = '{c} -q -p {t} -S {p} {r} -1 {f1} -2 {f2} | {s} view -F 0x04 -bt - | {s} sort -o {o}'\
+            .format(c=bowtiecmd,t=threads,p=params,f1=file1,f2=file2,r=idx,o=out,s=samtoolscmd)
     print (cmd)
     if verbose == True:
         print (cmd)
+    if not os.path.exists(out) and overwrite == False:
+        return
     try:
         result = subprocess.check_output(cmd, shell=True, executable='/bin/bash',
                                          stderr= subprocess.STDOUT)

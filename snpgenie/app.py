@@ -47,6 +47,8 @@ mbovis_genome = os.path.join(sequence_path, 'Mbovis_AF212297.fa')
 mtb_genome = os.path.join(sequence_path, 'MTB-H37Rv.fa')
 mbovis_gb = os.path.join(datadir, 'Mbovis_AF212297.gb')
 mtb_gb = os.path.join(datadir, 'MTB-H37Rv.gb')
+mbovis_mask =  os.path.join(datadir, 'Mbovis_AF212297_mask.bed')
+
 #windows only path to binaries
 bin_path = os.path.join(config_path, 'binaries')
 #this is a custom filter

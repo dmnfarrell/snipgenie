@@ -48,7 +48,7 @@ def format_nodes(t):
         ns["size"] = 0
         n.set_style(ns)
 
-def color_leaves(t, colors):
+def color_leaves(t, colors, color_bg=False):
     from ete3 import NodeStyle
 
     for l in t.iter_leaves():
@@ -64,6 +64,8 @@ def color_leaves(t, colors):
         ns = NodeStyle()
         ns["size"] = 12
         ns["fgcolor"] = clr
+        if color_bg == True:
+            ns["bgcolor"] = clr
         l.set_style(ns)
 
 def get_colormap(values):
@@ -110,15 +112,15 @@ def biopython_draw_tree(filename):
     Phylo.draw(tree)
     return
 
-def create_tree(filename, ref=None, labelmap=None, colormap=None):
+def create_tree(filename, ref=None, labelmap=None, colormap=None, color_bg=False):
     """Draw a tree """
 
-    from ete3 import Tree, TreeStyle, TextFace
+    from ete3 import Tree, PhyloTree, TreeStyle, TextFace
     t = Tree(filename)
     if ref != None:
         t.set_outgroup(ref)
     if colormap != None:
-        color_leaves(t, colormap)
+        color_leaves(t, colormap, color_bg)
     if labelmap != None:
         set_tiplabels(t,labelmap)
 
@@ -126,3 +128,20 @@ def create_tree(filename, ref=None, labelmap=None, colormap=None):
     ts = TreeStyle()
     ts.scale=300
     return t, ts
+
+def colors_from_labels(df,name,group):
+    """Colors from dataframe columns for use with an ete3 tree drawing"""
+
+    labels = df[group].unique()
+    colors={}
+    qcolors = ['blue','blueviolet','brown','burlywood','cadetblue','chartreuse','chocolate','coral','gold',
+               'cornflowerblue','cornsilk','crimson','green','khaki','orange','pink','red','lime',
+               'mediumvioletred','navy','teal']
+    i=0
+    for l in labels:
+        colors[l] = qcolors[i]
+        i+=1
+    df['color'] = df[group].apply(lambda x: colors[x],1)
+    colormap = dict(zip(df[name],df.color))
+    return colormap
+    

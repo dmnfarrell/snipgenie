@@ -81,10 +81,13 @@ def get_colormap(values):
 
 def run_RAXML(infile, name='variants', threads=8, outpath='.'):
     """Run Raxml pthreads.
-    Returns name of .tree file.
+        Returns:
+            name of .tree file.
     """
 
     outpath = os.path.abspath(outpath)
+    if not os.path.exists(outpath):
+        os.makedirs(outpath, exist_ok=True)
     bootstraps = 10
     model = 'GTRCAT'
     s1 = random.randint(0,1e8)
@@ -112,11 +115,11 @@ def biopython_draw_tree(filename):
     Phylo.draw(tree)
     return
 
-def create_tree(filename, ref=None, labelmap=None, colormap=None, color_bg=False):
+def create_tree(filename, ref=None, labelmap=None, colormap=None, color_bg=False, format=1):
     """Draw a tree """
 
     from ete3 import Tree, PhyloTree, TreeStyle, TextFace
-    t = Tree(filename)
+    t = Tree(filename, format=format)
     if ref != None:
         t.set_outgroup(ref)
     if colormap != None:
@@ -126,7 +129,7 @@ def create_tree(filename, ref=None, labelmap=None, colormap=None, color_bg=False
 
     #format_nodes(t)
     ts = TreeStyle()
-    ts.scale=300
+#    ts.scale=300
     return t, ts
 
 def colors_from_labels(df,name,group):
@@ -144,4 +147,9 @@ def colors_from_labels(df,name,group):
     df['color'] = df[group].apply(lambda x: colors[x],1)
     colormap = dict(zip(df[name],df.color))
     return colormap
-    
+
+def remove_nodes(tree, names):
+
+    for n in names:
+        node = tree.search_nodes(name=n)[0]
+        node.delete()

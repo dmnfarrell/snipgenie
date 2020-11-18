@@ -64,7 +64,8 @@ if not os.path.exists(config_path):
 defaults = {'threads':None, 'labelsep':'_','trim':False, 'quality':25,
             'aligner': 'bwa',
             'filters': default_filter, 'custom_filters': False, 'mask': None,
-            'reference': None, 'gb_file': None, 'overwrite':False, 'buildtree':False}
+            'reference': None, 'gb_file': None, 'overwrite':False,
+            'buildtree':False, 'bootstraps':10}
 
 def check_platform():
     """See if we are running in Windows"""
@@ -473,12 +474,14 @@ def read_csq_file(filename):
 
     cols = ['1','sample','2','chrom','start','snp_type','gene','locus_tag','strand','feature_type','aa','nuc',]
     csqdf = pd.read_csv(filename,sep='[|\t]',comment='#',names=cols, engine='python')
+    csqdf['aa'] = csqdf.aa.fillna(csqdf.snp_type)
+    csqdf['nuc'] = csqdf.nuc.fillna(csqdf.snp_type)
     return csqdf
 
 def get_aa_snp_matrix(df):
     """Get presence/absence matrix from csq calls table"""
 
-    df=df.drop_duplicates(['gene','aa','sample'])
+    df = df.drop_duplicates(['gene','aa','sample'])
     x = df.set_index(['start','gene','aa','sample'])['nuc'].unstack('sample')
     x[x.notna()] = 1
     x = x.fillna(0)
@@ -644,7 +647,7 @@ class WorkFlow(object):
             if len(bam_files) <= 2:
                 print ('Cannot build tree, too few samples.')
                 return
-            treefile = trees.run_RAXML(outfasta, outpath=self.outdir)
+            treefile = trees.run_RAXML(outfasta, bootstraps=self.bootstraps, outpath=self.outdir)
             if treefile == None:
                 return
             print (treefile)
@@ -702,6 +705,8 @@ def main():
                         help="aligner to use")
     parser.add_argument("-b", "--buildtree", dest="buildtree", action="store_true", default=False,
                         help="whether to try to build a phylogenetic tree" )
+    parser.add_argument("-p", "--bootstraps", dest="bootstraps", default=10,
+                        help="number of bootstraps to build tree" )
     parser.add_argument("-o", "--outdir", dest="outdir",
                         help="Results folder", metavar="FILE")
     parser.add_argument("-q", "--qc", dest="qc", action="store_true",

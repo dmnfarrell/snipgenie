@@ -56,7 +56,13 @@ def create_rd_index(names=None):
     aligners.build_bwa_index('RD.fa')
 
 def find_regions(df, path, threads=4, callback=None):
-    """Align reads to regions of difference and get coverage stats."""
+    """Align reads to regions of difference and get coverage stats.
+    Args:
+        df: a samples dataframe from snpgenie
+        path: folder with raw reads
+    Returns:
+        dataframe of rd results
+    """
 
     from io import StringIO
     from pyfaidx import Fasta
@@ -66,17 +72,22 @@ def find_regions(df, path, threads=4, callback=None):
     res = []
     if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)
+    #iterate over samples by grouping so we can get pairs if present
     for i,g in df.groupby('sample'):
         out = os.path.join(path,i+'.bam')
-        f1 = g.iloc[0].filename; f2 = g.iloc[1].filename
+        print (i)
+        if len(g) > 1:
+            f1 = g.iloc[0].filename; f2 = g.iloc[1].filename
+        else:
+            f1 = g.iloc[0].filename; f2 = None
         if not os.path.exists(out):
             aligners.bwa_align(f1, f2, ref, out, threads=threads, overwrite=False)
         #get the average sequencing depth
         cmd = 'zcat %s | paste - - - - | cut -f2 | wc -c' %f1
         tmp = subprocess.check_output(cmd,shell=True)
-        print (rg)
+        #print (rg)
         avdepth = int(tmp)*2/len(rg[k])
-        print (avdepth)
+        #print (avdepth)
         cmd = 'samtools coverage --min-BQ 0 %s' %out
         tmp = subprocess.check_output(cmd,shell=True)
         s = pd.read_csv(StringIO(tmp.decode()),sep='\t')

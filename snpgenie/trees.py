@@ -79,7 +79,7 @@ def get_colormap(values):
     clrs = dict(list(zip(labels,colors)))
     return clrs
 
-def run_RAXML(infile, name='variants', threads=8, outpath='.'):
+def run_RAXML(infile, name='variants', threads=8, bootstraps=10, outpath='.'):
     """Run Raxml pthreads.
         Returns:
             name of .tree file.
@@ -88,7 +88,7 @@ def run_RAXML(infile, name='variants', threads=8, outpath='.'):
     outpath = os.path.abspath(outpath)
     if not os.path.exists(outpath):
         os.makedirs(outpath, exist_ok=True)
-    bootstraps = 10
+
     model = 'GTRCAT'
     s1 = random.randint(0,1e8)
     s2 = random.randint(0,1e8)

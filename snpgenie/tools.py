@@ -408,20 +408,36 @@ def vcf_to_dataframe(vcf_file, quality=30):
     else:
         file = open(vcf_file)
     vcf_reader = vcf.Reader(file,'r')
-    #print (vcf_reader.filters)
     res=[]
-    cols = ['chrom','var_type','sub_type','start','end','REF','ALT','QUAL','DP']
+    cols = ['sample','REF','ALT','mut','chrom','var_type','sub_type','start','end','QUAL','DP']
+    i=0
     for rec in vcf_reader:
-        x = [rec.CHROM, rec.var_type, rec.var_subtype, rec.start, rec.end, rec.REF, str(rec.ALT[0]),
-            rec.QUAL, rec.INFO['DP']]
-        #print (rec.__dict__)
-        #print (rec.INFO.keys())
-        #for call in rec.samples:
-        #    print (call.sample, call.data, rec.genotype(call.sample))
-        res.append(x)
-        #print (x)
+        #if i>50:
+        #    break
+        S = {sample.sample: sample.gt_bases for sample in rec.samples}
+        #print (S)
+        x = [rec.CHROM, rec.var_type, rec.var_subtype, rec.start, rec.end, rec.QUAL, rec.INFO['DP']]
+        for sample in rec.samples:
+            if sample.gt_bases==None:
+                mut=''
+            elif rec.REF != sample.gt_bases:
+                mut=str(rec.end)+rec.REF+'>'+sample.gt_bases
+            else:
+                mut = rec.REF
+            row = [sample.sample, rec.REF, sample.gt_bases, mut] + x
+            res.append(row)
+        #i+=1
     res = pd.DataFrame(res,columns=cols)
     return res
+
+def get_snp_matrix(df):
+    """SNP matrix from multi sample vcf dataframe"""
+
+    df = df.drop_duplicates(['mut','sample'])
+    x = df.set_index(['mut','sample'])['start'].unstack('sample')
+    x[x.notna()] = 1
+    x = x.fillna(0)
+    return x
 
 def plot_fastq_qualities(filename, ax=None, limit=10000):
     """Plot fastq qualities"""

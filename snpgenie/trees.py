@@ -79,7 +79,7 @@ def get_colormap(values):
     clrs = dict(list(zip(labels,colors)))
     return clrs
 
-def run_RAXML(infile, name='variants', threads=8, bootstraps=10, outpath='.'):
+def run_RAXML(infile, name='variants', threads=8, bootstraps=100, outpath='.'):
     """Run Raxml pthreads.
         Returns:
             name of .tree file.
@@ -139,7 +139,7 @@ def colors_from_labels(df,name,group):
     colors={}
     qcolors = ['blue','blueviolet','brown','burlywood','cadetblue','chartreuse','chocolate','coral','gold',
                'cornflowerblue','cornsilk','crimson','green','khaki','orange','pink','red','lime',
-               'mediumvioletred','navy','teal']
+               'mediumvioletred','navy','teal','darkblue']    
     i=0
     for l in labels:
         colors[l] = qcolors[i]

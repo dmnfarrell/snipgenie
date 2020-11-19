@@ -65,7 +65,7 @@ defaults = {'threads':None, 'labelsep':'_','trim':False, 'quality':25,
             'aligner': 'bwa',
             'filters': default_filter, 'custom_filters': False, 'mask': None,
             'reference': None, 'gb_file': None, 'overwrite':False,
-            'buildtree':False, 'bootstraps':10}
+            'buildtree':False, 'bootstraps':100}
 
 def check_platform():
     """See if we are running in Windows"""
@@ -532,7 +532,7 @@ class WorkFlow(object):
         for i in defaults:
             if i not in self.__dict__:
                 self.__dict__[i] = defaults[i]
-        print ('options')
+        print ('The following options will be used')
         print ('-------')
         for i in self.__dict__:
             print (i, ':', self.__dict__[i])
@@ -705,7 +705,7 @@ def main():
                         help="aligner to use")
     parser.add_argument("-b", "--buildtree", dest="buildtree", action="store_true", default=False,
                         help="whether to try to build a phylogenetic tree" )
-    parser.add_argument("-p", "--bootstraps", dest="bootstraps", default=10,
+    parser.add_argument("-N", "--bootstraps", dest="bootstraps", default=100,
                         help="number of bootstraps to build tree" )
     parser.add_argument("-o", "--outdir", dest="outdir",
                         help="Results folder", metavar="FILE")

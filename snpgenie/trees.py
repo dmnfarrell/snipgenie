@@ -115,11 +115,14 @@ def biopython_draw_tree(filename):
     Phylo.draw(tree)
     return
 
-def create_tree(filename, ref=None, labelmap=None, colormap=None, color_bg=False, format=1):
+def create_tree(filename=None, tree=None, ref=None, labelmap=None, colormap=None, color_bg=False, format=1):
     """Draw a tree """
 
     from ete3 import Tree, PhyloTree, TreeStyle, TextFace
-    t = Tree(filename, format=format)
+    if filename != None:
+        t = Tree(filename, format=format)
+    else:
+        t = tree
     if ref != None:
         t.set_outgroup(ref)
     if colormap != None:
@@ -129,7 +132,6 @@ def create_tree(filename, ref=None, labelmap=None, colormap=None, color_bg=False
 
     #format_nodes(t)
     ts = TreeStyle()
-#    ts.scale=300
     return t, ts
 
 def colors_from_labels(df,name,group):
@@ -137,9 +139,9 @@ def colors_from_labels(df,name,group):
 
     labels = df[group].unique()
     colors={}
-    qcolors = ['blue','blueviolet','brown','burlywood','cadetblue','chartreuse','chocolate','coral','gold',
-               'cornflowerblue','cornsilk','crimson','green','khaki','orange','pink','red','lime',
-               'mediumvioletred','navy','teal','darkblue']    
+    qcolors = ['blue','green','blueviolet','brown','burlywood','cadetblue','chartreuse','chocolate','coral','gold',
+               'cornflowerblue','cornsilk','crimson','khaki','orange','pink','red','lime',
+               'mediumvioletred','navy','teal','darkblue']
     i=0
     for l in labels:
         colors[l] = qcolors[i]

@@ -398,8 +398,13 @@ def trim_reads(filename, outfile, adapter=None, quality=20,
         result = subprocess.check_output(cmd, shell=True, executable='/bin/bash')
     return
 
-def vcf_to_dataframe(vcf_file, quality=30):
-    """Convert vcf to dataframe"""
+def vcf_to_dataframe(vcf_file):
+    """
+    Convert a multi sample vcf to dataframe. Records each samples FORMAT fields.
+    Args:
+        vcf_file: input multi sample vcf
+    Returns: pandas DataFrame
+    """
 
     import vcf
     ext = os.path.splitext(vcf_file)[1]
@@ -409,25 +414,31 @@ def vcf_to_dataframe(vcf_file, quality=30):
         file = open(vcf_file)
     vcf_reader = vcf.Reader(file,'r')
     res=[]
-    cols = ['sample','REF','ALT','mut','chrom','var_type','sub_type','start','end','QUAL','DP']
+    cols = ['sample','REF','ALT','mut','DP','ADF','ADR','AD','chrom','var_type','sub_type','start','end','QUAL']
     i=0
     for rec in vcf_reader:
         #if i>50:
         #    break
-        S = {sample.sample: sample.gt_bases for sample in rec.samples}
-        #print (S)
-        x = [rec.CHROM, rec.var_type, rec.var_subtype, rec.start, rec.end, rec.QUAL, rec.INFO['DP']]
+        x = [rec.CHROM, rec.var_type, rec.var_subtype, rec.start, rec.end, rec.QUAL]
         for sample in rec.samples:
-            if sample.gt_bases==None:
+            if sample.gt_bases == None:
                 mut=''
+                row = [sample.sample, rec.REF, sample.gt_bases, mut, 0,0,0,0]
             elif rec.REF != sample.gt_bases:
-                mut=str(rec.end)+rec.REF+'>'+sample.gt_bases
+                mut = str(rec.end)+rec.REF+'>'+sample.gt_bases
+                cdata = sample.data
+                row = [sample.sample, rec.REF, sample.gt_bases, mut, cdata[2], cdata[4] ,cdata[5], cdata[6]] + x
             else:
-                mut = rec.REF
-            row = [sample.sample, rec.REF, sample.gt_bases, mut] + x
+                mut = str(rec.end)+rec.REF
+                #inf = sample.site.INFO
+                cdata = sample.data
+                row = [sample.sample, rec.REF, sample.gt_bases, mut, cdata[2], cdata[4] ,cdata[5], cdata[6]] + x
+
             res.append(row)
-        #i+=1
     res = pd.DataFrame(res,columns=cols)
+    res = res[~res.start.isnull()]
+    #res['start'] = res.start.astype(int)
+    #res['end'] = res.end.astype(int)
     return res
 
 def get_snp_matrix(df):

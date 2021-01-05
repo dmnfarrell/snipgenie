@@ -23,7 +23,8 @@ setup(
                       'biopython>=1.5',
                       'pyvcf>=0.6',
                       'pyfaidx',
-                      'pyside2>=5.1',
+                      'bcbio_gff',
+                      #'pyside2>=5.1',
                       'future'],
     entry_points = {
         'console_scripts': [

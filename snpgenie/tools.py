@@ -552,7 +552,7 @@ def concat_seqrecords(recs):
         concated += r.seq
     return SeqRecord(concated, id=recs[0].id)
 
-def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False):
+def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False, omit=None):
     """Get core snp site calls as sequences from all samples in a vcf file"""
 
     import vcf
@@ -564,11 +564,18 @@ def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False):
     result = defaultdict(default)
     sites = []
     result['ref'] = []
+    missing = []
     for record in vcf_reader:
         S = {sample.sample: sample.gt_bases for sample in record.samples}
+        if omit != None:
+            for o in omit:
+                del S[o]
         #if any missing samples at the site we don't add
         if None in S.values():
-            #print (S)
+            #for i in S:
+            #    if S[i]==None:
+            #        print (i)
+            missing.append(record.POS)
             continue
         if uninformative == False:
             u = set(S.values())
@@ -579,8 +586,10 @@ def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False):
             result[name].append(S[name])
         sites.append(record.POS)
 
-    #print (result)
     print ('found %s sites' %len(sites))
+    print ('%s sites with at least one missing sample' %len(missing))
+    if len(sites)==0:
+        print ('no sites found may mean one sample is too different')
     recs = []
     for sample in result:
         seq = ''.join(result[sample])

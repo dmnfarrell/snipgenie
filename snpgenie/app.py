@@ -106,8 +106,11 @@ def fetch_binaries():
         urllib.request.urlretrieve(link, filename)
     return
 
-def get_files_from_paths(paths):
-    """Get files in multiple paths"""
+def get_files_from_paths(paths, ext='*.f*q.gz'):
+    """Get files in multiple paths.
+    Args:
+        ext: wildcard for file types to parse eg. *.f*q.gz
+    """
 
     if not type(paths) == list:
         paths = [paths]
@@ -115,12 +118,15 @@ def get_files_from_paths(paths):
     for path in paths:
         if not os.path.exists(path):
             print ('the folder %s does not exist' %path)
-        s = glob.glob(os.path.join(path,'**/*.f*q.gz'), recursive=True)
+        s = glob.glob(os.path.join(path,'**/'+ext), recursive=True)
         files.extend(s)
     return files
 
 def get_samples(filenames, sep='-'):
-    """Get sample pairs from list of fastq files."""
+    """Get sample pairs from list of files, usually fastq. This
+     returns a dataframe os sample labels in original order of reading from
+     file system.
+     """
 
     res = []
     cols = ['name','sample','filename']
@@ -134,7 +140,7 @@ def get_samples(filenames, sep='-'):
         res.append(x)
 
     df = pd.DataFrame(res, columns=cols)
-    df = df.sort_values(['name','sample']).reset_index(drop=True)
+    #df = df.sort_values(['name','sample']).reset_index(drop=True)
     df['pair'] = df.groupby('sample').cumcount()+1
     #df = df.sort_values(['name','sample','pair']).reset_index(drop=True)
     df = df.drop_duplicates('filename')
@@ -151,8 +157,14 @@ def results_summary(df):
     return df.groupby('sample').first()[['name','bam_file','read_length']].reset_index()
 
 def write_samples(df, path):
+    """Write out sample names using dataframe from get_samples"""
+
     filename = os.path.join(path, 'samples.txt')
+    dup = df[df.duplicated(subset='sample')]
+    if len(dup)>0:
+        print ('duplicate sample names!')
     df.drop_duplicates('sample')['sample'].to_csv(filename,index=False,header=False)
+    return
 
 def align_reads(samples, idx, outdir='mapped', callback=None, aligner='bwa', **kwargs):
     """
@@ -329,8 +341,10 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
         #if linux use mpileup in parallel to speed up
         else:
             rawbcf = mpileup_gnuparallel(bam_files, ref, outpath, threads=threads, callback=callback)
-
+    else:
+        print ('%s already exists' %rawbcf)
     #find snps
+    print ('calling snps..')
     vcfout = os.path.join(outpath,'calls.vcf')
     cmd = '{bc} call -V indels --ploidy 1 -m -v -o {v} {raw}'.format(bc=bcftoolscmd,v=vcfout,raw=rawbcf)
     if callback != None:
@@ -375,6 +389,18 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
         m.to_csv(os.path.join(outpath,'csq.matrix'))
     print ('took %s seconds' %str(round(time.time()-st,0)))
     return final
+
+def relabel_vcfheader(vcf_file, sample_file):
+    """Re-label samples in vcf header"""
+
+    sample_file = os.path.join(outpath,'samples.txt')
+    rlout = os.path.join(tempdir,'calls.vcf')
+    cmd = '{bc} reheader --samples {s} -o {o} {v}'.format(bc=bcftoolscmd,o=rlout,v=vcf_file,s=sample_file)
+    print(cmd)
+    tmp = subprocess.check_output(cmd,shell=True)
+    #rewrite file
+    shutil.copy(rlout, vcf_file)
+    return
 
 def mask_filter(vcf_file, mask_file):
     """Remove any masked sites using a bed file, overwrites input"""
@@ -445,13 +471,13 @@ def site_proximity_filter(vcf_file, dist=10, outdir=None):
     tmp = subprocess.check_output(cmd,shell=True)
     return
 
-def create_bam_labels(filenames):
+'''def create_bam_labels(filenames):
 
     names = [os.path.basename(i).split('.')[0] for i in filenames]
     with open('samples.txt','w+') as file:
         for s in zip(bam_files,names):
             file.write('%s %s\n' %(s[0],s[1]))
-    return
+    return'''
 
 def trim_files(df, outpath, overwrite=False, threads=4, quality=30):
     """Batch trim fastq files"""
@@ -555,8 +581,8 @@ class WorkFlow(object):
             self.threads = int(self.threads)
         df = get_samples(self.filenames, sep=self.labelsep)
         if len(df) == 0:
-            print ('no samples provided')
-            return
+            print ('no samples provided. files should be fastq.gz type')
+            return False
 
         df['read_length'] = df.filename.apply(tools.get_fastq_info)
         self.fastq_table = df

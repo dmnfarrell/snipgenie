@@ -48,6 +48,23 @@ def format_nodes(t):
         ns["size"] = 0
         n.set_style(ns)
 
+def remove_tiplabels(t):
+    
+    for l in t.iter_leaves():
+        l.name = None
+        
+def set_nodesize(t, size=12):
+    """Change the node size"""
+    
+    from ete3 import NodeStyle
+    for l in t.iter_leaves():
+        clr = l._img_style['fgcolor']
+        ns = NodeStyle()
+        ns["size"] = size
+        #keep color
+        ns["fgcolor"] = clr
+        l.set_style(ns)
+        
 def color_leaves(t, colors, color_bg=False):
     from ete3 import NodeStyle
 
@@ -139,9 +156,10 @@ def colors_from_labels(df,name,group):
 
     labels = df[group].unique()
     colors={}
-    qcolors = ['blue','green','blueviolet','brown','burlywood','cadetblue','chartreuse','chocolate','coral','gold',
-               'cornflowerblue','cornsilk','crimson','khaki','orange','pink','red','lime',
-               'mediumvioletred','navy','teal','darkblue']
+    qcolors = ['blue','green','crimson','blueviolet','brown','burlywood','cadetblue','chartreuse','chocolate',
+                'coral','gold','cornflowerblue','cornsilk','khaki','orange','pink',
+                'red','lime','mediumvioletred','navy','teal','darkblue','purple','orange',
+                'marooon','salmon']
     i=0
     for l in labels:
         colors[l] = qcolors[i]

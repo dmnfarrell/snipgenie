@@ -33,6 +33,8 @@ from gzip import open as gzopen
 home = os.path.expanduser("~")
 config_path = os.path.join(home,'.config','snpgenie')
 bin_path = os.path.join(config_path, 'binaries')
+module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
+datadir = os.path.join(module_path, 'data')
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -139,6 +141,14 @@ def clustal_alignment(filename=None, seqs=None, command="clustalw"):
     align = AlignIO.read(name+'.aln', 'clustal')
     return align
 
+def make_blast_database(filename, dbtype='nucl'):
+    """Create a blast db from fasta file"""
+
+    cmd = get_cmd('makeblastdb')
+    cline = '%s -dbtype %s -in %s' %(cmd,dbtype,filename)
+    subprocess.check_output(cline, shell=True)
+    return
+
 def get_blast_results(filename):
     """
     Get blast results into dataframe. Assumes column names from local_blast method.
@@ -164,16 +174,29 @@ def local_blast(database, query, output=None, maxseqs=50, evalue=0.001,
 
     if output == None:
         output = os.path.splitext(query)[0]+'_blast.txt'
-    from Bio.Blast.Applications import NcbiblastxCommandline
+    from Bio.Blast.Applications import NcbiblastnCommandline
     outfmt = '"6 qseqid sseqid qseq sseq pident qcovs length mismatch gapopen qstart qend sstart send evalue bitscore stitle"'
-    cline = NcbiblastxCommandline(query=query, cmd=cmd, db=database,
+    cline = NcbiblastnCommandline(query=query, cmd=cmd, task='blastn', db=database,
                                  max_target_seqs=maxseqs,
                                  outfmt=outfmt, out=output,
                                  evalue=evalue, num_threads=cpus, **kwargs)
     if show_cmd == True:
         print (cline)
     stdout, stderr = cline()
-    return
+    return output
+
+def blast_fasta(database, filename, **kwargs):
+    """
+    Blast a fasta file
+    """
+
+    remotedbs = ['nr','refseq_protein','pdb','swissprot']
+    if database in remotedbs:
+        remote_blast(database, filename, **kwargs)
+    else:
+        outfile = local_blast(database, filename, **kwargs)
+    df = get_blast_results(filename=outfile)
+    return df
 
 def blast_sequences(database, seqs, labels=None, **kwargs):
     """
@@ -187,8 +210,6 @@ def blast_sequences(database, seqs, labels=None, **kwargs):
         pandas dataframe with top blast results
     """
 
-    remotedbs = ['nr','refseq_protein','pdb','swissprot']
-    res = []
     if not type(seqs) is list:
         seqs = [seqs]
     if labels is None:
@@ -203,11 +224,7 @@ def blast_sequences(database, seqs, labels=None, **kwargs):
             name = seq.id
         recs.append(rec)
     SeqIO.write(recs, 'tempseq.fa', "fasta")
-    if database in remotedbs:
-        remote_blast(database, 'tempseq.fa', **kwargs)
-    else:
-        local_blast(database, 'tempseq.fa', **kwargs)
-    df = get_blast_results(filename='tempseq_blast.txt')
+    df = blast_file(database, 'tempseq.fa', **kwargs)
     return df
 
 def dataframe_to_fasta(df, seqkey='translation', idkey='locus_tag',
@@ -221,7 +238,7 @@ def dataframe_to_fasta(df, seqkey='translation', idkey='locus_tag',
             d=row[descrkey]
         else:
             d=''
-        rec = SeqRecord(Seq(row[seqkey]),id=row[idkey],
+        rec = SeqRecord(Seq(row[seqkey]),id=str(row[idkey]),
                             description=d)
         seqs.append(rec)
     SeqIO.write(seqs, outfile, "fasta")
@@ -263,6 +280,26 @@ def fastq_to_dataframe(filename, size=1000):
     df = pd.DataFrame(res, columns=['id','seq'])
     df['length'] = df.seq.str.len()
     return df
+
+def fastq_to_fasta(filename, out, size=1000):
+    """Convert fastq to fasta
+        size: limit to the first reads of total size
+    """
+
+    ext = os.path.splitext(filename)[1]
+    if ext=='.gz':
+        fastq_parser = SeqIO.parse(gzopen(filename, "rt"), "fastq")
+    else:
+        fastq_parser = SeqIO.parse(open(filename, "r"), "fastq")
+    i=0
+    recs=[]
+    for fastq_rec in fastq_parser:
+        i+=1
+        if i>size:
+            break
+        recs.append(fastq_rec)
+    SeqIO.write(recs, out, 'fasta')
+    return
 
 def records_to_dataframe(records, cds=False, nucl_seq=False):
     """Get features from a biopython seq record object into a dataframe
@@ -713,3 +750,41 @@ def gff_bcftools_format(in_file, out_file):
         #write the new features to a GFF
         GFF.write([new], out_handle)
         return
+
+def get_spoligotype(filename, reads_limit=500000):
+    """Get mtb spoligotype from WGS reads"""
+
+    #ref = '../snpgenie/data/dr_spacers.fa'
+    ref = os.path.join(datadir, 'dr_spacers.fa')
+    #convert reads to fasta
+    tools.fastq_to_fasta(filename, 'temp.fa', reads_limit)
+    #make blast db from reads
+    tools.make_blast_database('temp.fa')
+    #blast spacers to db
+    bl = tools.blast_fasta('temp.fa', ref, evalue=0.1,
+                           maxseqs=100000, show_cmd=False)
+    bl=bl[(bl.qcovs>95) & (bl.mismatch<2)]
+    x = bl.groupby('qseqid').agg({'pident':np.size}).reset_index()
+    x
+    #print (x)
+    found = list(x.qseqid)
+    #print (found)
+    s=[]
+    for i in range(1,44):
+        if i in found:
+            s.append('1')
+        else:
+            s.append('0')
+    s =''.join(s)
+    print (s)
+    return s
+
+def get_sb_number(binary_str):
+    """Get SB number from binary pattern usinf database reference"""
+
+    df = pd.read_csv('../snpgenie/data/Mbovis.org_db.csv')
+    x = df[df['binary'] == binary_str]
+    if len(x) == 0:
+        return
+    else:
+        return x.iloc[0].SB

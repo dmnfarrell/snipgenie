@@ -43,20 +43,22 @@ def build_bwa_index(fastafile, path=None):
     print (cmd)
     return
 
-def bwa_align(file1, file2, idx, out, threads=4, overwrite=False, filter=None):
+def bwa_align(file1, file2, idx, out, threads=4, overwrite=False, options='', filter=None):
     """Align reads to a reference with bwa.
     Args:
         file1, file2: fastq files
         idx: bwa index name
         out: output bam file name
+        options: extra command line options e.g. -k INT for seed length
     """
 
     bwacmd = tools.get_cmd('bwa')
     samtoolscmd = tools.get_cmd('samtools')
     if file2 == None:
         file2=''
-    cmd = '{b} mem -M -t {t} {i} {f1} {f2} | {s} view -F 0x04 -bt - | {s} sort -o {o}'.format(b=bwacmd,i=idx,s=samtoolscmd,
-                                                                                      f1=file1,f2=file2,o=out,t=threads)
+    cmd = '{b} mem -M -t {t} {p} {i} {f1} {f2} | {s} view -F 0x04 -bt - | {s} sort -o {o}'.format(
+                b=bwacmd,i=idx,s=samtoolscmd,
+                f1=file1,f2=file2,o=out,t=threads,p=options)
     if not os.path.exists(out) or overwrite == True:
         print (cmd)
         tmp = subprocess.check_output(cmd, shell=True)
@@ -85,8 +87,8 @@ def build_bowtie_index(fastafile, path=None):
     print ('built bowtie index for %s' %fastafile)
     return name
 
-def bowtie_align(file1, file2, idx, out=None, remaining=None, threads=2,
-                overwrite=False, verbose=True):
+def bowtie_align(file1, file2, idx, out, remaining=None, threads=2,
+                overwrite=False, verbose=True, options='-v 1 --best'):
     """Map reads using bowtie"""
 
     bowtiecmd = tools.get_cmd('bowtie')
@@ -100,12 +102,13 @@ def bowtie_align(file1, file2, idx, out=None, remaining=None, threads=2,
         print ('aligners.BOWTIE_INDEXES variable not set')
         return
     os.environ["BOWTIE_INDEXES"] = BOWTIE_INDEXES
-    params = '-v 1 --best'
-    #if remaining == None:
-    #    remaining = os.path.join(outpath, label+'_r.fa')
-    cmd = '{c} -q -p {t} -S {p} {r} -1 {f1} -2 {f2} | {s} view -F 0x04 -bt - | {s} sort -o {o}'\
-            .format(c=bowtiecmd,t=threads,p=params,f1=file1,f2=file2,r=idx,o=out,s=samtoolscmd)
-    print (cmd)
+    if file2 != None:
+        filestr = '-1 {f1} -2 {f2}'.format(f1=file1,f2=file2)
+    else:
+        filestr = file1
+    cmd = '{c} -q -p {t} -S {p} {r} {f} | {s} view -F 0x04 -bt - | {s} sort -o {o}'\
+            .format(c=bowtiecmd,t=threads,f=filestr,p=options,r=idx,o=out,s=samtoolscmd)
+
     if verbose == True:
         print (cmd)
     if not os.path.exists(out) and overwrite == False:

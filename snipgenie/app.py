@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-    snpgenie methods for cmd line tool.
+    snipgenie methods for cmd line tool.
     Created Nov 2019
     Copyright (C) Damien Farrell
 
@@ -38,7 +38,7 @@ import multiprocessing as mp
 
 tempdir = tempfile.gettempdir()
 home = os.path.expanduser("~")
-config_path = os.path.join(home,'.config','snpgenie')
+config_path = os.path.join(home,'.config','snipgenie')
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
 datadir = os.path.join(module_path, 'data')
 sequence_path = os.path.join(config_path, 'genome')
@@ -65,6 +65,7 @@ defaults = {'threads':None, 'labelsep':'_','trim':False, 'quality':25,
             'aligner': 'bwa',
             'filters': default_filter, 'custom_filters': False, 'mask': None,
             'reference': None, 'gb_file': None, 'overwrite':False,
+            'omit_samples': [],
             'buildtree':False, 'bootstraps':100}
 
 def check_platform():
@@ -92,7 +93,7 @@ copy_ref_genomes()
 def fetch_binaries():
     """Get windows binaries -- windows only"""
 
-    url = "https://github.com/dmnfarrell/snpgenie/raw/master/win_binaries/"
+    url = "https://github.com/dmnfarrell/snipgenie/raw/master/win_binaries/"
     os.makedirs(bin_path, exist_ok=True)
     names = ['bcftools.exe','bwa.exe','samtools.exe','tabix.exe',
              'msys-2.0.dll','msys-bz2-1.dll','msys-lzma-5.dll','msys-ncursesw6.dll','msys-z.dll']
@@ -124,7 +125,7 @@ def get_files_from_paths(paths, ext='*.f*q.gz'):
 
 def get_samples(filenames, sep='-'):
     """Get sample pairs from list of files, usually fastq. This
-     returns a dataframe os sample labels in original order of reading from
+     returns a dataframe of sample labels in original order of reading from
      file system.
      """
 
@@ -140,7 +141,6 @@ def get_samples(filenames, sep='-'):
         res.append(x)
 
     df = pd.DataFrame(res, columns=cols)
-    #df = df.sort_values(['name','sample']).reset_index(drop=True)
     df['pair'] = df.groupby('sample').cumcount()+1
     #df = df.sort_values(['name','sample','pair']).reset_index(drop=True)
     df = df.drop_duplicates('filename')
@@ -160,9 +160,6 @@ def write_samples(df, path):
     """Write out sample names using dataframe from get_samples"""
 
     filename = os.path.join(path, 'samples.txt')
-    dup = df[df.duplicated(subset='sample')]
-    if len(dup)>0:
-        print ('duplicate sample names!')
     df.drop_duplicates('sample')['sample'].to_csv(filename,index=False,header=False)
     return
 
@@ -648,7 +645,7 @@ class WorkFlow(object):
         print ()
         print ('making SNP matrix')
         print ('-----------------')
-        snprecs, smat = tools.fasta_alignment_from_vcf(self.vcf_file)
+        snprecs, smat = tools.fasta_alignment_from_vcf(self.vcf_file, omit=self.omit_samples)
         outfasta = os.path.join(self.outdir, 'core.fa')
         SeqIO.write(snprecs, outfasta, 'fasta')
         #write out sites matrix as txt file
@@ -687,7 +684,7 @@ def test_run():
     """Test run"""
 
     testdatadir = os.path.join(module_path, 'testing')
-    out = os.path.join(tempdir, 'snpgenie_tests')
+    out = os.path.join(tempdir, 'snipgenie_tests')
     args = {'threads':8, 'outdir': out, 'input': testdatadir,
             'aligner':'bowtie',
             'reference': None, 'overwrite':True}
@@ -702,7 +699,7 @@ def main():
 
     import sys, os
     from argparse import ArgumentParser
-    parser = ArgumentParser(description='snpgenie CLI tool. https://github.com/dmnfarrell/snpgenie')
+    parser = ArgumentParser(description='snipgenie CLI tool. https://github.com/dmnfarrell/snipgenie')
     parser.add_argument("-i", "--input", action='append', dest="input", default=[],
                         help="input folder(s)", metavar="FILE")
     #parser.add_argument("-l", "--labels", dest="labels", default=[],
@@ -752,8 +749,8 @@ def main():
         test_run()
     elif args['version'] == True:
         from . import __version__
-        print ('snpgenie version %s' %__version__)
-        print ('https://github.com/dmnfarrell/snpgenie')
+        print ('snipgenie version %s' %__version__)
+        print ('https://github.com/dmnfarrell/snipgenie')
     elif args['qc'] == True:
         print ('Running qc report')
         qcfile = 'qc_report.pdf'
@@ -762,7 +759,7 @@ def main():
     elif args['outdir'] == None:
         print ('No input or output folders provided. These are required.')
         print ('Example:')
-        print ('snpgenie -r <reference> -i <input folder with fastq.gz files> -o <output folder>')
+        print ('snipgenie -r <reference> -i <input folder with fastq.gz files> -o <output folder>')
         print ('Use -h for more help on options.')
     else:
         W = WorkFlow(**args)

@@ -1,20 +1,20 @@
 from setuptools import setup
 import sys,os
 
-with open('snpgenie/description.txt') as f:
+with open('snipgenie/description.txt') as f:
     long_description = f.read()
 
 setup(
-    name = 'snpgenie',
-    version = '0.2.0',
-    description = 'variant calling and phylogenies from NGS data',
+    name = 'snipgenie',
+    version = '0.3.0',
+    description = 'variant calling and phylogenies from microbial WGS data',
     long_description = long_description,
-    url='https://github.com/dmnfarrell/snpgenie',
+    url='https://github.com/dmnfarrell/snipgenie',
     license='GPL v3',
     author = 'Damien Farrell',
     author_email = 'farrell.damien@gmail.com',
-    packages = ['snpgenie'],
-    package_data={'snpgenie': ['data/*.*','logo.png',
+    packages = ['snipgenie'],
+    package_data={'snipgenie': ['data/*.*','logo.png',
                   'description.txt']
                  },
     install_requires=['numpy>=1.10',
@@ -28,8 +28,8 @@ setup(
                       'future'],
     entry_points = {
         'console_scripts': [
-            'snpgenie-gui=snpgenie.gui:main',
-            'snpgenie=snpgenie.app:main']
+            'snipgenie-gui=snipgenie.gui:main',
+            'snipgenie=snipgenie.app:main']
             },
     classifiers = ['Operating System :: OS Independent',
             'Programming Language :: Python :: 2.7',

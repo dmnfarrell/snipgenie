@@ -1,11 +1,11 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Documentation Status](https://readthedocs.org/projects/snpgenie/badge/?version=latest)](https://snpgenie.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/snipgenie/badge/?version=latest)](https://snipgenie.readthedocs.io/en/latest/?badge=latest)
 
-# snpgenie
+# SNiPgenie
 
-<img align="right" src=snpgenie/logo.png width=180px>
+<img align="right" src=snipgenie/logo.png width=180px>
 
-_snpgenie_ is a tool for microbial variant calling and phylogenetic analysis from raw read data. It was primarily written to be used with bacterial isolates of M. Bovis but can be applied to other species. You need a good quality reference genome to align to. Anyone interested in using the software is encouraged to make suggestions on improving or adding features.
+_SNiPgenie_ is a tool for microbial variant calling and phylogenetic analysis from raw read data. It was primarily written to be used with bacterial isolates of M. Bovis but can be applied to other species. You need a good quality reference genome to align to. Anyone interested in using the software is encouraged to make suggestions on improving or adding features.
 
 This software is written in Python. It was developed on Ubuntu linux but is designed to also run on Windows 10 with a standalone application. The GUI is made using the Qt toolkit using PySide2.
 
@@ -25,7 +25,7 @@ This software is written in Python. It was developed on Ubuntu linux but is desi
 
 Note for Windows users: a GUI with standalone installer will be available shortly.
 
-`pip install -e git+https://github.com/dmnfarrell/snpgenie.git#egg=snpgenie`
+`pip install -e git+https://github.com/dmnfarrell/snipgenie.git#egg=snipgenie`
 
 Notes: You may need to use pip3 on Ubuntu to ensure you use Python 3. Use sudo if installing system-wide.
 
@@ -61,7 +61,7 @@ The binaries are downloaded automatically in Windows.
 
 ## Usage
 
-Run `snpgenie` for the cli or `snpgenie-gui` for the desktop version. You require a reference genome and reads in fastq format at minimum as input.
+Run `snipgenie` for the cli or `snipgenie-gui` for the desktop version. You require a reference genome and reads in fastq format at minimum as input.
 
 ### Command line options
 
@@ -96,24 +96,24 @@ This will run the entire process based on a set of options given at the terminal
 ### Examples
 
 ```
-snpgenie -r reference.fa -i data_files -o results
+snipgenie -r reference.fa -i data_files -o results
 ```
 Provide more than one folder:
 
 ```
-snpgenie -r reference.fa -i data_files1 -i data_files2 -o results
+snipgenie -r reference.fa -i data_files1 -i data_files2 -o results
 ```
 
 Provide an annotation (genbank format) for consequence calling:
 
 ```
-snpgenie -r reference.fa -g reference.gb -i data_files -o results
+snipgenie -r reference.fa -g reference.gb -i data_files -o results
 ```
 
 Add your own filters and provide threads:
 
 ```
-snpgenie -r reference.fa -i data_files -t 8 -o results` \
+snipgenie -r reference.fa -i data_files -t 8 -o results` \
  -f 'QUAL>=40 && INFO/DP>=20 && MQ>40'
 ```
 
@@ -146,7 +146,7 @@ Filenames are parsed and a sample name is extracted for each pair (if paired end
 
 ## Use from Python
 
-You can run a workflow from within Python by importing the snpgenie package and invoking the `WorkFlow` class. You need to provide the options in a dictionary with the same keywords as the command line. Notice in this example we are loading files from two folders.
+You can run a workflow from within Python by importing the snipgenie package and invoking the `WorkFlow` class. You need to provide the options in a dictionary with the same keywords as the command line. Notice in this example we are loading files from two folders.
 
 ```python
 import sngenie
@@ -154,7 +154,7 @@ args = {'threads':8, 'outdir': 'results', 'labelsep':'-',
         'input':['/my/folder/',
                  '/my/other/folder'],
         'reference': None, 'overwrite':False}
-W = snpgenie.app.WorkFlow(**args)
+W = snipgenie.app.WorkFlow(**args)
 W.setup()
 W.run()
 ```

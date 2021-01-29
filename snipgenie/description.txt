@@ -2,7 +2,7 @@ Background
 ----------
 
 This is a Python package for doing variant calling and making phylogenies using
-NGS data from microbial species.
+WGS data from microbial species.
 
 Dependencies
 ------------
@@ -12,7 +12,7 @@ pandas
 biopython
 matplotlib
 future
-pyside2
+pyside2 (for gui only)
 
 Installation
 ------------

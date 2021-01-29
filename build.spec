@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-    snpgenie spec file for pyinstaller.
+    snipgenie spec file for pyinstaller.
     Created Nov 2019
     Copyright (C) Damien Farrell
 
@@ -32,8 +32,8 @@ a = Analysis(['main.py'],
              win_private_assemblies=False,
              cipher=block_cipher,
              noarchive=False,
-             datas=[ ('snpgenie/logo.png', 'snpgenie/'),
-                     ('snpgenie/data/*', 'snpgenie/data/')  ])
+             datas=[ ('snipgenie/logo.png', 'snipgenie/'),
+                     ('snipgenie/data/*', 'snipgenie/data/')  ])
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 
@@ -59,7 +59,7 @@ exe = EXE(pyz,
           a.scripts,
           [],
           exclude_binaries=True,
-          name='snpgenie.exe',
+          name='snipgenie.exe',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
@@ -73,4 +73,4 @@ coll = COLLECT(exe,
                strip=False,
                upx=True,
                upx_exclude=[],
-               name='snpgenie')
+               name='snipgenie')

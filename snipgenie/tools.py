@@ -31,7 +31,7 @@ import pandas as pd
 from gzip import open as gzopen
 
 home = os.path.expanduser("~")
-config_path = os.path.join(home,'.config','snpgenie')
+config_path = os.path.join(home,'.config','snipgenie')
 bin_path = os.path.join(config_path, 'binaries')
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
 datadir = os.path.join(module_path, 'data')
@@ -751,24 +751,22 @@ def gff_bcftools_format(in_file, out_file):
         GFF.write([new], out_handle)
         return
 
-def get_spoligotype(filename, reads_limit=500000):
+def get_spoligotype(filename, reads_limit=500000, threshold=2):
     """Get mtb spoligotype from WGS reads"""
 
-    #ref = '../snpgenie/data/dr_spacers.fa'
+    #ref = '../snipgenie/data/dr_spacers.fa'
     ref = os.path.join(datadir, 'dr_spacers.fa')
     #convert reads to fasta
-    tools.fastq_to_fasta(filename, 'temp.fa', reads_limit)
+    fastq_to_fasta(filename, 'temp.fa', reads_limit)
     #make blast db from reads
-    tools.make_blast_database('temp.fa')
+    make_blast_database('temp.fa')
     #blast spacers to db
-    bl = tools.blast_fasta('temp.fa', ref, evalue=0.1,
+    bl = blast_fasta('temp.fa', ref, evalue=0.1,
                            maxseqs=100000, show_cmd=False)
     bl=bl[(bl.qcovs>95) & (bl.mismatch<2)]
     x = bl.groupby('qseqid').agg({'pident':np.size}).reset_index()
-    x
-    #print (x)
+    x = x[x.pident>=threshold]
     found = list(x.qseqid)
-    #print (found)
     s=[]
     for i in range(1,44):
         if i in found:
@@ -782,7 +780,7 @@ def get_spoligotype(filename, reads_limit=500000):
 def get_sb_number(binary_str):
     """Get SB number from binary pattern usinf database reference"""
 
-    df = pd.read_csv('../snpgenie/data/Mbovis.org_db.csv')
+    df = pd.read_csv('../snipgenie/data/Mbovis.org_db.csv')
     x = df[df['binary'] == binary_str]
     if len(x) == 0:
         return

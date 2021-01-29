@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-    snpgenie GUI.
+    snipgenie GUI.
     Created Jan 2020
     Copyright (C) Damien Farrell
 
@@ -25,9 +25,16 @@ import sys,os,traceback,subprocess
 import glob,platform,shutil
 import pickle
 import threading,time
-from PySide2 import QtCore
-from PySide2.QtWidgets import *
-from PySide2.QtGui import *
+try:
+    from PySide2 import QtCore
+    from PySide2.QtWidgets import *
+    from PySide2.QtGui import *
+    from PySide2.QtCore import QObject, Signal, Slot
+except:
+    from PyQt5 import QtCore
+    from PyQt5.QtWidgets import *
+    from PyQt5.QtGui import *
+    from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 import pandas as pd
 import numpy as np
@@ -45,7 +52,7 @@ class App(QMainWindow):
 
         QMainWindow.__init__(self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        self.setWindowTitle("snpgenie")
+        self.setWindowTitle("snipgenie")
 
         self.setWindowIcon(QIcon(logoimg))
         self.create_menu()
@@ -287,11 +294,11 @@ class App(QMainWindow):
 
         options = QFileDialog.Options()
         filename, _ = QFileDialog.getSaveFileName(self,"Save Project",
-                                                  "","Project files (*.snpgenie);;All files (*.*)",
+                                                  "","Project files (*.snipgenie);;All files (*.*)",
                                                   options=options)
         if filename:
-            if not os.path.splitext(filename)[1] == '.snpgenie':
-                filename += '.snpgenie'
+            if not os.path.splitext(filename)[1] == '.snipgenie':
+                filename += '.snipgenie'
             self.proj_file = filename
             self.save_project()
         return
@@ -345,7 +352,7 @@ class App(QMainWindow):
         """Load project"""
 
         filename, _ = QFileDialog.getOpenFileName(self, 'Open Project', './',
-                                        filter="Project Files(*.snpgenie);;All Files(*.*)")
+                                        filter="Project Files(*.snipgenie);;All Files(*.*)")
         if not filename:
             return
         if not os.path.exists(filename):
@@ -836,7 +843,7 @@ class App(QMainWindow):
         else:
             snap=''
 
-        text='snpgenie GUI\n'\
+        text='snipgenie GUI\n'\
             +'version '+__version__+snap+'\n'\
             +'Copyright (C) Damien Farrell 2020-\n'\
             +'This program is free software; you can redistribute it and/or '\
@@ -933,11 +940,11 @@ def main():
 
     import sys, os
     from argparse import ArgumentParser
-    parser = ArgumentParser(description='snpgenie gui tool')
+    parser = ArgumentParser(description='snipgenie gui tool')
     parser.add_argument("-f", "--fasta", dest="filenames",default=[],
                         help="input fasta file", metavar="FILE")
     parser.add_argument("-p", "--proj", dest="project",default=None,
-                        help="load .snpgenie project file", metavar="FILE")
+                        help="load .snipgenie project file", metavar="FILE")
     args = vars(parser.parse_args())
 
     app = QApplication(sys.argv)

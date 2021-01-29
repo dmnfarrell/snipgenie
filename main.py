@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-    snpgenie GUI app lauancher.
+    snipgenie GUI app lauancher.
     Created Sep 2020
     Copyright (C) Damien Farrell
 
@@ -21,7 +21,7 @@
 """
 
 from PySide2.QtWidgets import *
-from snpgenie import gui
+from snipgenie import gui
 
 def main():
     "Run the application"

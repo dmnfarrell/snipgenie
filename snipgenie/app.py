@@ -107,10 +107,11 @@ def fetch_binaries():
         urllib.request.urlretrieve(link, filename)
     return
 
-def get_files_from_paths(paths, ext='*.f*q.gz'):
+def get_files_from_paths(paths, ext='*.f*q.gz', filter_list=None):
     """Get files in multiple paths.
     Args:
-        ext: wildcard for file types to parse eg. *.f*q.gz
+        ext: wildcard for file types to parse eg. *.f*q.gz]
+        filter_list: list of labels that should be present in the filenames, optional
     """
 
     if not type(paths) == list:
@@ -121,6 +122,13 @@ def get_files_from_paths(paths, ext='*.f*q.gz'):
             print ('the folder %s does not exist' %path)
         s = glob.glob(os.path.join(path,'**/'+ext), recursive=True)
         files.extend(s)
+    found = []
+    if filter_list != None:
+        for f in files:
+            for n in filter_list:
+                if n in f:
+                    found.append(f)
+        files=found
     return files
 
 def get_samples(filenames, sep='-'):
@@ -161,7 +169,7 @@ def write_samples(df, path):
 
     filename = os.path.join(path, 'samples.txt')
     df.drop_duplicates('sample')['sample'].to_csv(filename,index=False,header=False)
-    return
+    return filename
 
 def align_reads(samples, idx, outdir='mapped', callback=None, aligner='bwa', **kwargs):
     """
@@ -351,12 +359,14 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
 
     #relabel samples in vcf header
     if relabel == True:
-        sample_file = os.path.join(outpath,'samples.txt')
+        '''
         rlout = os.path.join(tempdir,'calls.vcf')
         cmd = '{bc} reheader --samples {s} -o {o} {v}'.format(bc=bcftoolscmd,o=rlout,v=vcfout,s=sample_file)
         print(cmd)
         tmp = subprocess.check_output(cmd,shell=True)
-        shutil.copy(rlout, vcfout)
+        shutil.copy(rlout, vcfout)'''
+        sample_file = os.path.join(outpath,'samples.txt')
+        relabel_vcfheader(vcfout, sample_file)
 
     #filter variants
     final = os.path.join(outpath,'filtered.vcf.gz')
@@ -390,9 +400,10 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
 def relabel_vcfheader(vcf_file, sample_file):
     """Re-label samples in vcf header"""
 
-    sample_file = os.path.join(outpath,'samples.txt')
+    bcftoolscmd = tools.get_cmd('bcftools')
     rlout = os.path.join(tempdir,'calls.vcf')
-    cmd = '{bc} reheader --samples {s} -o {o} {v}'.format(bc=bcftoolscmd,o=rlout,v=vcf_file,s=sample_file)
+    cmd = '{bc} reheader --samples {s} -o {o} {v}'.format(bc=bcftoolscmd,o=rlout,
+                                                v=vcf_file,s=sample_file)
     print(cmd)
     tmp = subprocess.check_output(cmd,shell=True)
     #rewrite file
@@ -468,14 +479,6 @@ def site_proximity_filter(vcf_file, dist=10, outdir=None):
     tmp = subprocess.check_output(cmd,shell=True)
     return
 
-'''def create_bam_labels(filenames):
-
-    names = [os.path.basename(i).split('.')[0] for i in filenames]
-    with open('samples.txt','w+') as file:
-        for s in zip(bam_files,names):
-            file.write('%s %s\n' %(s[0],s[1]))
-    return'''
-
 def trim_files(df, outpath, overwrite=False, threads=4, quality=30):
     """Batch trim fastq files"""
 
@@ -509,6 +512,30 @@ def get_aa_snp_matrix(df):
     x[x.notna()] = 1
     x = x.fillna(0)
     return x
+
+def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4, **kwargs):
+    """
+    Use bam files from previous run(s) or sets of alignments
+    so we can select a subset only to do calling on.
+    kwargs passed to app.variant_calling method
+    """
+
+    if gff_file!=None:
+        tools.gff_bcftools_format(ref, gff_file)
+    if not os.path.exists(outdir):
+        os.makedirs(outdir, exist_ok=True)
+    df = get_samples(bam_files, sep='_')
+    write_samples(df, outdir)
+    vcf_file = variant_calling(bam_files, ref, outdir, threads=threads,
+                                   relabel=True, gff_file=gff_file,
+                                   **kwargs)
+
+    snprecs, smat = tools.fasta_alignment_from_vcf(vcf_file)
+    outfasta = os.path.join(outdir, 'core.fa')
+    SeqIO.write(snprecs, outfasta, 'fasta')
+    smat.to_csv(os.path.join(outdir,'core.txt'), sep=' ')
+    treefile = trees.run_RAXML(outfasta, outpath=outdir)
+    return
 
 class Logger(object):
     """
@@ -656,7 +683,8 @@ class WorkFlow(object):
         snp_dist = tools.snp_dist_matrix(aln)
         snp_dist.to_csv(os.path.join(self.outdir,'snpdist.csv'), sep=',')
 
-        #save summary table
+        #save summary tables
+        samples.to_csv(os.path.join(self.outdir,'samples.csv'),index=False)
         summ = results_summary(samples)
         summ.to_csv(os.path.join(self.outdir,'summary.csv'),index=False)
         print ('Done. Sample summary:')

@@ -20,15 +20,11 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 
-from PySide2 import QtCore, QtGui
-from PySide2.QtCore import QObject
-from PySide2.QtWidgets import *
-from PySide2.QtGui import *
-
 import sys, os, io
 import numpy as np
 import pandas as pd
 import string
+from .qt import *
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -36,6 +32,9 @@ except AttributeError:
     def _fromUtf8(s):
         return s
 from . import tools, plotting
+
+module_path = os.path.dirname(os.path.abspath(__file__))
+iconpath = os.path.join(module_path, 'icons')
 
 def dialogFromOptions(parent, opts, sections=None,
                       sticky='news', wrap=2, section_wrap=2):
@@ -198,6 +197,48 @@ def setWidgetValues(widgets, values):
             elif type(w) is QSpinBox:
                 w.setValue(val)
     return
+
+def addToolBarItems(toolbar, parent, items):
+    """Populate toolbar from dict of items"""
+
+    for i in items:
+        if 'file' in items[i]:
+            iconfile = os.path.join(iconpath,items[i]['file']+'.png')
+            icon = QIcon(iconfile)
+        else:
+            icon = QIcon.fromTheme(items[i]['icon'])
+        btn = QAction(icon, i, parent)
+        btn.triggered.connect(items[i]['action'])
+        if 'shortcut' in items[i]:
+            btn.setShortcut(QKeySequence(items[i]['shortcut']))
+        #btn.setCheckable(True)
+        toolbar.addAction(btn)
+    return toolbar
+
+class MultipleInputDialog(QDialog):
+    """Qdialog with multiple inputs"""
+    def __init__(self, parent, options=None, title='Input', width=400, height=200):
+        super(MultipleInputDialog, self).__init__(parent)
+        self.values = None
+        self.accepted = False
+        self.setMinimumSize(width, height)
+        self.setWindowTitle(title)
+        dialog, self.widgets = dialogFromOptions(self, options)
+        vbox = QVBoxLayout(self)
+        vbox.addWidget(dialog)
+        buttonbox = QDialogButtonBox(self)
+        buttonbox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok)
+        buttonbox.button(QDialogButtonBox.Ok).clicked.connect(self.accept)
+        buttonbox.button(QDialogButtonBox.Cancel).clicked.connect(self.close)
+        vbox.addWidget(buttonbox)
+        self.show()
+        return self.values
+
+    def accept(self):
+        self.values = getWidgetValues(self.widgets)
+        self.accepted = True
+        self.close()
+        return
 
 class ToolBar(QWidget):
     """Toolbar class"""
@@ -371,7 +412,7 @@ class PlainTextEditor(QPlainTextEdit):
             self.zoom(1)
         elif action == zoomoutAction:
             self.zoom(-1)
-            
+
 class FileViewer(QDialog):
     """Sequence records features viewer"""
     def __init__(self, parent=None, filename=None):
@@ -792,3 +833,72 @@ class GraphicalBamViewer(QDialog):
         self.view_range = xend-xstart
         self.loclbl.setText(str(xstart)+'-'+str(xend))
         return
+
+class TreeViewer(QDialog):
+    """Phylogeny viewer with toytree"""
+    def __init__(self, parent=None, filename=None):
+
+        super(TreeViewer, self).__init__(parent)
+        self.setGeometry(QtCore.QRect(200, 200, 1000, 300))
+        self.setMinimumHeight(150)
+        self.add_widgets()
+        import toytree
+        self.style = {
+            "edge_type": 'p',
+            "edge_style": {
+                "stroke": toytree.colors[1],
+                "stroke-width": 2.5,
+            },
+            "tip_labels_align": True,
+            "tip_labels_colors": toytree.colors[3],
+            "tip_labels_style": {
+                "font-size": "14px"
+            },
+            "node_labels": False,
+            "node_sizes": 10,
+            "node_colors": toytree.colors[2],
+        }
+        self.tree = None
+        return
+
+    def add_widgets(self):
+        """Add widgets"""
+
+        from PySide2.QtWebEngineWidgets import QWebEngineView
+        self.browser = QWebEngineView()
+        vbox = QVBoxLayout()
+        self.setLayout(vbox)
+        vbox.addWidget(self.browser)
+        toolswidget = QWidget()
+        vbox.addWidget(toolswidget)
+        l=QVBoxLayout(toolswidget)
+
+        self.zoomslider = w = QSlider(QtCore.Qt.Horizontal)
+        w.setSingleStep(5)
+        w.setMinimum(5)
+        w.setMaximum(50)        
+        w.setValue(10)
+        l.addWidget(w)
+        w.valueChanged.connect(self.zoom)
+        return
+
+    def load_tree(self, filename):
+        import toytree
+        self.tree = toytree.tree(filename)
+
+    def update(self):
+
+        import toytree
+        import toyplot
+        canvas,axes,mark = self.tree.draw(
+                        width=600,
+                        height=800,
+                        scalebar=True, **self.style)
+        toyplot.html.render(canvas, "temp.html")
+        with open('temp.html', 'r') as f:
+            html = f.read()
+            self.browser.setHtml(html)
+
+    def zoom(self):
+        zoom = self.zoomslider.value()/10
+        self.browser.setZoomFactor(zoom)

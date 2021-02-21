@@ -1,5 +1,5 @@
 name: snpgenie
-version: 'latest'
+version: '0.2.0-28-g7b45938'
 #version-script: git describe --abbrev=1 --tags
 summary: tool for microbial variant calling
 description: |
@@ -33,4 +33,4 @@ parts:
       - bcftools
       - samtools
       - bwa
-#      - raxml
+      - fasttree

@@ -9,6 +9,8 @@ CHANGES
 * fix to use only core snps
 * can remove uninformative sites from core
 * can create qc report from cmd line
+* map view for gui
+* gui tree viewer 
 
 0.2.0
 -----

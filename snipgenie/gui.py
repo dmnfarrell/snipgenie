@@ -25,17 +25,7 @@ import sys,os,traceback,subprocess
 import glob,platform,shutil
 import pickle
 import threading,time
-try:
-    from PySide2 import QtCore
-    from PySide2.QtWidgets import *
-    from PySide2.QtGui import *
-    from PySide2.QtCore import QObject, Signal, Slot
-except:
-    from PyQt5 import QtCore
-    from PyQt5.QtWidgets import *
-    from PyQt5.QtGui import *
-    from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
-
+from .qt import *
 import pandas as pd
 import numpy as np
 import pylab as plt
@@ -45,6 +35,7 @@ from . import tools, aligners, app, widgets, tables, plotting, trees
 home = os.path.expanduser("~")
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
 logoimg = os.path.join(module_path, 'logo.png')
+iconpath = os.path.join(module_path, 'icons')
 
 class App(QMainWindow):
     """GUI Application using PySide2 widgets"""
@@ -101,7 +92,8 @@ class App(QMainWindow):
 
         self.m = QSplitter(self.main)
         #left menu
-        left = QWidget(self.m)
+        left = QWidget()
+        self.m.addWidget(left)
         l = QVBoxLayout(left)
         lbl = QLabel("Reference Genome:")
         l.addWidget(lbl)
@@ -116,15 +108,14 @@ class App(QMainWindow):
 
         #create option widgets
         self.opts = AppOptions(parent=self.m)
-        #optionswidget = QWidget(left)
-        #l.addWidget(optionswidget)
         dialog = self.opts.showDialog(left, wrap=1, section_wrap=1)
         l.addWidget(dialog)
 
         l.addStretch()
         left.setFixedWidth(250)
 
-        center = QWidget(self.m)
+        center = QWidget()
+        self.m.addWidget(center)
         l = QVBoxLayout(center)
         self.fastq_table = tables.FilesTable(center, app=self, dataframe=pd.DataFrame())
         l.addWidget(self.fastq_table)
@@ -135,9 +126,11 @@ class App(QMainWindow):
         self.tabs.tabCloseRequested.connect(self.close_tab)
         l.addWidget(self.tabs)
 
-        self.right = right = QWidget(self.m)
+        self.right = right = QWidget()
+        self.m.addWidget(self.right)
         l2 = QVBoxLayout(right)
         #mainlayout.addWidget(right)
+
         self.right_tabs = QTabWidget(right)
         self.right_tabs.setTabsClosable(True)
         self.right_tabs.tabCloseRequested.connect(self.close_right_tab)
@@ -196,8 +189,6 @@ class App(QMainWindow):
         """Create the menu bar for the application. """
 
         self.file_menu = QMenu('&File', self)
-        #self.file_menu.addAction('&New', self.newProject,
-        #        QtCore.Qt.CTRL + QtCore.Qt.Key_N)
         self.file_menu.addAction('&Add Folder', self.load_fastq_folder_dialog,
                 QtCore.Qt.CTRL + QtCore.Qt.Key_F)
         self.file_menu.addAction('&Add Fastq Files', self.load_fastq_files_dialog,
@@ -219,8 +210,6 @@ class App(QMainWindow):
         self.analysis_menu = QMenu('&Analysis', self)
         self.menuBar().addSeparator()
         self.menuBar().addMenu(self.analysis_menu)
-        #self.analysis_menu.addAction('&Run Blast',
-        #    lambda: self.run_threaded_process(self.run_gene_finder, self.find_genes_completed))
         self.analysis_menu.addAction('&Trim Reads',
             lambda: self.run_threaded_process(self.run_trimming, self.processing_completed))
         self.analysis_menu.addAction('&Align Reads',
@@ -229,9 +218,17 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.variant_calling, self.processing_completed))
         self.analysis_menu.addAction('&Create SNP alignment',
             lambda: self.run_threaded_process(self.snp_alignment, self.processing_completed))
-        self.analysis_menu.addAction('&Run Workflow', self.run)
+        self.analysis_menu.addAction('&Make Phylogeny', self.make_phylo_tree)
         self.analysis_menu.addSeparator()
-        self.analysis_menu.addAction('&Show Annotation', self.show_ref_annotation)
+        self.analysis_menu.addAction('&Run Workflow', self.run)
+
+        self.tools_menu = QMenu('&Tools', self)
+        self.menuBar().addMenu(self.tools_menu)
+        self.tools_menu.addAction('&Fastq Qualities Report', self.fastq_quality_report)
+        self.tools_menu.addAction('&RD Analysis (MTBC)',
+            lambda: self.run_threaded_process(self.rd_analysis, self.rd_analysis_completed))
+        self.tools_menu.addAction('&Show Annotation', self.show_ref_annotation)
+        self.tools_menu.addAction('&Map View', self.show_map)
 
         self.settings_menu = QMenu('&Settings', self)
         self.menuBar().addMenu(self.settings_menu)
@@ -244,12 +241,6 @@ class App(QMainWindow):
         self.presets_menu = QMenu('&Load Preset', self)
         self.menuBar().addMenu(self.presets_menu)
         self.load_presets_menu()
-
-        self.tools_menu = QMenu('&Tools', self)
-        self.menuBar().addMenu(self.tools_menu)
-        self.tools_menu.addAction('&Fastq Qualities Report', self.fastq_quality_report)
-        self.tools_menu.addAction('&RD Analysis (MTBC)',
-            lambda: self.run_threaded_process(self.rd_analysis, self.rd_analysis_completed))
 
         self.help_menu = QMenu('&Help', self)
         self.menuBar().addMenu(self.help_menu)
@@ -368,6 +359,12 @@ class App(QMainWindow):
             return
         #filenames = glob.glob(os.path.join(app.datadir, '*.fa'))
         self.load_fastq_table(filenames)
+        return
+
+    def import_results_folder(self, path):
+        """Import previously made results"""
+
+        df = read.csv(os.path.join(path, 'samples.csv'))
         return
 
     def check_missing_files(self):
@@ -501,7 +498,17 @@ class App(QMainWindow):
         selected_directory = QFileDialog.getExistingDirectory()
         if selected_directory:
             self.outputdir = selected_directory
-        #check it's empty?
+        #check if folder already got some results
+        results_file = os.path.join(self.outputdir, 'samples.csv')
+        if os.path.exists(results_file):
+            msg = "This folder appears to have results already. Try to import the table?"
+            reply = QMessageBox.question(self, 'Confirm', msg,
+                                        QMessageBox.Cancel | QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.Cancel:
+                return
+            elif reply == QMessageBox.Yes:
+                self.fastq_table.model.df = pd.read_csv(results_file)
+                self.fastq_table.refresh()
         self.outdirLabel.setText(self.outputdir)
         return
 
@@ -509,8 +516,6 @@ class App(QMainWindow):
         """check if we have an output dir"""
 
         if self.outputdir == None:
-            #QMessageBox.warning(self, 'No output folder set',
-            #    'You should set an output folder from the Settings menu')
             self.show_info('You should set an output folder from the Settings menu')
             return 0
         return 1
@@ -631,11 +636,39 @@ class App(QMainWindow):
         SeqIO.write(result, outfile, 'fasta')
         return
 
-    def view_tree(self):
+    def make_phylo_tree(self):
 
-        trees.run_RAXML(outfile)
-        #t = trees.create_tree('RAxML_bipartitions.variants')#, labelmap)
-        trees.biopython_draw_tree('RAxML_bipartitions.variants')
+        corefasta = os.path.join(self.outputdir, 'core.fa')
+        bootstraps = 10
+        treefile = trees.run_RAXML(corefasta, bootstraps=bootstraps, outpath=self.outputdir)
+        #trees.biopython_draw_tree(treefile)
+        self.show_tree()
+        self.treefile = treefile
+        return
+
+    def show_tree(self):
+
+        #canvas = toyplot.Canvas(width=600, height=800)
+        #axes = canvas.cartesian()
+        #y = np.linspace(0, 1, 20) ** 2
+        #axes.plot(y)
+        #matrix = np.random.normal(loc=1.0, size=(20, 20))
+        #canvas.matrix(matrix, label="A matrix")
+
+        self.treeview = widgets.TreeViewer(self)
+        filename = os.path.join(self.outputdir,'RAxML_bipartitions.variants')
+        self.treeview.load_tree(filename)
+        self.treeview.update()
+        idx = self.right_tabs.addTab(self.treeview, 'tree')
+        self.right_tabs.setCurrentIndex(idx)
+        return
+
+    def show_map(self):
+
+        from . import gis
+        gv = gis.GISViewer()
+        idx = self.right_tabs.addTab(gv, 'map')
+        self.right_tabs.setCurrentIndex(idx)
         return
 
     def processing_completed(self):
@@ -824,9 +857,14 @@ class App(QMainWindow):
     def online_documentation(self,event=None):
         """Open the online documentation"""
 
-        import webbrowser
+        #import webbrowser
         link='https://github.com/dmnfarrell/btbgenie'
-        webbrowser.open(link,autoraise=1)
+        #webbrowser.open(link,autoraise=1)
+        from PySide2.QtWebEngineWidgets import QWebEngineView
+        browser = QWebEngineView()
+        browser.setUrl(link)
+        idx = self.right_tabs.addTab(browser, 'help')
+        self.right_tabs.setCurrentIndex(idx)
         return
 
     def about(self):
@@ -946,7 +984,7 @@ def main():
     parser.add_argument("-p", "--proj", dest="project",default=None,
                         help="load .snipgenie project file", metavar="FILE")
     args = vars(parser.parse_args())
-
+    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QApplication(sys.argv)
     aw = App(**args)
     aw.show()

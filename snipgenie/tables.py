@@ -24,17 +24,7 @@ from __future__ import absolute_import, print_function
 import sys,os,platform
 import pandas as pd
 import numpy as np
-
-try:
-    from PySide2 import QtCore
-    from PySide2.QtWidgets import *
-    from PySide2.QtGui import *
-    from PySide2.QtCore import QObject, Signal, Slot
-except:
-    from PyQt5 import QtCore
-    from PyQt5.QtWidgets import *
-    from PyQt5.QtGui import *
-    from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+from .qt import *
 
 class ColumnHeader(QHeaderView):
     def __init__(self):

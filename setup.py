@@ -25,7 +25,9 @@ setup(
                       'pyfaidx',
                       'bcbio_gff',
                       #'pyside2>=5.1',
-                      'future'],
+                      'future',
+                      #'toytree',
+                      ],
     entry_points = {
         'console_scripts': [
             'snipgenie-gui=snipgenie.gui:main',

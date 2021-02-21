@@ -451,7 +451,8 @@ def vcf_to_dataframe(vcf_file):
         file = open(vcf_file)
     vcf_reader = vcf.Reader(file,'r')
     res=[]
-    cols = ['sample','REF','ALT','mut','DP','ADF','ADR','AD','chrom','var_type','sub_type','start','end','QUAL']
+    cols = ['sample','REF','ALT','mut','DP','ADF','ADR','AD','chrom','var_type',
+            'sub_type','start','end','QUAL']
     i=0
     for rec in vcf_reader:
         #if i>50:
@@ -602,6 +603,7 @@ def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False, omit=
     sites = []
     result['ref'] = []
     missing = []
+    unf = []
     for record in vcf_reader:
         S = {sample.sample: sample.gt_bases for sample in record.samples}
         if omit != None:
@@ -617,6 +619,7 @@ def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False, omit=
         if uninformative == False:
             u = set(S.values())
             if len(u) == 1:
+                unf.append(record.POS)
                 continue
         result['ref'].append(record.REF)
         for name in S:
@@ -625,6 +628,7 @@ def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False, omit=
 
     print ('found %s sites' %len(sites))
     print ('%s sites with at least one missing sample' %len(missing))
+    print ('%s uninformative sites' %len(unf))
     if len(sites)==0:
         print ('no sites found may mean one sample is too different')
     recs = []

@@ -226,7 +226,7 @@ class GISViewer(QWidget):
     def loadDefault(self):
         """Load a test map"""
 
-        url = 'https://github.com/dmnfarrell/tablexplore/blob/master/maps/ireland_counties.zip?raw=true'
+        url = 'https://github.com/dmnfarrell/snipgenie/raw/master/maps/ireland_counties.zip'
         self.importShapefile(url)
         return
 

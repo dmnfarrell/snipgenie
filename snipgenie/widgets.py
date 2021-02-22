@@ -120,8 +120,15 @@ def dialogFromOptions(parent, opts, sections=None,
                 w.setTickPosition(QSlider.TicksBelow)
                 w.setValue(val)
             elif t == 'spinbox':
-                w = QSpinBox()
+                if type(val) is float:
+                    w = QDoubleSpinBox()
+                else:
+                    w = QSpinBox()
                 w.setValue(val)
+                if 'range' in opt:
+                    min,max=opt['range']
+                    w.setRange(min,max)
+                    w.setMinimum(min)
                 if 'interval' in opt:
                     w.setSingleStep(opt['interval'])
             elif t == 'checkbox':
@@ -844,22 +851,42 @@ class TreeViewer(QDialog):
         self.add_widgets()
         import toytree
         self.style = {
+            "layout":'r',
             "edge_type": 'p',
             "edge_style": {
-                "stroke": toytree.colors[1],
-                "stroke-width": 2.5,
+                "stroke": 'black',
+                "stroke-width": 2,
             },
+            "tip_labels": True,
             "tip_labels_align": True,
-            "tip_labels_colors": toytree.colors[3],
+            "tip_labels_colors": toytree.colors[4],
             "tip_labels_style": {
                 "font-size": "14px"
             },
             "node_labels": False,
             "node_sizes": 10,
             "node_colors": toytree.colors[2],
+            "use_edge_lengths":True,
         }
         self.tree = None
+        self.test_tree()
         return
+
+    def test_tree(self):
+        import toytree
+        #self.tree = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
+        self.set_tree(self.random_tree())
+        self.update()
+
+    def random_tree(self):
+
+        import toytree
+        tre = toytree.rtree.coaltree(12)
+        ## assign random edge lengths and supports to each node
+        for node in tre.treenode.traverse():
+            node.dist = np.random.exponential(1)
+            node.support = int(np.random.uniform(50, 100))
+        return tre
 
     def add_widgets(self):
         """Add widgets"""
@@ -869,36 +896,101 @@ class TreeViewer(QDialog):
         vbox = QVBoxLayout()
         self.setLayout(vbox)
         vbox.addWidget(self.browser)
-        toolswidget = QWidget()
-        vbox.addWidget(toolswidget)
-        l=QVBoxLayout(toolswidget)
+        self.browser.setMinimumHeight(500)
 
+        toolswidget = QWidget()
+        toolswidget.setMaximumHeight(200)
+
+        vbox.addWidget(toolswidget)
+        l = QVBoxLayout(toolswidget)
         self.zoomslider = w = QSlider(QtCore.Qt.Horizontal)
         w.setSingleStep(5)
         w.setMinimum(5)
-        w.setMaximum(50)        
+        w.setMaximum(50)
         w.setValue(10)
         l.addWidget(w)
         w.valueChanged.connect(self.zoom)
+        btn = QPushButton('Set Style')
+        l.addWidget(btn)
+        btn.clicked.connect(self.tree_style_options)
+        lbl = QLabel('Root Tree')
+        l.addWidget(lbl)
+        w = self.root_w = QComboBox()
+        l.addWidget(w)
+        w.currentIndexChanged.connect(self.root_tree)
         return
 
     def load_tree(self, filename):
         import toytree
-        self.tree = toytree.tree(filename)
+        self.set_tree(toytree.tree(filename))
+        return
 
-    def update(self):
+    def set_tree(self, tree):
+        self.tree = tree
+        self.root_w.addItems(self.tree.get_tip_labels())
+        return
+
+    def update(self, w=500, h=800):
 
         import toytree
         import toyplot
+        if self.tree==None:
+            return
         canvas,axes,mark = self.tree.draw(
-                        width=600,
-                        height=800,
+                        width=w,
+                        height=h,
                         scalebar=True, **self.style)
         toyplot.html.render(canvas, "temp.html")
         with open('temp.html', 'r') as f:
             html = f.read()
             self.browser.setHtml(html)
 
+    def root_tree(self):
+
+        name = self.root_w.currentText()
+        self.tree = self.tree.root(name)
+        self.update()
+        return
+
     def zoom(self):
         zoom = self.zoomslider.value()/10
         self.browser.setZoomFactor(zoom)
+
+    def clustermap(self):
+        #canvas = toyplot.Canvas(width=600, height=800)
+        #axes = canvas.cartesian()
+        #y = np.linspace(0, 1, 20) ** 2
+        #axes.plot(y)
+        #matrix = np.random.normal(loc=1.0, size=(20, 20))
+        #canvas.matrix(matrix, label="A matrix")
+        return
+
+    def tree_style_options(self):
+
+        opts = {'tree_style':{'type':'combobox','default':self.style['layout'],'items':['n','d','c']},
+                'layout': {'type':'combobox','default':self.style['layout'],'items':['r','d','c']},
+                'edge_type': {'type':'combobox','default':self.style['edge_type'],'items':['p','c']},
+                'tip_labels':{'type':'checkbox','default':self.style['tip_labels'] },
+                'tip_labels_align':{'type':'checkbox','default':self.style['tip_labels_align'] },
+                'node_labels':{'type':'checkbox','default':True },
+                'node_sizes':{'type':'spinbox','default':10,'range':(2,20),'interval':1},
+                'width':{'type':'spinbox','default':400,'range':(100,1500),'interval':20},
+                'height':{'type':'spinbox','default':500,'range':(100,1500),'interval':20},
+                }
+
+        dlg = MultipleInputDialog(self, opts, title='Tree Style', width=300)
+        dlg.exec_()
+        if not dlg.accepted:
+            return False
+        kwds = dlg.values
+        self.set_style(kwds)
+        self.update()
+        return
+
+    def set_style(self, kwds):
+
+        omit=['width','height']
+        for k in kwds:
+            if k not in omit:
+                self.style[k] = kwds[k]
+        return

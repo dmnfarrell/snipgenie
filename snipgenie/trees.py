@@ -49,13 +49,13 @@ def format_nodes(t):
         n.set_style(ns)
 
 def remove_tiplabels(t):
-    
+
     for l in t.iter_leaves():
         l.name = None
-        
+
 def set_nodesize(t, size=12):
     """Change the node size"""
-    
+
     from ete3 import NodeStyle
     for l in t.iter_leaves():
         clr = l._img_style['fgcolor']
@@ -64,7 +64,7 @@ def set_nodesize(t, size=12):
         #keep color
         ns["fgcolor"] = clr
         l.set_style(ns)
-        
+
 def color_leaves(t, colors, color_bg=False):
     from ete3 import NodeStyle
 
@@ -95,6 +95,14 @@ def get_colormap(values):
     #clrs = {labels[i]:cmap(float(i)/(len(labels))) for i in range(len(labels))}
     clrs = dict(list(zip(labels,colors)))
     return clrs
+
+def run_fasttree(infile, bootstraps=100, outpath='.'):
+    """Run fasttree"""
+
+    out = os.path.join(outpath,'fasttree.newick')
+    cmd = 'fasttree -n {b} {i} > {o}'.format(b=bootstraps,i=infile,o=out)
+    tmp = subprocess.check_output(cmd, shell=True)
+    return out
 
 def run_RAXML(infile, name='variants', threads=8, bootstraps=100, outpath='.'):
     """Run Raxml pthreads.

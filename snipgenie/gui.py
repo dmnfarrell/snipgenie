@@ -35,6 +35,7 @@ from . import tools, aligners, app, widgets, tables, plotting, trees
 home = os.path.expanduser("~")
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
 logoimg = os.path.join(module_path, 'logo.png')
+stylepath = os.path.join(module_path, 'styles')
 iconpath = os.path.join(module_path, 'icons')
 
 class App(QMainWindow):
@@ -58,9 +59,12 @@ class App(QMainWindow):
         else:
             self.showMaximized()
 
+        self.recent_files = ['']
         self.main.setFocus()
         self.setCentralWidget(self.main)
         self.setup_gui()
+        self.load_settings()
+        self.show_recent_files()
 
         self.new_project()
         self.running = False
@@ -70,6 +74,54 @@ class App(QMainWindow):
         if project != None:
             self.load_project(project)
         self.threadpool = QtCore.QThreadPool()
+        return
+
+    def load_settings(self):
+        """Load GUI settings"""
+
+        s = self.settings = QtCore.QSettings('snipgenie','default')
+        try:
+            self.resize(s.value('window_size'))
+            self.move(s.value('window_position'))
+            self.setStyle(s.value('style'))
+            #self.FONT = s.value("font")
+            #self.FONTSIZE = int(s.value("fontsize"))
+            #core.COLUMNWIDTH = int(s.value("columnwidth"))
+            #core.TIMEFORMAT = s.value("timeformat")
+            r = s.value("recent_files")
+            if r != '':
+                self.recent_files = r.split(',')
+            r = s.value("recent_urls")
+            if r != '':
+                self.recent_urls = r.split('^^')
+        except:
+            pass
+        return
+
+    def save_settings(self):
+        """Save GUI settings"""
+
+        self.settings.setValue('window_size', self.size())
+        self.settings.setValue('window_position', self.pos())
+        self.settings.setValue('style', self.style)
+        #self.settings.setValue('columnwidth', core.COLUMNWIDTH)
+        #self.settings.setValue('font', self.FONT)
+        #self.settings.setValue('fontsize', self.FONTSIZE)
+        self.settings.setValue('recent_files',','.join(self.recent_files))
+        self.settings.sync()
+        return
+
+    def set_style(self, style='default'):
+        """Change interface style."""
+
+        if style == 'default':
+            	self.setStyleSheet("")
+        else:
+            f = open(os.path.join(stylepath,'%s.qss' %style), 'r')
+            self.style_data = f.read()
+            f.close()
+            self.setStyleSheet(self.style_data)
+        self.style = style
         return
 
     def update_ref_genome(self):
@@ -196,47 +248,72 @@ class App(QMainWindow):
         #self.file_menu.addAction('&Load Test Files', self.load_test,
         #        QtCore.Qt.CTRL + QtCore.Qt.Key_T)
         self.menuBar().addSeparator()
-        self.file_menu.addAction('&New Project', lambda: self.new_project(ask=True),
+        icon = QIcon(os.path.join(iconpath,'document-new.png'))
+        self.file_menu.addAction(icon, '&New Project', lambda: self.new_project(ask=True),
                 QtCore.Qt.CTRL + QtCore.Qt.Key_N)
-        self.file_menu.addAction('&Open Project', self.load_project_dialog,
+        icon = QIcon(os.path.join(iconpath,'document-open.png'))
+        self.file_menu.addAction(icon, '&Open Project', self.load_project_dialog,
                 QtCore.Qt.CTRL + QtCore.Qt.Key_O)
-        self.file_menu.addAction('&Save Project', self.save_project,
+        self.recent_files_menu = QMenu("Recent Projects",
+            self.file_menu)
+        self.file_menu.addAction(self.recent_files_menu.menuAction())
+        icon = QIcon(os.path.join(iconpath,'save.png'))
+        self.file_menu.addAction(icon, '&Save Project', self.save_project,
                 QtCore.Qt.CTRL + QtCore.Qt.Key_S)
         self.file_menu.addAction('&Save Project As', self.save_project_dialog)
-        self.file_menu.addAction('&Quit', self.quit,
+        icon = QIcon(os.path.join(iconpath,'application-exit.png'))
+        self.file_menu.addAction(icon, '&Quit', self.quit,
                 QtCore.Qt.CTRL + QtCore.Qt.Key_Q)
         self.menuBar().addMenu(self.file_menu)
+
+        self.view_menu = QMenu('&View', self)
+        self.menuBar().addMenu(self.view_menu)
+        icon = QIcon(os.path.join(iconpath,'zoom-in.png'))
+        self.view_menu.addAction(icon, 'Zoom In', self.zoom_in,
+                QtCore.Qt.CTRL + QtCore.Qt.Key_Equal)
+        icon = QIcon(os.path.join(iconpath,'zoom-out.png'))
+        self.view_menu.addAction(icon, 'Zoom Out', self.zoom_out,
+                QtCore.Qt.CTRL + QtCore.Qt.Key_Minus)
+
+        self.style_menu = QMenu("Styles",  self.view_menu)
+        self.style_menu.addAction('Default', self.setStyle)
+        self.style_menu.addAction('Light', lambda: self.set_style('light'))
+        self.style_menu.addAction('Dark', lambda: self.set_style('dark'))
+        self.view_menu.addAction(self.style_menu.menuAction())
 
         self.analysis_menu = QMenu('&Analysis', self)
         self.menuBar().addSeparator()
         self.menuBar().addMenu(self.analysis_menu)
-        self.analysis_menu.addAction('&Trim Reads',
+        self.analysis_menu.addAction('Trim Reads',
             lambda: self.run_threaded_process(self.run_trimming, self.processing_completed))
-        self.analysis_menu.addAction('&Align Reads',
+        icon = QIcon(os.path.join(iconpath,'align-reads.png'))
+        self.analysis_menu.addAction(icon, 'Align Reads',
             lambda: self.run_threaded_process(self.align_files, self.alignment_completed))
-        self.analysis_menu.addAction('&Call Variants',
+        icon = QIcon(os.path.join(iconpath,'call-variants.png'))
+        self.analysis_menu.addAction(icon, 'Call Variants',
             lambda: self.run_threaded_process(self.variant_calling, self.processing_completed))
-        self.analysis_menu.addAction('&Create SNP alignment',
+        self.analysis_menu.addAction('Create SNP alignment',
             lambda: self.run_threaded_process(self.snp_alignment, self.processing_completed))
-        self.analysis_menu.addAction('&Make Phylogeny', self.make_phylo_tree)
+        self.analysis_menu.addAction('Make Phylogeny', self.make_phylo_tree)
         self.analysis_menu.addSeparator()
-        self.analysis_menu.addAction('&Run Workflow', self.run)
+        self.analysis_menu.addAction('Run Workflow', self.run)
 
-        self.tools_menu = QMenu('&Tools', self)
+        self.tools_menu = QMenu('Tools', self)
         self.menuBar().addMenu(self.tools_menu)
-        self.tools_menu.addAction('&Fastq Qualities Report', self.fastq_quality_report)
-        self.tools_menu.addAction('&RD Analysis (MTBC)',
+        self.tools_menu.addAction('Fastq Qualities Report', self.fastq_quality_report)
+        self.tools_menu.addAction('RD Analysis (MTBC)',
             lambda: self.run_threaded_process(self.rd_analysis, self.rd_analysis_completed))
-        self.tools_menu.addAction('&Show Annotation', self.show_ref_annotation)
-        self.tools_menu.addAction('&Map View', self.show_map)
+        self.tools_menu.addAction('Show Annotation', self.show_ref_annotation)
+        self.tools_menu.addAction('Map View', self.show_map)
+        self.tools_menu.addAction('Phylogeny', self.tree_viewer)
 
         self.settings_menu = QMenu('&Settings', self)
         self.menuBar().addMenu(self.settings_menu)
-        self.settings_menu.addAction('&Set Output Folder', self.set_output_folder)
-        self.settings_menu.addAction('&Set Reference Sequence', self.set_reference)
-        self.settings_menu.addAction('&Set Annnotation (genbank)', self.set_annotation)
-        self.settings_menu.addAction('&Add Sample Meta Data', self.merge_meta_data)
-        self.settings_menu.addAction('&Clean Up Files', self.clean_up)
+        self.settings_menu.addAction('Set Output Folder', self.set_output_folder)
+        self.settings_menu.addAction('Set Reference Sequence', self.set_reference)
+        self.settings_menu.addAction('Set Annnotation (genbank)', self.set_annotation)
+        self.settings_menu.addAction('Add Sample Meta Data', self.merge_meta_data)
+        self.settings_menu.addAction('Clean Up Files', self.clean_up)
 
         self.presets_menu = QMenu('&Load Preset', self)
         self.menuBar().addMenu(self.presets_menu)
@@ -260,6 +337,28 @@ class App(QMainWindow):
                 self.set_annotation(gbfile)
             receiver = lambda seqname=seqname, gb=gbfile: func(seqname, gb)
             self.presets_menu.addAction('&%s' %name, receiver)
+        return
+
+    def show_recent_files(self):
+        """Populate recent files menu"""
+
+        from functools import partial
+        if self.recent_files == None:
+            return
+        for fname in self.recent_files:
+            self.recent_files_menu.addAction(fname, partial(self.load_project, fname))
+        self.recent_files_menu.setEnabled(len(self.recent_files))
+        return
+
+    def add_recent_file(self, fname):
+        """Add file to recent if not present"""
+
+        fname = os.path.abspath(fname)
+        if fname and fname not in self.recent_files:
+            self.recent_files.insert(0, fname)
+            if len(self.recent_files) > 5:
+                self.recent_files.pop()
+        self.recent_files_menu.setEnabled(len(self.recent_files))
         return
 
     def save_project(self):
@@ -636,40 +735,50 @@ class App(QMainWindow):
         SeqIO.write(result, outfile, 'fasta')
         return
 
-    def make_phylo_tree(self):
+    def make_phylo_tree(self, method='raxml'):
 
         corefasta = os.path.join(self.outputdir, 'core.fa')
         bootstraps = 10
-        treefile = trees.run_RAXML(corefasta, bootstraps=bootstraps, outpath=self.outputdir)
-        #trees.biopython_draw_tree(treefile)
+        if method == 'raxml':
+            treefile = trees.run_RAXML(corefasta, bootstraps=bootstraps, outpath=self.outputdir)
+
         self.show_tree()
         self.treefile = treefile
         return
 
     def show_tree(self):
 
-        #canvas = toyplot.Canvas(width=600, height=800)
-        #axes = canvas.cartesian()
-        #y = np.linspace(0, 1, 20) ** 2
-        #axes.plot(y)
-        #matrix = np.random.normal(loc=1.0, size=(20, 20))
-        #canvas.matrix(matrix, label="A matrix")
-
-        self.treeview = widgets.TreeViewer(self)
+        self.tree_viewer()
         filename = os.path.join(self.outputdir,'RAxML_bipartitions.variants')
         self.treeview.load_tree(filename)
         self.treeview.update()
-        idx = self.right_tabs.addTab(self.treeview, 'tree')
-        self.right_tabs.setCurrentIndex(idx)
+        return
+
+    def tree_viewer(self):
+
+        if not hasattr(self, 'treeviewer'):
+            self.treeview = widgets.TreeViewer(self)
+        if not 'phylogeny' in self.get_tabs():
+            idx = self.right_tabs.addTab(self.treeview, 'phylogeny')
+            self.right_tabs.setCurrentIndex(idx)
         return
 
     def show_map(self):
 
         from . import gis
-        gv = gis.GISViewer()
-        idx = self.right_tabs.addTab(gv, 'map')
-        self.right_tabs.setCurrentIndex(idx)
+        if not hasattr(self, 'gisviewer'):
+            self.gisviewer = gis.GISViewer()
+        if not 'map' in self.get_tabs():
+            idx = self.right_tabs.addTab(self.gisviewer, 'map')
+            self.right_tabs.setCurrentIndex(idx)
         return
+
+    def get_tabs(self):
+
+        n=[]
+        for i in range(self.right_tabs.count()):
+            n.append(self.right_tabs.tabText(i))
+        return n
 
     def processing_completed(self):
         """Generic process completed"""
@@ -821,6 +930,18 @@ class App(QMainWindow):
         self.running = False
         return
 
+    def zoom_in(self):
+
+        w = self.fastq_table
+        w.zoomIn()
+        return
+
+    def zoom_out(self):
+
+        w = self.fastq_table
+        w.zoomOut()
+        return
+
     def show_info(self, msg):
 
         self.info.append(msg)
@@ -845,8 +966,9 @@ class App(QMainWindow):
                 return
             elif reply == QMessageBox.Yes:
                 self.save_project()
-        #self.close()
+        #self.save_settings()
         event.accept()
+        return
 
     def _check_snap(self):
         if os.environ.has_key('SNAP_USER_COMMON'):
@@ -954,7 +1076,7 @@ class AppOptions(widgets.BaseOptions):
                         'trimming':['quality'],
                         'aligners':['aligner'],
                         'variant calling':['filters'],
-                        'blast':['db','identity','coverage'],
+                        'blast':['db','identity','coverage']
                        }
         self.opts = {'threads':{'type':'combobox','default':4,'items':cpus},
                     'overwrite':{'type':'checkbox','default':False},

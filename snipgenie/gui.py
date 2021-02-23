@@ -737,10 +737,12 @@ class App(QMainWindow):
 
     def make_phylo_tree(self, method='raxml'):
 
-        corefasta = os.path.join(self.outputdir, 'core.fa')
-        bootstraps = 10
-        if method == 'raxml':
-            treefile = trees.run_RAXML(corefasta, bootstraps=bootstraps, outpath=self.outputdir)
+        outfile = os.path.join(self.outputdir,'RAxML_bipartitions.variants')
+        if not os.path.exists(outfile):
+            corefasta = os.path.join(self.outputdir, 'core.fa')
+            bootstraps = 10
+            if method == 'raxml':
+                treefile = trees.run_RAXML(corefasta, bootstraps=bootstraps, outpath=self.outputdir)
 
         self.show_tree()
         self.treefile = treefile

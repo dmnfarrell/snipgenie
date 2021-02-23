@@ -172,7 +172,7 @@ def write_samples(df, path):
     return filename
 
 def check_samples_aligned(samples, outdir):
-"""Check how many samples already aligned"""
+    """Check how many samples already aligned"""
 
     found = glob.glob(os.path.join(outdir,'*.bam'))
     x = samples.groupby('sample')

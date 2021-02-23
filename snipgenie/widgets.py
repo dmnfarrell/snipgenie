@@ -850,6 +850,9 @@ class TreeViewer(QDialog):
         self.setMinimumHeight(150)
         self.add_widgets()
         self.create_menu(self)
+        self.tree = None
+        self.width = 400
+        self.height = 500
         import toytree
         self.style = {
             "layout":'r',
@@ -869,7 +872,6 @@ class TreeViewer(QDialog):
             "node_colors": toytree.colors[2],
             "use_edge_lengths":True,
         }
-        self.tree = None
         self.test_tree()
         return
 
@@ -948,7 +950,7 @@ class TreeViewer(QDialog):
         self.root_w.addItems(self.tree.get_tip_labels())
         return
 
-    def update(self, w=500, h=800):
+    def update(self):
         """Update the plot"""
 
         import toytree
@@ -956,8 +958,8 @@ class TreeViewer(QDialog):
         if self.tree==None:
             return
         canvas,axes,mark = self.tree.draw(
-                        width=w,
-                        height=h,
+                        width=self.width,
+                        height=self.height,
                         scalebar=True, **self.style)
         toyplot.html.render(canvas, "temp.html")
         with open('temp.html', 'r') as f:
@@ -971,7 +973,7 @@ class TreeViewer(QDialog):
         name = self.root_w.currentText()
         self.tree = self.tree.root(name)
         self.update()
-        return
+        return'tip_labels_style'
 
     def export_image(self):
         """Save tree as image"""
@@ -1004,6 +1006,9 @@ class TreeViewer(QDialog):
 
     def tree_style_options(self):
 
+        fonts = ['%spx' %i for i in range (6,20)]
+        tip_labels_style = self.style['tip_labels_style']
+
         opts = {'tree_style':{'type':'combobox','default':self.style['layout'],'items':['n','d','c']},
                 'layout': {'type':'combobox','default':self.style['layout'],'items':['r','d','c']},
                 'edge_type': {'type':'combobox','default':self.style['edge_type'],'items':['p','c']},
@@ -1011,8 +1016,9 @@ class TreeViewer(QDialog):
                 'tip_labels_align':{'type':'checkbox','default':self.style['tip_labels_align'] },
                 'node_labels':{'type':'checkbox','default':self.style['node_labels'] },
                 'node_sizes':{'type':'spinbox','default':self.style['node_sizes'],'range':(2,20),'interval':1},
-                'width':{'type':'spinbox','default':400,'range':(100,1500),'interval':20},
-                'height':{'type':'spinbox','default':500,'range':(100,1500),'interval':20},
+                'font_size':{'type':'combobox','default':tip_labels_style['font-size'],'items':fonts},
+                'width':{'type':'entry','default':self.width},
+                'height':{'type':'entry','default':self.height,},
                 }
 
         dlg = MultipleInputDialog(self, opts, title='Tree Style', width=300)
@@ -1026,8 +1032,11 @@ class TreeViewer(QDialog):
 
     def set_style(self, kwds):
 
-        omit=['width','height']
+        omit=['width','height','font_size']
         for k in kwds:
             if k not in omit:
                 self.style[k] = kwds[k]
+        self.style['tip_labels_style']['font-size'] = kwds['font_size']
+        self.width = kwds['width']
+        self.height = kwds['height']
         return

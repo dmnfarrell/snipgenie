@@ -171,6 +171,15 @@ def write_samples(df, path):
     df.drop_duplicates('sample')['sample'].to_csv(filename,index=False,header=False)
     return filename
 
+def check_samples_aligned(samples, outdir):
+"""Check how many samples already aligned"""
+
+    found = glob.glob(os.path.join(outdir,'*.bam'))
+    x = samples.groupby('sample')
+    print ('%s/%s samples already aligned' %(len(found),len(x)))
+    return
+
+
 def align_reads(samples, idx, outdir='mapped', callback=None, aligner='bwa', **kwargs):
     """
     Align multiple files. Requires a dataframe with a 'sample' column to indicate
@@ -656,6 +665,7 @@ class WorkFlow(object):
         print ('--------------')
         print ('Using reference genome: %s' %self.reference)
         path = os.path.join(self.outdir, 'mapped')
+        check_samples_aligned(samples, path)
         samples = align_reads(samples, idx=self.reference, outdir=path,
                         aligner=self.aligner,
                         threads=self.threads, overwrite=self.overwrite)

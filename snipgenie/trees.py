@@ -173,8 +173,8 @@ def colors_from_labels(df,name,group):
         colors[l] = qcolors[i]
         i+=1
     df['color'] = df[group].apply(lambda x: colors[x],1)
-    colormap = dict(zip(df[name],df.color))
-    return colormap
+    #colormap = dict(zip(df[name],df.color))
+    return colors
 
 def remove_nodes(tree, names):
 

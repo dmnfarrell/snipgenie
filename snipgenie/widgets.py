@@ -849,6 +849,7 @@ class TreeViewer(QDialog):
         self.setGeometry(QtCore.QRect(200, 200, 1000, 300))
         self.setMinimumHeight(150)
         self.add_widgets()
+        self.create_menu(self)
         import toytree
         self.style = {
             "layout":'r',
@@ -859,7 +860,7 @@ class TreeViewer(QDialog):
             },
             "tip_labels": True,
             "tip_labels_align": True,
-            "tip_labels_colors": toytree.colors[4],
+            "tip_labels_colors": toytree.colors[1],
             "tip_labels_style": {
                 "font-size": "14px"
             },
@@ -878,19 +879,36 @@ class TreeViewer(QDialog):
         self.set_tree(self.random_tree())
         self.update()
 
-    def random_tree(self):
+    def random_tree(self, n=12):
+        """Make a random tree"""
 
         import toytree
-        tre = toytree.rtree.coaltree(12)
+        tre = toytree.rtree.coaltree(n)
         ## assign random edge lengths and supports to each node
         for node in tre.treenode.traverse():
             node.dist = np.random.exponential(1)
             node.support = int(np.random.uniform(50, 100))
         return tre
 
+    def create_menu(self, parent):
+        """Menu bar"""
+
+        self.menubar = QMenuBar(parent)
+        self.file_menu = QMenu('File', parent)
+        self.file_menu.addAction('Import Tree', self.load_tree)
+        self.file_menu.addAction('Load Test Tree', self.test_tree)
+        self.file_menu.addAction('Export Image', self.export_image)
+        self.menubar.addMenu(self.file_menu)
+
+        return
+
     def add_widgets(self):
         """Add widgets"""
 
+        layout = self.layout = QVBoxLayout()
+        self.main = QWidget()
+        vbox = QVBoxLayout(self.main)
+        layout.addWidget(self.main)
         from PySide2.QtWebEngineWidgets import QWebEngineView
         self.browser = QWebEngineView()
         vbox = QVBoxLayout()
@@ -931,6 +949,7 @@ class TreeViewer(QDialog):
         return
 
     def update(self, w=500, h=800):
+        """Update the plot"""
 
         import toytree
         import toyplot
@@ -944,12 +963,30 @@ class TreeViewer(QDialog):
         with open('temp.html', 'r') as f:
             html = f.read()
             self.browser.setHtml(html)
+        self.canvas = canvas
+        return
 
     def root_tree(self):
 
         name = self.root_w.currentText()
         self.tree = self.tree.root(name)
         self.update()
+        return
+
+    def export_image(self):
+        """Save tree as image"""
+
+        options = QFileDialog.Options()
+        filter = "png files (*.png);;pdf files (*.pdf);;All files (*.*)"
+        filename, _ = QFileDialog.getSaveFileName(self,"Save Project",
+                                    "",filter=filter,selectedFilter =filter, options=options)
+        if not filename:
+            return
+
+        ext = os.path.splitext(filename)
+        print (ext)
+        from toyplot import png
+        png.render(self.canvas, filename, width=(4, "inches"))
         return
 
     def zoom(self):
@@ -972,8 +1009,8 @@ class TreeViewer(QDialog):
                 'edge_type': {'type':'combobox','default':self.style['edge_type'],'items':['p','c']},
                 'tip_labels':{'type':'checkbox','default':self.style['tip_labels'] },
                 'tip_labels_align':{'type':'checkbox','default':self.style['tip_labels_align'] },
-                'node_labels':{'type':'checkbox','default':True },
-                'node_sizes':{'type':'spinbox','default':10,'range':(2,20),'interval':1},
+                'node_labels':{'type':'checkbox','default':self.style['node_labels'] },
+                'node_sizes':{'type':'spinbox','default':self.style['node_sizes'],'range':(2,20),'interval':1},
                 'width':{'type':'spinbox','default':400,'range':(100,1500),'interval':20},
                 'height':{'type':'spinbox','default':500,'range':(100,1500),'interval':20},
                 }

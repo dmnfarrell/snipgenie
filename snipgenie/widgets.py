@@ -175,7 +175,7 @@ def getWidgetValues(widgets):
                 val = w.isChecked()
             elif type(w) is QSlider:
                 val = w.value()
-            elif type(w) is QSpinBox:
+            elif type(w) in [QSpinBox,QDoubleSpinBox]:
                 val = w.value()
             if val != None:
                 kwds[i] = val
@@ -291,6 +291,169 @@ class ToolBar(QWidget):
         button.clicked.connect(function)
         button.setMinimumWidth(30)
         layout.addWidget(button)
+
+class BasicDialog(QDialog):
+    """Qdialog for table operations interfaces"""
+    def __init__(self, parent, table, title=None):
+
+        super(BasicDialog, self).__init__(parent)
+        self.parent = parent
+        self.table = table
+        self.df = table.model.df
+        #self.app = self.parent.app
+        self.setWindowTitle(title)
+        self.createWidgets()
+        self.setGeometry(QtCore.QRect(400, 300, 1000, 600))
+        self.show()
+        return
+
+    def createWidgets(self):
+        """Create widgets - override this"""
+
+        cols = list(self.df.columns)
+
+    def createButtons(self, parent):
+
+        bw = self.button_widget = QWidget(parent)
+        vbox = QVBoxLayout(bw)
+        vbox.setAlignment(QtCore.Qt.AlignTop)
+        button = QPushButton("Apply")
+        button.clicked.connect(self.apply)
+        vbox.addWidget(button)
+        button = QPushButton("Update")
+        button.clicked.connect(self.update)
+        vbox.addWidget(button)
+        button = QPushButton("Copy to clipboard")
+        button.clicked.connect(self.copy_to_clipboard)
+        vbox.addWidget(button)
+        button = QPushButton("Close")
+        button.clicked.connect(self.close)
+        vbox.addWidget(button)
+        return bw
+
+    def apply(self):
+        """Override this"""
+        return
+
+    def update(self):
+        """Update the original table"""
+
+        self.table.model.df = self.result.model.df
+        self.table.refresh()
+        self.close()
+        return
+
+    def copy_to_clipboard(self):
+        """Copy result to clipboard"""
+
+        df = self.result.model.df
+        df.to_clipboard()
+        return
+
+    def close(self):
+        self.destroy()
+        return
+
+class MergeDialog(BasicDialog):
+    """Dialog to melt table"""
+    def __init__(self, parent, table, df2, title='Merge Tables'):
+        self.table = table
+        self.df = table.model.df
+        self.df2 = df2
+        BasicDialog.__init__(self, parent, table, title)
+        return
+
+    def createWidgets(self):
+        """Create widgets"""
+
+        cols = self.df.columns
+        cols2 = self.df2.columns
+        ops = ['merge','concat']
+        how = ['inner','outer','left','right']
+        hbox = QHBoxLayout(self)
+        main = QWidget(self)
+        main.setMaximumWidth(300)
+        hbox.addWidget(main)
+
+        l = QVBoxLayout(main)
+        w = self.ops_w = QComboBox(main)
+        w.addItems(ops)
+        l.addWidget(QLabel('Operation'))
+        l.addWidget(w)
+        w = self.lefton_w = QListWidget(main)
+        w.setSelectionMode(QAbstractItemView.MultiSelection)
+        w.addItems(cols)
+        l.addWidget(QLabel('Left on'))
+        l.addWidget(w)
+        w = self.righton_w = QListWidget(main)
+        w.setSelectionMode(QAbstractItemView.MultiSelection)
+        w.addItems(cols2)
+        l.addWidget(QLabel('Right on'))
+        l.addWidget(w)
+
+        w = self.leftindex_w = QCheckBox(main)
+        w.setChecked(False)
+        l.addWidget(QLabel('Use left index'))
+        l.addWidget(w)
+        w = self.rightindex_w = QCheckBox(main)
+        w.setChecked(False)
+        l.addWidget(QLabel('Use right index'))
+        l.addWidget(w)
+
+        w = self.how_w = QComboBox(main)
+        w.addItems(how)
+        l.addWidget(QLabel('How'))
+        l.addWidget(w)
+
+        w = self.left_suffw = QLineEdit('_1')
+        l.addWidget(QLabel('Left suffix'))
+        l.addWidget(w)
+        w = self.right_suffw = QLineEdit('_2')
+        l.addWidget(QLabel('Right suffix'))
+        l.addWidget(w)
+
+        from . import tables
+        self.result = tables.DataFrameTable(self)
+        hbox.addWidget(self.result)
+        bf = self.createButtons(self)
+        hbox.addWidget(bf)
+        return
+
+    def updateColumns(self):
+
+        #self.df2 =
+        cols2 = self.df2.columns
+        return
+
+    def apply(self):
+        """Do the operation"""
+
+        left_index = self.leftindex_w.isChecked()
+        right_index = self.rightindex_w.isChecked()
+        if left_index == True:
+            lefton = None
+        else:
+            lefton = [i.text() for i in self.lefton_w.selectedItems()]
+        if right_index == True:
+            righton = None
+        else:
+            righton = [i.text() for i in self.righton_w.selectedItems()]
+        how = self.how_w.currentText()
+        op = self.ops_w.currentText()
+        if op == 'merge':
+            res = pd.merge(self.df, self.df2,
+                            left_on=lefton,
+                            right_on=righton,
+                            left_index=left_index,
+                            right_index=right_index,
+                            how=how,
+                            suffixes=(self.left_suffw .text(),self.right_suffw.text())
+                            )
+        else:
+            res = pd.concat([self.df, self.df2])
+        self.result.model.df = res
+        self.result.refresh()
+        return
 
 class BaseOptions(object):
     """Class to generate widget dialog for dict of options"""
@@ -420,6 +583,31 @@ class PlainTextEditor(QPlainTextEdit):
         elif action == zoomoutAction:
             self.zoom(-1)
 
+class TextViewer(QDialog):
+    """Sequence records features viewer using dna_features_viewer"""
+    def __init__(self, parent=None, text='', title='Text'):
+
+        super(TextViewer, self).__init__(parent)
+        self.setWindowTitle(title)
+        self.setGeometry(QtCore.QRect(200, 200, 1000, 400))
+        self.setMinimumHeight(150)
+        self.add_widgets()
+        self.ed.appendPlainText(text)
+        return
+
+    def add_widgets(self):
+        """Add widgets"""
+
+        l = QVBoxLayout(self)
+        self.setLayout(l)
+        font = QFont("Monospace")
+        font.setPointSize(10)
+        font.setStyleHint(QFont.TypeWriter)
+        self.ed = ed = PlainTextEditor(self, readOnly=True)
+        self.ed.setFont(font)
+        l.addWidget(self.ed)
+        self.show()
+
 class FileViewer(QDialog):
     """Sequence records features viewer"""
     def __init__(self, parent=None, filename=None):
@@ -437,9 +625,6 @@ class FileViewer(QDialog):
         #self.setCentralWidget(ed)
         l = QVBoxLayout(self)
         self.setLayout(l)
-        #w = self.chromselect = QComboBox()
-        #l.addWidget(QLabel('contig'))
-        #l.addWidget(w)
         l.addWidget(ed)
         self.show()
 
@@ -872,14 +1057,22 @@ class TreeViewer(QDialog):
             "node_colors": toytree.colors[2],
             "use_edge_lengths":True,
         }
-        self.test_tree()
+        self.test_tree(10)
         return
 
-    def test_tree(self):
+    def test_tree(self, n=None):
+        """Load a test tree"""
+
         import toytree
-        #self.tree = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
-        self.set_tree(self.random_tree())
+        if n==None:
+            n, ok = QInputDialog().getInt(self, "Test tree",
+                                                 "Nodes:", 10)
+            if not ok:
+                return
+        self.set_tree(self.random_tree(n=n))
+        self.height = 200+self.tree.ntips*10
         self.update()
+        return
 
     def random_tree(self, n=12):
         """Make a random tree"""
@@ -892,6 +1085,26 @@ class TreeViewer(QDialog):
             node.support = int(np.random.uniform(50, 100))
         return tre
 
+    def saveData(self):
+        """Save layers"""
+
+        data = tools.get_attributes(self)
+        data['tree'] = self.tree
+        #data['style'] = self.style
+        return data
+
+    def loadData(self, data):
+        """Load saved layers"""
+
+        try:
+            tools.set_attributes(self, data)
+            self.tree = data['tree']
+            #self.style = data['style']
+        except:
+            pass
+        self.update()
+        return
+
     def create_menu(self, parent):
         """Menu bar"""
 
@@ -901,6 +1114,9 @@ class TreeViewer(QDialog):
         self.file_menu.addAction('Load Test Tree', self.test_tree)
         self.file_menu.addAction('Export Image', self.export_image)
         self.menubar.addMenu(self.file_menu)
+        self.view_menu = QMenu('View', parent)
+        self.view_menu.addAction('Show Newick', self.show_newick)
+        self.menubar.addMenu(self.view_menu)
 
         return
 
@@ -966,6 +1182,12 @@ class TreeViewer(QDialog):
             html = f.read()
             self.browser.setHtml(html)
         self.canvas = canvas
+        return
+
+    def show_newick(self):
+
+        txt = self.tree.newick
+        ed = TextViewer(self,txt)
         return
 
     def root_tree(self):

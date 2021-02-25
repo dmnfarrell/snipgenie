@@ -51,6 +51,45 @@ def get_cmd(cmd):
         cmd = os.path.join(bin_path, '%s.exe' %cmd)
     return cmd
 
+def get_attributes(obj):
+    """Get non hidden and built-in type object attributes that can be persisted"""
+
+    d={}
+    import matplotlib
+    allowed = [str,int,float,list,tuple,bool,matplotlib.figure.Figure]
+    for key in obj.__dict__:
+        if key.startswith('_'):
+            continue
+        item = obj.__dict__[key]
+        if type(item) in allowed:
+            d[key] = item
+        elif type(item) is dict:
+            if checkDict(item) == 1:
+                d[key] = item
+    return d
+
+def set_attributes(obj, data):
+    """Set attributes from a dict. Used for restoring settings in tables"""
+
+    for key in data:
+        try:
+            obj.__dict__[key] = data[key]
+        except Exception as e:
+            print (e)
+    return
+
+def checkDict(d):
+    """Check a dict recursively for non serializable types"""
+
+    allowed = [str,int,float,list,tuple,bool]
+    for k, v in d.items():
+        if isinstance(v, dict):
+            checkDict(v)
+        else:
+            if type(v) not in allowed:
+                return 0
+    return 1
+
 def batch_iterator(iterator, batch_size):
     """Returns lists of length batch_size.
 
@@ -784,7 +823,7 @@ def get_spoligotype(filename, reads_limit=500000, threshold=2):
 def get_sb_number(binary_str):
     """Get SB number from binary pattern usinf database reference"""
 
-    df = pd.read_csv('../snipgenie/data/Mbovis.org_db.csv')
+    df = pd.read_csv(os.path.join(datadir, 'Mbovis.org_db.csv'))
     x = df[df['binary'] == binary_str]
     if len(x) == 0:
         return

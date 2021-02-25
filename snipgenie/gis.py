@@ -138,7 +138,7 @@ class GISViewer(QWidget):
 
         layout = self.layout = QVBoxLayout()
         self.main = QWidget()
-        vbox = QVBoxLayout(self.main)
+        self.vbox = vbox = QVBoxLayout(self.main)
         layout.addWidget(self.main)
         #splitter
         self.splitter = QSplitter(self)
@@ -161,7 +161,7 @@ class GISViewer(QWidget):
         self.tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.showTreeMenu)
         #self.tree.itemDoubleClicked.connect(handler)
-        self.tree.itemChanged.connect(self.itemClicked)
+        #self.tree.itemChanged.connect(self.itemClicked)
         hbox.addWidget(self.tree)
         self.toolbar = self.createToolBar(self)
         hbox.addWidget(self.toolbar)
@@ -214,6 +214,32 @@ class GISViewer(QWidget):
             self.setFile(item)
         return
 
+    def loadData(self, data):
+        """Load saved layers"""
+
+        self.updateLayers(data['layers'])
+        self.setFigure(data['plot'])
+        self.update()
+        return
+
+    def setFigure(self, figure):
+        """Recreate canvas with given figure"""
+
+        self.canvas.figure = figure
+        self.fig = self.canvas.figure
+        self.ax = self.canvas.ax
+        self.canvas.draw()
+        return
+
+    def saveData(self):
+        """Save layers"""
+
+        data = {}
+        data['layers'] = self.layers
+        data['plot'] = self.fig
+        print (data)
+        return data
+
     def loadWorldMap(self):
         """Load a world map"""
 
@@ -226,18 +252,19 @@ class GISViewer(QWidget):
     def loadDefault(self):
         """Load a test map"""
 
-        url = 'https://github.com/dmnfarrell/snipgenie/raw/master/maps/ireland_counties.zip'
-        self.importShapefile(url)
+        url = 'https://github.com/dmnfarrell/snipgenie/raw/master/maps/ireland_counties.zip?raw=true'
+        self.importShapefile(url, 'ireland counties', 'white')
         return
 
-    def importShapefile(self, filename):
+    def importShapefile(self, filename, name=None, color=None):
 
         ext = os.path.splitext(filename)[1]
         if ext == '.zip':
             filename = 'zip://'+filename
         gdf = gpd.read_file(filename)
-        name = os.path.basename(filename)
-        self.addEntry(name, gdf, filename)
+        if name == None:
+            name = os.path.basename(filename)
+        self.addEntry(name, gdf, color, filename)
         self.plot()
         return
 
@@ -272,13 +299,7 @@ class GISViewer(QWidget):
         item.setText(1, filename)
         return
 
-    def itemClicked(self, item, column):
-
-        #if item.checkState(column) == Qt.Checked:
-        #    self.replot()
-        return
-
-    def addEntry(self, name, gdf, filename=None):
+    def addEntry(self, name, gdf, color=None, filename=None):
         """Add geopandas dataframe entry to tree"""
 
         if name in self.layers:
@@ -293,9 +314,18 @@ class GISViewer(QWidget):
         self.layers[name] = new
         new.filename = filename
         i = len(self.layers)
-        clr = qcolors[i]
-        new.color = clr
-        item.setBackground(0 , QBrush(QColor(clr)))
+        if color == None:
+            color = qcolors[i]
+        new.color = color
+        item.setBackground(0 , QBrush(QColor(color)))
+        return
+
+    def updateLayers(self, layers):
+        """Reload from a dict of layers"""
+
+        for l in layers:
+            lyr=layers[l]
+            self.addEntry(lyr.name, lyr.gdf, lyr.color)
         return
 
     def setColor(self, item):
@@ -355,9 +385,8 @@ class GISViewer(QWidget):
                 ax.set_ylim(lims[1])
             i+=1
             ax.id = name
-
-        self.canvas.draw()
         plt.tight_layout()
+        self.canvas.draw()
         return
 
     def getPlotLimits(self):
@@ -432,9 +461,12 @@ class GISViewer(QWidget):
 
         name = item.text(0)
         layer = self.layers[name]
-        table = self.tablewidget.table
+        
+        from . import tables
+        table = tables.DataFrameTable(self)
         table.model.df = layer.gdf
         table.refresh()
+        self.vbox.addWidget(table)
         return
 
     def setProperties(self, item):

@@ -303,6 +303,8 @@ class App(QMainWindow):
         self.tools_menu.addAction('Fastq Qualities Report', self.fastq_quality_report)
         self.tools_menu.addAction('RD Analysis (MTBC)',
             lambda: self.run_threaded_process(self.rd_analysis, self.rd_analysis_completed))
+        self.tools_menu.addAction('M.bovis Spoligotyping',
+            lambda: self.run_threaded_process(self.spoligotyping, self.spotyping_completed))
         self.tools_menu.addAction('Show Annotation', self.show_ref_annotation)
         self.tools_menu.addAction('Map View', self.show_map)
         self.tools_menu.addAction('Phylogeny', self.tree_viewer)
@@ -374,6 +376,12 @@ class App(QMainWindow):
         for k in keys:
             if hasattr(self, k):
                 data[k] = self.__dict__[k]
+        if hasattr(self, 'gisviewer'):
+            d=self.gisviewer.saveData()
+            data['gisviewer'] = d
+        if hasattr(self, 'treeviewer'):
+            d=self.treeviewer.saveData()
+            data['treeviewer'] = d
 
         self.projectlabel.setText(filename)
         pickle.dump(data, open(filename,'wb'))
@@ -436,6 +444,14 @@ class App(QMainWindow):
         print (self.results)
         if 'vcf_file' in self.results:
             self.show_variants()
+        #load any saved maps
+        if 'gisviewer' in data.keys():
+            self.show_map()
+            self.gisviewer.loadData(data['gisviewer'])
+        #load tree view
+        if 'treeviewer' in data.keys():
+            self.tree_viewer()
+            self.treeviewer.loadData(data['treeviewer'])
         return
 
     def load_project_dialog(self):
@@ -567,12 +583,11 @@ class App(QMainWindow):
         if not filename:
             return
 
-        df = self.fastq_table.model.df
         meta = pd.read_csv(filename)
-
-
-        new = df.merge(meta, left_on='sample', right_on='ACCESSION',how='left')
-        self.fastq_table.setDataFrame(new)
+        dlg = widgets.MergeDialog(self, self.fastq_table, meta)
+        dlg.exec_()
+        if not dlg.accepted:
+            return
         return
 
     def add_file(self, filter="Fasta Files(*.fa *.fna *.fasta)", path=None):
@@ -759,9 +774,9 @@ class App(QMainWindow):
     def tree_viewer(self):
 
         if not hasattr(self, 'treeviewer'):
-            self.treeview = widgets.TreeViewer(self)
+            self.treeviewer = widgets.TreeViewer(self)
         if not 'phylogeny' in self.get_tabs():
-            idx = self.right_tabs.addTab(self.treeview, 'phylogeny')
+            idx = self.right_tabs.addTab(self.treeviewer, 'phylogeny')
             self.right_tabs.setCurrentIndex(idx)
         return
 
@@ -893,6 +908,38 @@ class App(QMainWindow):
         else:
                 import webbrowser
                 webbrowser.open_new(out)
+        return
+
+    def spoligotyping(self, progress_callback):
+        """Mbovis spo typing tool"""
+
+        msg = 'This tool is designed for strain typing of M.bovis isolates. '
+        reply = QMessageBox.question(self, 'Continue?', msg,
+                                        QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.No:
+            return
+
+        df = self.fastq_table.model.df
+        rows = self.fastq_table.getSelectedRows()
+        data = df.iloc[rows]
+        res=[]
+        for i,r in data.iterrows():
+            name = r['sample']
+            s = tools.get_spoligotype(r.filename, reads_limit=500000, threshold=2)
+            sb = tools.get_sb_number(s)
+            print (name, sb)
+            res.append([name,sb])
+        print (pd.DataFrame(res))
+
+        return
+
+    def spotyping_completed(self):
+        """Typing completed"""
+
+        self.info.append("finished")
+        self.progressbar.setRange(0,1)
+        self.fastq_table.refresh()
+        self.running = False
         return
 
     def rd_analysis(self, progress_callback):

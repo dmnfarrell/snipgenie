@@ -25,6 +25,7 @@ import sys,os,platform
 import pandas as pd
 import numpy as np
 from .qt import *
+from pandas.api.types import is_datetime64_any_dtype as is_datetime
 
 class ColumnHeader(QHeaderView):
     def __init__(self):
@@ -375,21 +376,42 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         return len(self.df.columns.values)
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
+        """Edit or display roles. Handles what happens when the Cells
+        are edited or what appears in each cell.
+        """
 
         i = index.row()
         j = index.column()
+        #print (self.df.dtypes)
+        #coltype = self.df.dtypes[j]
+        coltype = self.df[self.df.columns[j]].dtype
+        isdate = is_datetime(coltype)
         if role == QtCore.Qt.DisplayRole:
             value = self.df.iloc[i, j]
-            if type(value) != str and np.isnan(value):
-                return ''
+            if isdate:
+                return value.strftime(TIMEFORMAT)
+            elif type(value) != str:
+                if type(value) in [float,np.float64] and np.isnan(value):
+                    return ''
+                elif type(value) == np.float:
+                    return value
+                else:
+                    return (str(value))
             else:
                 return '{0}'.format(value)
         elif (role == QtCore.Qt.EditRole):
             value = self.df.iloc[i, j]
-            if type(value) != str and np.isnan(value):
+            #print (coltype)
+            #print (value)
+            if type(value) is str:
+                try:
+                    return float(value)
+                except:
+                    return str(value)
+
+            if np.isnan(value):
                 return ''
-            else:
-                return value
+
         elif role == QtCore.Qt.BackgroundRole:
             return QColor(self.bg)
 

@@ -5,7 +5,7 @@
 
 <img align="right" src=snipgenie/logo.png width=180px>
 
-_SNiPgenie_ is a tool for microbial variant calling and phylogenetic analysis from raw read data. It was primarily written to be used with bacterial isolates of M. Bovis but can be applied to other species. You need a good quality reference genome to align to. Anyone interested in using the software is encouraged to make suggestions on improving or adding features.
+_SNiPgenie_ is a tool for microbial variant calling and phylogenetic analysis from raw read data. It was primarily written to be used with bacterial isolates of M. bovis but can be applied to other species. You need a good quality reference genome to align to. Anyone interested in using the software is encouraged to make suggestions on improving or adding features.
 
 This software is written in Python. It was developed on Ubuntu linux but is designed to also run on Windows 10 with a standalone application. The GUI is made using the Qt toolkit using PySide2.
 

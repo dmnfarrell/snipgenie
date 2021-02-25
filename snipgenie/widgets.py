@@ -56,7 +56,6 @@ def dialogFromOptions(parent, opts, sections=None,
     QPlainTextEdit {
         max-height: 80px;
     }
-
     '''
 
     if sections == None:
@@ -1039,7 +1038,8 @@ class TreeViewer(QDialog):
         self.width = 400
         self.height = 500
         import toytree
-        self.style = {
+        self.colors = {}
+        self.default_style = {
             "layout":'r',
             "edge_type": 'p',
             "edge_style": {
@@ -1048,7 +1048,7 @@ class TreeViewer(QDialog):
             },
             "tip_labels": True,
             "tip_labels_align": True,
-            "tip_labels_colors": toytree.colors[1],
+            "tip_labels_colors": 'black',
             "tip_labels_style": {
                 "font-size": "14px"
             },
@@ -1057,6 +1057,8 @@ class TreeViewer(QDialog):
             "node_colors": toytree.colors[2],
             "use_edge_lengths":True,
         }
+        self.style = self.default_style
+
         self.test_tree(10)
         return
 
@@ -1090,16 +1092,14 @@ class TreeViewer(QDialog):
 
         data = tools.get_attributes(self)
         data['tree'] = self.tree
-        #data['style'] = self.style
         return data
 
     def loadData(self, data):
         """Load saved layers"""
 
         try:
-            tools.set_attributes(self, data)
-            self.tree = data['tree']
-            #self.style = data['style']
+            self.set_tree(data['tree'])
+            tools.set_attributes(self, data)        
         except:
             pass
         self.update()
@@ -1112,11 +1112,13 @@ class TreeViewer(QDialog):
         self.file_menu = QMenu('File', parent)
         self.file_menu.addAction('Import Tree', self.load_tree)
         self.file_menu.addAction('Load Test Tree', self.test_tree)
+        self.file_menu.addAction('Show Newick', self.show_newick)
         self.file_menu.addAction('Export Image', self.export_image)
         self.menubar.addMenu(self.file_menu)
-        self.view_menu = QMenu('View', parent)
-        self.view_menu.addAction('Show Newick', self.show_newick)
-        self.menubar.addMenu(self.view_menu)
+        self.tree_menu = QMenu('Tree', parent)
+        self.tree_menu.addAction('Show Unrooted', self.unroot_tree)
+        self.tree_menu.addAction('Reset Format', self.reset_style)
+        self.menubar.addMenu(self.tree_menu)
 
         return
 
@@ -1146,14 +1148,34 @@ class TreeViewer(QDialog):
         w.setValue(10)
         l.addWidget(w)
         w.valueChanged.connect(self.zoom)
-        btn = QPushButton('Set Style')
+        btn = QPushButton('Set Format')
         l.addWidget(btn)
         btn.clicked.connect(self.tree_style_options)
-        lbl = QLabel('Root Tree')
-        l.addWidget(lbl)
-        w = self.root_w = QComboBox()
-        l.addWidget(w)
-        w.currentIndexChanged.connect(self.root_tree)
+        t = self.tipitems = QTreeWidget()
+        t.setHeaderItem(QTreeWidgetItem(["name","visible"]))
+        t.setColumnWidth(0, 200)
+        t.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        t.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        t.customContextMenuRequested.connect(self.show_tree_menu)
+        l.addWidget(t)
+
+        return
+
+    def show_tree_menu(self, pos):
+        """Show right cick tree menu"""
+
+        item = self.tipitems.itemAt( pos )
+        menu = QMenu(self.tipitems)
+        #propsAction = menu.addAction("Properties")
+        colorAction = menu.addAction("Set Color")
+        rootAction = menu.addAction("Root On")
+        action = menu.exec_(self.tipitems.mapToGlobal(pos))
+        if action == rootAction:
+            self.root_tree()
+        elif action == colorAction:
+            self.set_color(item)
+
+    def drop_tip(self):
         return
 
     def load_tree(self, filename):
@@ -1162,8 +1184,17 @@ class TreeViewer(QDialog):
         return
 
     def set_tree(self, tree):
+        """Set a new tree"""
+
         self.tree = tree
-        self.root_w.addItems(self.tree.get_tip_labels())
+        self.colors = {}
+        self.style['tip_labels_colors'] = 'black'
+        self.tipitems.clear()
+        for t in self.tree.get_tip_labels():
+            item = QTreeWidgetItem(self.tipitems)
+            item.setCheckState(1, QtCore.Qt.Checked)
+            item.setText(0, t)
+
         return
 
     def update(self):
@@ -1173,6 +1204,9 @@ class TreeViewer(QDialog):
         import toyplot
         if self.tree==None:
             return
+        #set colors
+        colorlist = [self.colors[tip] if tip in self.colors else "black" for tip in self.tree.get_tip_labels()]
+        self.style['tip_labels_colors'] = colorlist
         canvas,axes,mark = self.tree.draw(
                         width=self.width,
                         height=self.height,
@@ -1192,10 +1226,17 @@ class TreeViewer(QDialog):
 
     def root_tree(self):
 
-        name = self.root_w.currentText()
+        item = self.tipitems.selectedItems()[0]
+        row = self.tipitems.selectedIndexes()[0].row()
+        name = item.text(0)
         self.tree = self.tree.root(name)
         self.update()
-        return'tip_labels_style'
+        return
+
+    def unroot_tree(self):
+        self.tree = self.tree.unroot()
+        self.update()
+        return
 
     def export_image(self):
         """Save tree as image"""
@@ -1228,7 +1269,7 @@ class TreeViewer(QDialog):
 
     def tree_style_options(self):
 
-        fonts = ['%spx' %i for i in range (6,20)]
+        fonts = ['%spx' %i for i in range (6,28)]
         tip_labels_style = self.style['tip_labels_style']
 
         opts = {'tree_style':{'type':'combobox','default':self.style['layout'],'items':['n','d','c']},
@@ -1261,4 +1302,18 @@ class TreeViewer(QDialog):
         self.style['tip_labels_style']['font-size'] = kwds['font_size']
         self.width = kwds['width']
         self.height = kwds['height']
+        return
+
+    def reset_style(self):
+
+        self.style = self.default_style
+        self.update()
+
+    def set_color(self, item):
+
+        qcolor = QColorDialog.getColor()
+        item.setBackground(0 , qcolor)
+        name = item.text(0)
+        self.colors[name] = qcolor.name()
+        self.update()
         return

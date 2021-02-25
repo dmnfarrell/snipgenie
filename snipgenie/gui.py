@@ -301,13 +301,15 @@ class App(QMainWindow):
         self.tools_menu = QMenu('Tools', self)
         self.menuBar().addMenu(self.tools_menu)
         self.tools_menu.addAction('Fastq Qualities Report', self.fastq_quality_report)
+        self.tools_menu.addAction('Show Annotation', self.show_ref_annotation)
+        self.tools_menu.addAction('Map View', self.show_map)
+        self.tools_menu.addAction('Phylogeny', self.tree_viewer)
+        self.tools_menu.addSeparator()
+        self.tools_menu.addAction('Check Heterozygosity', self.check_heterozygosity)
         self.tools_menu.addAction('RD Analysis (MTBC)',
             lambda: self.run_threaded_process(self.rd_analysis, self.rd_analysis_completed))
         self.tools_menu.addAction('M.bovis Spoligotyping',
             lambda: self.run_threaded_process(self.spoligotyping, self.spotyping_completed))
-        self.tools_menu.addAction('Show Annotation', self.show_ref_annotation)
-        self.tools_menu.addAction('Map View', self.show_map)
-        self.tools_menu.addAction('Phylogeny', self.tree_viewer)
 
         self.settings_menu = QMenu('&Settings', self)
         self.menuBar().addMenu(self.settings_menu)
@@ -615,7 +617,7 @@ class App(QMainWindow):
         #check if folder already got some results
         results_file = os.path.join(self.outputdir, 'samples.csv')
         if os.path.exists(results_file):
-            msg = "This folder appears to have results already. Try to import the table?"
+            msg = "This folder appears to have results already. Try to import them?"
             reply = QMessageBox.question(self, 'Confirm', msg,
                                         QMessageBox.Cancel | QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Cancel:
@@ -623,6 +625,7 @@ class App(QMainWindow):
             elif reply == QMessageBox.Yes:
                 self.fastq_table.model.df = pd.read_csv(results_file)
                 self.fastq_table.refresh()
+                self.results['vcf_file'] = os.path.join(self.outputdir, 'filtered.vcf.gz')
         self.outdirLabel.setText(self.outputdir)
         return
 
@@ -742,9 +745,9 @@ class App(QMainWindow):
         kwds = self.opts.kwds
         vcf_file = self.results['vcf_file']
         progress_callback.emit('Making SNP alignment')
-        result, smat = tools.fasta_alignment_from_vcf(vcf_file, self.ref_genome,
+        result, smat = tools.fasta_alignment_from_vcf(vcf_file,
                                                 callback=progress_callback.emit)
-        print (result)
+        #print (result)
         outfile = os.path.join(self.outputdir, 'core.fa')
         self.results['snp_file'] = outfile
         SeqIO.write(result, outfile, 'fasta')
@@ -760,15 +763,15 @@ class App(QMainWindow):
                 treefile = trees.run_RAXML(corefasta, bootstraps=bootstraps, outpath=self.outputdir)
 
         self.show_tree()
-        self.treefile = treefile
+        self.treefile = outfile
         return
 
     def show_tree(self):
 
         self.tree_viewer()
         filename = os.path.join(self.outputdir,'RAxML_bipartitions.variants')
-        self.treeview.load_tree(filename)
-        self.treeview.update()
+        self.treeviewer.load_tree(filename)
+        self.treeviewer.update()
         return
 
     def tree_viewer(self):
@@ -910,6 +913,48 @@ class App(QMainWindow):
                 webbrowser.open_new(out)
         return
 
+    def show_browser_tab(self, link, name):
+
+        from PySide2.QtWebEngineWidgets import QWebEngineView
+        browser = QWebEngineView()
+        browser.setUrl(link)
+        idx = self.right_tabs.addTab(browser, name)
+        self.right_tabs.setCurrentIndex(idx)
+        return
+
+    def check_heterozygosity(self):
+
+        df = self.fastq_table.model.df
+        rows = self.fastq_table.getSelectedRows()
+        data = df.iloc[rows]
+        samples = list(data['sample'].unique())
+        print (samples)
+        vcffile = self.results['vcf_file']
+        vdf = tools.vcf_to_dataframe(vcffile)
+        def het(x):
+            if sum(x.AD) == 0:
+                return
+            return min(x.AD)/sum(x.AD)
+        l=int(np.sqrt(len(samples)))+1
+        fig,ax=plt.subplots(l,l,figsize=(10,10))
+        axs=ax.flat
+        i=0
+        sites = []
+        for s in samples:
+            x = vdf[vdf['sample']==s]
+            x['het'] = x.apply(het,1)
+            x.plot('start','het',kind='scatter',alpha=0.6,ax=axs[i])
+            axs[i].set_title(s)
+            i+=1
+            h = x[x['het']>0.1]
+            sites.append(h)
+
+        plt.tight_layout()
+        w = widgets.PlotViewer(self)
+        w.show_figure(fig)
+        i = self.tabs.addTab(w, 'hetero')
+        return
+
     def spoligotyping(self, progress_callback):
         """Mbovis spo typing tool"""
 
@@ -927,7 +972,7 @@ class App(QMainWindow):
             name = r['sample']
             s = tools.get_spoligotype(r.filename, reads_limit=500000, threshold=2)
             sb = tools.get_sb_number(s)
-            print (name, sb)
+            #print (name, sb)
             res.append([name,sb])
         print (pd.DataFrame(res))
 
@@ -944,6 +989,14 @@ class App(QMainWindow):
 
     def rd_analysis(self, progress_callback):
         """Run RD analysis for MTBC species"""
+
+
+        '''msg = 'This tool is for Region of Difference analysis of MTBC isolates only. '\
+            'arse.'
+        reply = QMessageBox.question(self, 'Continue?', msg,
+                                        QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.No:
+            return'''
 
         self.running == True
         self.opts.applyOptions()

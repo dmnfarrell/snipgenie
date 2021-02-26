@@ -721,10 +721,10 @@ class WorkFlow(object):
 def test_run():
     """Test run"""
 
-    testdatadir = os.path.join(module_path, 'testing')
-    out = os.path.join(tempdir, 'snipgenie_tests')
-    args = {'threads':8, 'outdir': out, 'input': testdatadir,
-            'aligner':'bowtie',
+    testdatadir = 'testing'
+    out = 'test_results'
+    args = {'threads':4, 'outdir': out, 'input': testdatadir,
+            'aligner':'bwa', 'filters':None,
             'reference': None, 'overwrite':True}
     W = WorkFlow(**args)
     st = W.setup()

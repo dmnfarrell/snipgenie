@@ -8,7 +8,7 @@ description: |
 base: core18
 grade: stable
 confinement: strict
-icon: gui/icon.png
+icon: snap/gui/icon.png
 
 apps:
   snpgenie:

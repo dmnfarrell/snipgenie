@@ -1099,7 +1099,7 @@ class TreeViewer(QDialog):
 
         try:
             self.set_tree(data['tree'])
-            tools.set_attributes(self, data)        
+            tools.set_attributes(self, data)
         except:
             pass
         self.update()
@@ -1166,17 +1166,16 @@ class TreeViewer(QDialog):
 
         item = self.tipitems.itemAt( pos )
         menu = QMenu(self.tipitems)
-        #propsAction = menu.addAction("Properties")
         colorAction = menu.addAction("Set Color")
         rootAction = menu.addAction("Root On")
+        dropAction = menu.addAction("Drop Tips")
         action = menu.exec_(self.tipitems.mapToGlobal(pos))
         if action == rootAction:
             self.root_tree()
         elif action == colorAction:
-            self.set_color(item)
-
-    def drop_tip(self):
-        return
+            self.set_color()
+        elif action == dropAction:
+            self.drop_tips()
 
     def load_tree(self, filename):
         import toytree
@@ -1309,11 +1308,22 @@ class TreeViewer(QDialog):
         self.style = self.default_style
         self.update()
 
-    def set_color(self, item):
+    def set_color(self):
 
+        items = self.tipitems.selectedItems()
+        names = [i.text(0) for i in items]
         qcolor = QColorDialog.getColor()
-        item.setBackground(0 , qcolor)
-        name = item.text(0)
-        self.colors[name] = qcolor.name()
+        for item in items:
+            item.setBackground(0 , qcolor)
+        for name in names:
+            self.colors[name] = qcolor.name()
+        self.update()
+        return
+
+    def drop_tips(self):
+        items = self.tipitems.selectedItems()
+        names = [i.text(0) for i in items]
+        #for name in names:
+        self.tree = self.tree.drop_tips(names=names).ladderize()
         self.update()
         return

@@ -210,6 +210,9 @@ def align_reads(samples, idx, outdir='mapped', callback=None, aligner='bwa', **k
         elif aligner == 'bowtie':
             idx = os.path.splitext(os.path.basename(idx))[0]
             aligners.bowtie_align(files[0],files[1], idx=idx, out=out, **kwargs)
+        elif aligner == 'subread':
+            idx = os.path.splitext(os.path.basename(idx))[0]
+            aligners.subread_align(files[0],files[1], idx=idx, out=out, **kwargs)
         bamidx = out+'.bai'
         if not os.path.exists(bamidx) or kwargs['overwrite']==True:
             cmd = '{s} index {o}'.format(o=out,s=samtoolscmd)
@@ -633,6 +636,8 @@ class WorkFlow(object):
             aligners.build_bwa_index(self.reference)
         elif self.aligner == 'bowtie':
             aligners.build_bowtie_index(self.reference)
+        elif self.aligner == 'subread':
+            aligners.build_subread_index(self.reference)
         if self.gb_file != None:
             #convert annotation to gff for consequence calling
             self.gff_file = os.path.join(self.outdir, os.path.basename(self.gb_file)+'.gff')
@@ -711,7 +716,7 @@ class WorkFlow(object):
             treefile = trees.run_RAXML(outfasta, bootstraps=self.bootstraps, outpath=self.outdir)
             if treefile == None:
                 return
-            print (treefile)
+            #print (treefile)
             #labelmap = dict(zip(sra.filename,sra.geo_loc_name_country))
             t,ts = trees.create_tree(treefile)#, labelmap)
             t.render(os.path.join(self.outdir, 'tree.png'))
@@ -730,6 +735,8 @@ def test_run():
     st = W.setup()
     if st == True:
         W.run()
+    vdf = tools.vcf_to_dataframe(W.vcf_file)
+    print (vdf)
     return
 
 def main():

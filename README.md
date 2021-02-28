@@ -23,8 +23,6 @@ This software is written in Python. It was developed on Ubuntu linux but is desi
 
 ## Installation
 
-Note for Windows users: a GUI with standalone installer will be available shortly.
-
 `pip install -e git+https://github.com/dmnfarrell/snipgenie.git#egg=snipgenie`
 
 Notes: You may need to use pip3 on Ubuntu to ensure you use Python 3. Use sudo if installing system-wide.
@@ -39,7 +37,7 @@ For Linux installs, you require Python 3 and the following packages. These will 
 * biopython
 * pyvcf
 * pyfaidx
-* pyside2 (if using GUI)
+* pyside2 (only if using GUI)
 
 Other binaries required:
 
@@ -158,6 +156,12 @@ W = snipgenie.app.WorkFlow(**args)
 W.setup()
 W.run()
 ```
+
+## GUI
+
+The package includes a desktop application with additional features like a fastq quality analysis, the ability to view alignments and tree viewing. It requires the installation of either PyQt5 or PySide2 if using the pip install. A windows installer for this application will be available separately.
+
+<img src=img/scr1.png width=600px>
 
 ## FAQ
 

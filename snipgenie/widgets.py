@@ -1037,6 +1037,7 @@ class TreeViewer(QDialog):
         self.tree = None
         self.width = 400
         self.height = 500
+        self.ts = ''
         import toytree
         self.colors = {}
         self.default_style = {
@@ -1055,9 +1056,10 @@ class TreeViewer(QDialog):
             "node_labels": False,
             "node_sizes": 10,
             "node_colors": toytree.colors[2],
+            "node_markers":"c",
             "use_edge_lengths":True,
         }
-        self.style = self.default_style
+        self.style = self.default_style.copy()
 
         self.test_tree(10)
         return
@@ -1167,6 +1169,7 @@ class TreeViewer(QDialog):
         item = self.tipitems.itemAt( pos )
         menu = QMenu(self.tipitems)
         colorAction = menu.addAction("Set Color")
+        nodecolorAction = menu.addAction("Set Node Color")
         rootAction = menu.addAction("Root On")
         dropAction = menu.addAction("Drop Tips")
         action = menu.exec_(self.tipitems.mapToGlobal(pos))
@@ -1174,11 +1177,20 @@ class TreeViewer(QDialog):
             self.root_tree()
         elif action == colorAction:
             self.set_color()
+        elif action == nodecolorAction:
+            self.set_color('node')
         elif action == dropAction:
             self.drop_tips()
 
-    def load_tree(self, filename):
+    def load_tree(self, filename=None):
         import toytree
+        if filename == None:
+            options = QFileDialog.Options()
+            filter = "newick files (*.newick);;All files (*.*)"
+            filename, _ = QFileDialog.getOpenFileName(self,"Open tree file",
+                                        "",filter=filter,selectedFilter =filter, options=options)
+            if not filename:
+                return
         self.set_tree(toytree.tree(filename))
         return
 
@@ -1206,10 +1218,14 @@ class TreeViewer(QDialog):
         #set colors
         colorlist = [self.colors[tip] if tip in self.colors else "black" for tip in self.tree.get_tip_labels()]
         self.style['tip_labels_colors'] = colorlist
-        canvas,axes,mark = self.tree.draw(
+        if self.ts != '':
+            style = {}
+        else:
+            style = self.style
+        canvas,axes,mark = self.tree.draw(ts=self.ts,
                         width=self.width,
                         height=self.height,
-                        scalebar=True, **self.style)
+                        scalebar=True, **style)
         toyplot.html.render(canvas, "temp.html")
         with open('temp.html', 'r') as f:
             html = f.read()
@@ -1228,12 +1244,12 @@ class TreeViewer(QDialog):
         item = self.tipitems.selectedItems()[0]
         row = self.tipitems.selectedIndexes()[0].row()
         name = item.text(0)
-        self.tree = self.tree.root(name)
+        self.tree = self.tree.root(name).ladderize()
         self.update()
         return
 
     def unroot_tree(self):
-        self.tree = self.tree.unroot()
+        self.tree = self.tree.unroot().ladderize()
         self.update()
         return
 
@@ -1269,15 +1285,19 @@ class TreeViewer(QDialog):
     def tree_style_options(self):
 
         fonts = ['%spx' %i for i in range (6,28)]
+        markers = ['o','s','d','^','>','oo']
+        nlabels = ['','idx','support']
         tip_labels_style = self.style['tip_labels_style']
-
-        opts = {'tree_style':{'type':'combobox','default':self.style['layout'],'items':['n','d','c']},
+        tree_styles = [None,'n','s','c','o','p','d']
+        opts = {'ts': {'type':'combobox','default':self.ts,'items':tree_styles},
                 'layout': {'type':'combobox','default':self.style['layout'],'items':['r','d','c']},
-                'edge_type': {'type':'combobox','default':self.style['edge_type'],'items':['p','c']},
+                'edge_type': {'type':'combobox','default':self.style['edge_type'],'items':['p','b','c']},
+                'use_edge_lengths':{'type':'checkbox','default':self.style['use_edge_lengths'] },
                 'tip_labels':{'type':'checkbox','default':self.style['tip_labels'] },
                 'tip_labels_align':{'type':'checkbox','default':self.style['tip_labels_align'] },
-                'node_labels':{'type':'checkbox','default':self.style['node_labels'] },
+                'node_labels':{'type':'combobox','default':self.style['node_labels'],'items': nlabels},
                 'node_sizes':{'type':'spinbox','default':self.style['node_sizes'],'range':(2,20),'interval':1},
+                'node_markers': {'type':'combobox','default':self.style['node_markers'],'items':markers},
                 'font_size':{'type':'combobox','default':tip_labels_style['font-size'],'items':fonts},
                 'width':{'type':'entry','default':self.width},
                 'height':{'type':'entry','default':self.height,},
@@ -1294,11 +1314,14 @@ class TreeViewer(QDialog):
 
     def set_style(self, kwds):
 
-        omit=['width','height','font_size']
+        omit=['width','height','font_size','ts']
         for k in kwds:
             if k not in omit:
                 self.style[k] = kwds[k]
+        if kwds['node_labels'] == '':
+            self.style['node_labels'] = False
         self.style['tip_labels_style']['font-size'] = kwds['font_size']
+        self.ts = kwds['ts']
         self.width = kwds['width']
         self.height = kwds['height']
         return
@@ -1306,9 +1329,11 @@ class TreeViewer(QDialog):
     def reset_style(self):
 
         self.style = self.default_style
+        self.colors = {}
+        print (self.style)
         self.update()
 
-    def set_color(self):
+    def set_color(self, kind='text'):
 
         items = self.tipitems.selectedItems()
         names = [i.text(0) for i in items]
@@ -1316,11 +1341,15 @@ class TreeViewer(QDialog):
         for item in items:
             item.setBackground(0 , qcolor)
         for name in names:
-            self.colors[name] = qcolor.name()
+            if kind == 'text':
+                self.colors[name] = qcolor.name()
+            elif kind == 'node':
+                self.node_colors[name] = qcolor.name()
         self.update()
         return
 
     def drop_tips(self):
+
         items = self.tipitems.selectedItems()
         names = [i.text(0) for i in items]
         #for name in names:

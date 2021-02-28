@@ -33,6 +33,7 @@ home = os.path.expanduser("~")
 config_path = os.path.join(home,'.config','snpgenie')
 module_path = os.path.dirname(os.path.abspath(__file__))
 BOWTIE_INDEXES = os.path.join(config_path, 'genome')
+SUBREAD_INDEXES = os.path.join(config_path, 'genome')
 
 def build_bwa_index(fastafile, path=None):
     """Build a bwa index"""
@@ -122,9 +123,10 @@ def bowtie_align(file1, file2, idx, out, remaining=None, threads=2,
         print (str(e.output))
     return remaining
 
-def build_subread_index(fastafile, path):
+def build_subread_index(fastafile):
     """Build an index for subread"""
 
+    path = BOWTIE_INDEXES
     name = os.path.splitext(fastafile)[0]
     cmd = 'subread-buildindex -o %s %s' %(name,fastafile)
     try:
@@ -134,5 +136,20 @@ def build_subread_index(fastafile, path):
         return
     exts = ['.00.b.array','.00.b.tab','.files','.reads']
     files = [name+i for i in exts]
-    utils.move_files(files, path)
+    tools.move_files(files, path)
+    return
+
+def subread_align(file1, file2, idx, out, threads=2,
+                overwrite=False, verbose=True):
+
+    os.environ["SUBREAD_INDEXES"] = SUBREAD_INDEXES
+    idx = os.path.join(SUBREAD_INDEXES, idx)
+    samtoolscmd = tools.get_cmd('samtools')
+    subreadcmd = tools.get_cmd('subread-align')
+    params = '-t 0 --SAMoutput -m 2 -M 1'
+    cmd = '{sc} {p} -T {t} -i {i} -r {f1} -R {f2} | {s} view -F 0x04 -bt - | {s} sort -o {o}'.format(
+            sc=subreadcmd,p=params,t=threads,i=idx,f1=file1,f2=file2,s=samtoolscmd,o=out)
+    print (cmd)
+    result = subprocess.check_output(cmd, shell=True, executable='/bin/bash',
+                                     stderr= subprocess.STDOUT)
     return

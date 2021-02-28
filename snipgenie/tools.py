@@ -51,6 +51,13 @@ def get_cmd(cmd):
         cmd = os.path.join(bin_path, '%s.exe' %cmd)
     return cmd
 
+def move_files(files, path):
+    if not os.path.exists(path):
+        os.mkdir(path)
+    for f in files:
+        shutil.move(f, os.path.join(path,os.path.basename(f)))
+    return
+
 def get_attributes(obj):
     """Get non hidden and built-in type object attributes that can be persisted"""
 

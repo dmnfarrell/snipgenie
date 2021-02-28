@@ -276,7 +276,7 @@ class App(QMainWindow):
                 QtCore.Qt.CTRL + QtCore.Qt.Key_Minus)
 
         self.style_menu = QMenu("Styles",  self.view_menu)
-        self.style_menu.addAction('Default', self.setStyle)
+        self.style_menu.addAction('Default', self.set_style)
         self.style_menu.addAction('Light', lambda: self.set_style('light'))
         self.style_menu.addAction('Dark', lambda: self.set_style('dark'))
         self.view_menu.addAction(self.style_menu.menuAction())
@@ -446,6 +446,8 @@ class App(QMainWindow):
         print (self.results)
         if 'vcf_file' in self.results:
             self.show_variants()
+        if 'snp_dist' in self.results:
+            self.show_snpdist()
         #load any saved maps
         if 'gisviewer' in data.keys():
             self.show_map()
@@ -722,7 +724,8 @@ class App(QMainWindow):
                                     overwrite=overwrite, filters=filters,
                                     gff_file=gff_file,
                                     callback=progress_callback.emit)
-        csqmat = self.results['csq_matrix'] = os.path.join(self.outputdir, 'csq.matrix')
+        self.results['csq_matrix'] = os.path.join(self.outputdir, 'csq.matrix')
+
         return
 
     def show_variants(self):
@@ -734,8 +737,15 @@ class App(QMainWindow):
         if 'csq_matrix' in self.results:
             csqmat = pd.read_csv(self.results['csq_matrix'])
             table = tables.DefaultTable(self.tabs, app=self, dataframe=csqmat)
-            i = self.tabs.addTab(table, 'csq.matrix')
+            i = self.tabs.addTab(table, 'csq_matrix')
             self.tabs.setCurrentIndex(i)
+        return
+
+    def show_snpdist(self):
+
+        mat = pd.read_csv(self.results['snp_dist'])
+        table = tables.DefaultTable(self.tabs, app=self, dataframe=mat)
+        i = self.tabs.addTab(table, 'snp_dist')
         return
 
     def snp_alignment(self, progress_callback):
@@ -751,6 +761,7 @@ class App(QMainWindow):
         outfile = os.path.join(self.outputdir, 'core.fa')
         self.results['snp_file'] = outfile
         SeqIO.write(result, outfile, 'fasta')
+        self.results['snp_dist'] = os.path.join(self.outputdir, 'snpdist.csv')
         return
 
     def make_phylo_tree(self, method='raxml'):
@@ -1171,7 +1182,7 @@ class AppOptions(widgets.BaseOptions):
         self.parent = parent
         self.kwds = {}
         genomes = []
-        aligners = ['bwa','bowtie']
+        aligners = ['bwa','subread']
         cpus = [str(i) for i in range(1,os.cpu_count()+1)]
         self.groups = {'general':['threads','overwrite'],
                         #'reference':['refgenome','annotation'],

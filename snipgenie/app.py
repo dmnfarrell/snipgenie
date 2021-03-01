@@ -52,7 +52,7 @@ mbovis_mask =  os.path.join(datadir, 'Mbovis_AF212297_mask.bed')
 #windows only path to binaries
 bin_path = os.path.join(config_path, 'binaries')
 #this is a custom filter
-default_filter = 'QUAL>=40 && FORMAT/DP>=30 && DP4>=4 && MQ>30'
+default_filter = 'QUAL>=40 && FORMAT/DP>=30 && DP4>=4'
 annotatestr = '"AD,ADF,ADR,DP,SP,INFO/AD,INFO/ADF,INFO/ADR"'
 
 if not os.path.exists(config_path):
@@ -322,7 +322,7 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
 
     regstr = ' '.join(regions)
     filesstr = ' '.join(outfiles)
-    cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b  --min-MQ 60 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
+    cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b --min-MQ 10 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
             .format(r=ref, reg=regstr, b=bam_files, o=filesstr, a=annotatestr)
     print (cmd)
     if callback != None:
@@ -401,6 +401,8 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
         csqout = os.path.join(outpath, 'csq.tsv')
         cmd = '{bc} csq -f {r} -g {g} {f} -Ot -o {o}'.format(bc=bcftoolscmd,r=ref,g=gff_file,f=final,o=csqout)
         print (cmd)
+        if callback != None:
+            callback(cmd)
         tmp = subprocess.check_output(cmd,shell=True)
         csqdf = read_csq_file(csqout)
         #get presence/absence matrix of csq mutations
@@ -727,9 +729,9 @@ def test_run():
     """Test run"""
 
     testdatadir = 'testing'
-    out = 'test_results'
+    out = 'subread_results'
     args = {'threads':4, 'outdir': out, 'input': testdatadir,
-            'aligner':'bwa', 'filters':None,
+            'aligner':'subread', 'filters':'QUAL>=40 && DP4>=4',
             'reference': None, 'overwrite':True}
     W = WorkFlow(**args)
     st = W.setup()

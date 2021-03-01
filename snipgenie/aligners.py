@@ -142,11 +142,13 @@ def build_subread_index(fastafile):
 def subread_align(file1, file2, idx, out, threads=2,
                 overwrite=False, verbose=True):
 
+    if not os.path.exists(out) and overwrite == False:
+        return
     os.environ["SUBREAD_INDEXES"] = SUBREAD_INDEXES
     idx = os.path.join(SUBREAD_INDEXES, idx)
     samtoolscmd = tools.get_cmd('samtools')
     subreadcmd = tools.get_cmd('subread-align')
-    params = '-t 0 --SAMoutput -m 2 -M 1'
+    params = '-t 1 --SAMoutput -m 3 -M 2'
     cmd = '{sc} {p} -T {t} -i {i} -r {f1} -R {f2} | {s} view -F 0x04 -bt - | {s} sort -o {o}'.format(
             sc=subreadcmd,p=params,t=threads,i=idx,f1=file1,f2=file2,s=samtoolscmd,o=out)
     print (cmd)

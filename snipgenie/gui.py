@@ -688,14 +688,18 @@ class App(QMainWindow):
         msg = 'Aligning reads..\nThis may take some time.'
         progress_callback.emit(msg)
         ref = self.ref_genome
-        aligners.build_bwa_index(ref)
+        if kwds['aligner'] == 'bwa':
+            aligners.build_bwa_index(self.ref_genome)
+        elif kwds['aligner'] == 'subread':
+            aligners.build_subread_index(self.ref_genome)
 
         progress_callback.emit('Using reference genome: %s' %ref)
         path = os.path.join(self.outputdir, 'mapped')
         if not os.path.exists(path):
             os.makedirs(path)
         app.align_reads(df, idx=ref, outdir=path, overwrite=overwrite, threads=kwds['threads'],
-                            callback=progress_callback.emit)
+                        aligner=kwds['aligner'],
+                        callback=progress_callback.emit)
         return
 
     def variant_calling(self, progress_callback=None):
@@ -707,7 +711,6 @@ class App(QMainWindow):
         self.running = True
         self.opts.applyOptions()
         kwds = self.opts.kwds
-        #print (kwds)
         overwrite = kwds['overwrite']
         threads = int(kwds['threads'])
         filters = kwds['filters']

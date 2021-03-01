@@ -30,7 +30,7 @@ from . import tools
 
 tempdir = tempfile.gettempdir()
 home = os.path.expanduser("~")
-config_path = os.path.join(home,'.config','snpgenie')
+config_path = os.path.join(home,'.config','snipgenie')
 module_path = os.path.dirname(os.path.abspath(__file__))
 BOWTIE_INDEXES = os.path.join(config_path, 'genome')
 SUBREAD_INDEXES = os.path.join(config_path, 'genome')
@@ -94,10 +94,6 @@ def bowtie_align(file1, file2, idx, out, remaining=None, threads=2,
 
     bowtiecmd = tools.get_cmd('bowtie')
     samtoolscmd = tools.get_cmd('samtools')
-    #label = os.path.splitext(os.path.basename(infile))[0]
-    #outpath = os.path.dirname(os.path.abspath(infile))
-    #if out == None:
-    #    out = ref+'_bowtie.sam'
 
     if BOWTIE_INDEXES == None:
         print ('aligners.BOWTIE_INDEXES variable not set')
@@ -112,8 +108,6 @@ def bowtie_align(file1, file2, idx, out, remaining=None, threads=2,
 
     if verbose == True:
         print (cmd)
-    if not os.path.exists(out) and overwrite == False:
-        return
     try:
         result = subprocess.check_output(cmd, shell=True, executable='/bin/bash',
                                          stderr= subprocess.STDOUT)
@@ -126,13 +120,15 @@ def bowtie_align(file1, file2, idx, out, remaining=None, threads=2,
 def build_subread_index(fastafile):
     """Build an index for subread"""
 
-    path = BOWTIE_INDEXES
+    path = SUBREAD_INDEXES
     name = os.path.splitext(fastafile)[0]
-    cmd = 'subread-buildindex -o %s %s' %(name,fastafile)
+    subreadalign = tools.get_cmd('subread-buildindex')
+    cmd = '{sc} -o {n} {f}'.format(sc=subreadalign,n=name,f=fastafile)
+    print (cmd)
     try:
-        result = subprocess.check_output(cmd, shell=True, executable='/bin/bash')
+        result = subprocess.check_output(cmd, shell=True)
     except subprocess.CalledProcessError as e:
-        #print (str(e.output))
+        print (str(e.output))
         return
     exts = ['.00.b.array','.00.b.tab','.files','.reads']
     files = [name+i for i in exts]
@@ -142,8 +138,6 @@ def build_subread_index(fastafile):
 def subread_align(file1, file2, idx, out, threads=2,
                 overwrite=False, verbose=True):
 
-    if not os.path.exists(out) and overwrite == False:
-        return
     os.environ["SUBREAD_INDEXES"] = SUBREAD_INDEXES
     idx = os.path.join(SUBREAD_INDEXES, idx)
     samtoolscmd = tools.get_cmd('samtools')
@@ -151,7 +145,7 @@ def subread_align(file1, file2, idx, out, threads=2,
     params = '-t 1 --SAMoutput -m 3 -M 2'
     cmd = '{sc} {p} -T {t} -i {i} -r {f1} -R {f2} | {s} view -F 0x04 -bt - | {s} sort -o {o}'.format(
             sc=subreadcmd,p=params,t=threads,i=idx,f1=file1,f2=file2,s=samtoolscmd,o=out)
-    print (cmd)
-    result = subprocess.check_output(cmd, shell=True, executable='/bin/bash',
-                                     stderr= subprocess.STDOUT)
+    if not os.path.exists(out) or overwrite == True:
+        print (cmd)
+        result = subprocess.check_output(cmd, shell=True, stderr= subprocess.STDOUT)
     return

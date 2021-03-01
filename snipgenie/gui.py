@@ -332,7 +332,10 @@ class App(QMainWindow):
         """Add preset genomes to menu"""
 
         genomes = {'Mbovis AF212297':{'sequence':app.mbovis_genome, 'gb':app.mbovis_gb},
-                   'MTB H37Rv':{'sequence':app.mtb_genome, 'gb':app.mtb_gb}}
+                   'MTB H37Rv':{'sequence':app.mtb_genome, 'gb':app.mtb_gb},
+                   'MAP-K10':{'sequence':app.map_genome, 'gb':app.map_gb},
+                   'M.smegmatis MC2 155':{'sequence':app.msmeg_genome, 'gb':app.msmeg_gb}
+                   }
         for name in genomes:
             seqname = genomes[name]['sequence']
             gbfile = genomes[name]['gb']
@@ -340,7 +343,7 @@ class App(QMainWindow):
                 self.set_reference(seqname)
                 self.set_annotation(gbfile)
             receiver = lambda seqname=seqname, gb=gbfile: func(seqname, gb)
-            self.presets_menu.addAction('&%s' %name, receiver)
+            self.presets_menu.addAction('%s' %name, receiver)
         return
 
     def show_recent_files(self):

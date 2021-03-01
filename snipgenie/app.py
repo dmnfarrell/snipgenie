@@ -47,6 +47,10 @@ mbovis_genome = os.path.join(sequence_path, 'Mbovis_AF212297.fa')
 mtb_genome = os.path.join(sequence_path, 'MTB-H37Rv.fa')
 mbovis_gb = os.path.join(datadir, 'Mbovis_AF212297.gb')
 mtb_gb = os.path.join(datadir, 'MTB-H37Rv.gb')
+map_genome = os.path.join(sequence_path, 'MAP-K10.fa')
+map_gb = os.path.join(datadir, 'MAP-K10.gb')
+msmeg_genome = os.path.join(sequence_path, 'Msmeg-MC2.fa')
+msmeg_gb = os.path.join(datadir, 'Msmeg-MC2.gb')
 mbovis_mask =  os.path.join(datadir, 'Mbovis_AF212297_mask.bed')
 
 #windows only path to binaries
@@ -87,7 +91,7 @@ def copy_ref_genomes():
         dest = os.path.join(path, os.path.basename(src))
         shutil.copy(src, dest)
     return
-
+    
 copy_ref_genomes()
 
 def fetch_binaries():
@@ -95,7 +99,7 @@ def fetch_binaries():
 
     url = "https://github.com/dmnfarrell/snipgenie/raw/master/win_binaries/"
     os.makedirs(bin_path, exist_ok=True)
-    names = ['bcftools.exe','bwa.exe','samtools.exe','tabix.exe',
+    names = ['bcftools.exe','bwa.exe','samtools.exe','tabix.exe','subread-align.exe','subread'
              'msys-2.0.dll','msys-bz2-1.dll','msys-lzma-5.dll','msys-ncursesw6.dll','msys-z.dll']
     for n in names:
         filename = os.path.join(bin_path,n)

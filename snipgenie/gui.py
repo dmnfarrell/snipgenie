@@ -996,6 +996,7 @@ class App(QMainWindow):
         return
 
     def check_heterozygosity(self):
+        """Plot heterozygosity for each sample"""
 
         df = self.fastq_table.model.df
         rows = self.fastq_table.getSelectedRows()
@@ -1008,8 +1009,8 @@ class App(QMainWindow):
             if sum(x.AD) == 0:
                 return
             return min(x.AD)/sum(x.AD)
-        l=int(np.sqrt(len(samples)))+1
-        fig,ax=plt.subplots(l,l,figsize=(10,10))
+        l=int(np.sqrt(len(samples)))
+        fig,ax=plt.subplots(l,l+1,figsize=(10,6))
         axs=ax.flat
         i=0
         sites = []
@@ -1026,6 +1027,7 @@ class App(QMainWindow):
         w = widgets.PlotViewer(self)
         w.show_figure(fig)
         i = self.tabs.addTab(w, 'hetero')
+        fig.savefig(os.path.join(self.outputdir, 'hetero.png'))
         return
 
     def spoligotyping(self, progress_callback):

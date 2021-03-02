@@ -1113,6 +1113,7 @@ class TreeViewer(QDialog):
         self.menubar = QMenuBar(parent)
         self.file_menu = QMenu('File', parent)
         self.file_menu.addAction('Import Tree', self.load_tree)
+        self.file_menu.addAction('Import MultiTree', self.load_multitree)
         self.file_menu.addAction('Load Test Tree', self.test_tree)
         self.file_menu.addAction('Show Newick', self.show_newick)
         self.file_menu.addAction('Export Image', self.export_image)
@@ -1208,14 +1209,32 @@ class TreeViewer(QDialog):
 
         return
 
+    def load_multitree(self):
+
+        import toytree
+        options = QFileDialog.Options()
+        filter = "newick files (*.newick);;All files (*.*)"
+        filename, _ = QFileDialog.getOpenFileName(self,"Open tree file",
+                                    "",filter=filter,selectedFilter =filter, options=options)
+        if not filename:
+            return
+        self.tree = toytree.mtree(filename)
+        self.update()
+        return
+
     def update(self):
         """Update the plot"""
 
         import toytree
         import toyplot
+
         if self.tree==None:
             return
         #set colors
+        print (type(self.tree))
+        if type(self.tree) is toytree.Multitree.MultiTree:
+            self.update_multitree()
+            return
         colorlist = [self.colors[tip] if tip in self.colors else "black" for tip in self.tree.get_tip_labels()]
         self.style['tip_labels_colors'] = colorlist
         if self.ts != '':
@@ -1226,6 +1245,19 @@ class TreeViewer(QDialog):
                         width=self.width,
                         height=self.height,
                         scalebar=True, **style)
+        toyplot.html.render(canvas, "temp.html")
+        with open('temp.html', 'r') as f:
+            html = f.read()
+            self.browser.setHtml(html)
+        self.canvas = canvas
+        return
+
+    def update_multitree(self):
+        import toyplot
+        style = self.style
+        canvas,axes,mark = self.tree.draw(ncols=3,nrows=3, ts=self.ts,
+                        width=self.width,
+                        height=self.height*3, **style)
         toyplot.html.render(canvas, "temp.html")
         with open('temp.html', 'r') as f:
             html = f.read()

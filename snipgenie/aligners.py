@@ -57,7 +57,7 @@ def bwa_align(file1, file2, idx, out, threads=4, overwrite=False, options='', fi
     samtoolscmd = tools.get_cmd('samtools')
     if file2 == None:
         file2=''
-    cmd = '{b} mem -M -t {t} {p} {i} {f1} {f2} | {s} view -F 0x04 -bt - | {s} sort -o {o}'.format(
+    cmd = '{b} mem -M -t {t} {p} {i} "{f1}" "{f2}" | {s} view -F 0x04 -bt - | {s} sort -o {o}'.format(
                 b=bwacmd,i=idx,s=samtoolscmd,
                 f1=file1,f2=file2,o=out,t=threads,p=options)
     if not os.path.exists(out) or overwrite == True:

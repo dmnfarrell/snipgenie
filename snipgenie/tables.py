@@ -476,6 +476,7 @@ class FilesTable(DataFrameTable):
         menu = self.menu
         fastqqualityAction = menu.addAction("Quality Summary")
         plotbamAction = menu.addAction("Show Read Alignments")
+        mappingstatsAction = menu.addAction("Mapping Statistics")
         removeAction = menu.addAction("Remove Selected")
         exportAction = menu.addAction("Export Table")
         action = menu.exec_(self.mapToGlobal(event.pos()))
@@ -485,6 +486,8 @@ class FilesTable(DataFrameTable):
         if action == fastqqualityAction:
             #print (row)
             self.app.quality_summary(row)
+        elif action == mappingstatsAction:
+            self.app.mapping_stats(row)
         elif action == plotbamAction:
             #print (row)
             self.app.show_bam_viewer(row)

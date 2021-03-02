@@ -139,6 +139,11 @@ class App(QMainWindow):
         self.annotlabel.setText(gbname)
         return
 
+    def update_mask(self):
+
+        self.masklabel.setText(self.mask_file)
+        return
+
     def setup_gui(self):
         """Add all GUI elements"""
 
@@ -157,6 +162,11 @@ class App(QMainWindow):
         self.annotlabel = QLabel()
         self.annotlabel.setStyleSheet('color: blue')
         l.addWidget(self.annotlabel)
+        lbl = QLabel("Mask:")
+        l.addWidget(lbl)
+        self.masklabel = QLabel()
+        self.masklabel.setStyleSheet('color: blue')
+        l.addWidget(self.masklabel)
 
         #create option widgets
         self.opts = AppOptions(parent=self.m)
@@ -293,7 +303,7 @@ class App(QMainWindow):
         self.analysis_menu.addAction(icon, 'Call Variants',
             lambda: self.run_threaded_process(self.variant_calling, self.processing_completed))
         self.analysis_menu.addAction('Create SNP alignment',
-            lambda: self.run_threaded_process(self.snp_alignment, self.processing_completed))
+            lambda: self.run_threaded_process(self.snp_alignment, self.snp_align_completed))
         self.analysis_menu.addAction('Make Phylogeny', self.make_phylo_tree)
         self.analysis_menu.addSeparator()
         self.analysis_menu.addAction('Run Workflow', self.run)
@@ -316,6 +326,7 @@ class App(QMainWindow):
         self.settings_menu.addAction('Set Output Folder', self.set_output_folder)
         self.settings_menu.addAction('Set Reference Sequence', self.set_reference)
         self.settings_menu.addAction('Set Annnotation (genbank)', self.set_annotation)
+        self.settings_menu.addAction('Add Mask File', self.add_mask)
         self.settings_menu.addAction('Add Sample Meta Data', self.merge_meta_data)
         self.settings_menu.addAction('Clean Up Files', self.clean_up)
 
@@ -515,6 +526,8 @@ class App(QMainWindow):
         bcf = os.path.join(self.outputdir, 'raw.bcf')
         if os.path.exists(bcf):
              os.remove(bcf)
+        self.results = {}
+        self.treefile = None
         return
 
     def load_fastq_table(self, filenames):
@@ -532,6 +545,7 @@ class App(QMainWindow):
             new = new.drop_duplicates('filename')
         self.fastq_table.setDataFrame(new)
         self.fastq_table.resizeColumns()
+        app.write_samples(df, self.outputdir)
         return
 
     def load_fastq_folder_dialog(self):
@@ -580,6 +594,18 @@ class App(QMainWindow):
         #put annotation in a dataframe
         self.annot = tools.genbank_to_dataframe(self.ref_gb)
         self.update_ref_genome()
+        return
+
+    def add_mask(self, filename=None):
+
+        msg = "This will add a mask file"
+        reply = QMessageBox.question(self, 'Warning!', msg,
+                                        QMessageBox.No | QMessageBox.Yes )
+        if reply == QMessageBox.No:
+            return
+        filename = self.add_file("Bed files(*.bed)")
+        self.mask_file = filename
+        self.update_mask()
         return
 
     def merge_meta_data(self):
@@ -700,9 +726,14 @@ class App(QMainWindow):
         path = os.path.join(self.outputdir, 'mapped')
         if not os.path.exists(path):
             os.makedirs(path)
-        app.align_reads(df, idx=ref, outdir=path, overwrite=overwrite, threads=kwds['threads'],
+        samples = app.align_reads(df, idx=ref, outdir=path, overwrite=overwrite, threads=kwds['threads'],
                         aligner=kwds['aligner'],
                         callback=progress_callback.emit)
+        samples.to_csv(os.path.join(self.outputdir,'samples.csv'),index=False)
+        summ = app.results_summary(samples)
+        summ.to_csv(os.path.join(self.outputdir,'summary.csv'),index=False)
+        #rewrite samples in case check_missing
+        app.write_samples(samples, self.outputdir)
         return
 
     def variant_calling(self, progress_callback=None):
@@ -726,7 +757,7 @@ class App(QMainWindow):
         bam_files = list(df.bam_file.unique())
 
         self.results['vcf_file'] = app.variant_calling(bam_files, self.ref_genome, path,
-                                    threads=threads,
+                                    threads=threads, relabel=True,
                                     overwrite=overwrite, filters=filters,
                                     gff_file=gff_file,
                                     callback=progress_callback.emit)
@@ -749,7 +780,10 @@ class App(QMainWindow):
 
     def show_snpdist(self):
 
-        mat = pd.read_csv(self.results['snp_dist'])
+        filename = self.results['snp_dist']
+        if not os.path.exists(filename):
+            return
+        mat = pd.read_csv(filename)
         table = tables.DefaultTable(self.tabs, app=self, dataframe=mat)
         i = self.tabs.addTab(table, 'snp_dist')
         return
@@ -764,20 +798,29 @@ class App(QMainWindow):
         result, smat = tools.fasta_alignment_from_vcf(vcf_file,
                                                 callback=progress_callback.emit)
         #print (result)
-        outfile = os.path.join(self.outputdir, 'core.fa')
-        self.results['snp_file'] = outfile
-        SeqIO.write(result, outfile, 'fasta')
+        outfasta = os.path.join(self.outputdir, 'core.fa')
+        self.results['snp_file'] = outfasta
+        SeqIO.write(result, outfasta, 'fasta')
         self.results['snp_dist'] = os.path.join(self.outputdir, 'snpdist.csv')
+        from Bio import AlignIO
+        aln = AlignIO.read(outfasta, 'fasta')
+        snp_dist = tools.snp_dist_matrix(aln)
+        snp_dist.to_csv(self.results['snp_dist'], sep=',')
+        return
+
+    def snp_align_completed(self):
+
+        self.processing_completed()
+        self.show_snpdist()
         return
 
     def make_phylo_tree(self, method='raxml'):
 
         outfile = os.path.join(self.outputdir,'RAxML_bipartitions.variants')
-        if not os.path.exists(outfile):
-            corefasta = os.path.join(self.outputdir, 'core.fa')
-            bootstraps = 10
-            if method == 'raxml':
-                treefile = trees.run_RAXML(corefasta, bootstraps=bootstraps, outpath=self.outputdir)
+        corefasta = os.path.join(self.outputdir, 'core.fa')
+        bootstraps = 100
+        if method == 'raxml':
+            treefile = trees.run_RAXML(corefasta, bootstraps=bootstraps, outpath=self.outputdir)
 
         self.show_tree()
         self.treefile = outfile
@@ -891,6 +934,19 @@ class App(QMainWindow):
         w.show_figure(fig)
         i = self.tabs.addTab(w, name )
         self.tabs.setCurrentIndex(i)
+        return
+
+    def mapping_stats(self, row):
+        """Summary of a single fastq file"""
+
+        df = self.fastq_table.model.df
+        row = self.fastq_table.getSelectedRows()[0]
+        data = df.iloc[row]
+        d = tools.samtools_flagstat(data.bam_file)
+        df = pd.DataFrame(d.items())
+        self.info.append(data.bam_file)
+        self.info.append(df.to_string())
+        self.info.append('-----------------')
         return
 
     def show_bam_viewer(self, row):

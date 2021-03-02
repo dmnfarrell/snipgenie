@@ -91,7 +91,7 @@ def copy_ref_genomes():
         dest = os.path.join(path, os.path.basename(src))
         shutil.copy(src, dest)
     return
-    
+
 copy_ref_genomes()
 
 def fetch_binaries():
@@ -99,7 +99,7 @@ def fetch_binaries():
 
     url = "https://github.com/dmnfarrell/snipgenie/raw/master/win_binaries/"
     os.makedirs(bin_path, exist_ok=True)
-    names = ['bcftools.exe','bwa.exe','samtools.exe','tabix.exe','subread-align.exe','subread'
+    names = ['bcftools.exe','bwa.exe','samtools.exe','tabix.exe','subread-align.exe','subread-buildindex.exe',
              'msys-2.0.dll','msys-bz2-1.dll','msys-lzma-5.dll','msys-ncursesw6.dll','msys-z.dll']
     for n in names:
         filename = os.path.join(bin_path,n)
@@ -375,13 +375,8 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
 
     #relabel samples in vcf header
     if relabel == True:
-        '''
-        rlout = os.path.join(tempdir,'calls.vcf')
-        cmd = '{bc} reheader --samples {s} -o {o} {v}'.format(bc=bcftoolscmd,o=rlout,v=vcfout,s=sample_file)
-        print(cmd)
-        tmp = subprocess.check_output(cmd,shell=True)
-        shutil.copy(rlout, vcfout)'''
         sample_file = os.path.join(outpath,'samples.txt')
+        print (sample_file)
         relabel_vcfheader(vcfout, sample_file)
 
     #filter variants

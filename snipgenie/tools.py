@@ -689,7 +689,7 @@ def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False, omit=
     smat.index.rename('pos', inplace=True)
     return recs, smat
 
-def samtools_flagstats(filename):
+def samtools_flagstat(filename):
     """Parse samtools flagstat output into dictionary"""
 
     cmd = 'samtools flagstat %s' %filename

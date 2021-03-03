@@ -25,7 +25,6 @@ setup(
                       'pyfaidx',
                       'bcbio_gff',
                       #'pyside2>=5.1',
-                      'future',
                       #'toytree',
                       ],
     entry_points = {

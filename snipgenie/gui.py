@@ -20,7 +20,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 
-from __future__ import absolute_import, print_function
 import sys,os,traceback,subprocess
 import glob,platform,shutil
 import pickle
@@ -312,6 +311,7 @@ class App(QMainWindow):
         self.menuBar().addMenu(self.tools_menu)
         self.tools_menu.addAction('Fastq Qualities Report', self.fastq_quality_report)
         self.tools_menu.addAction('Show Annotation', self.show_ref_annotation)
+        self.tools_menu.addAction('Plot SNP Matrix', self.plot_snp_matrix)
         self.tools_menu.addAction('Map View', self.show_map)
         self.tools_menu.addAction('Phylogeny', self.tree_viewer)
         self.tools_menu.addSeparator()
@@ -326,6 +326,7 @@ class App(QMainWindow):
         self.settings_menu.addAction('Set Output Folder', self.set_output_folder)
         self.settings_menu.addAction('Set Reference Sequence', self.set_reference)
         self.settings_menu.addAction('Set Annnotation (genbank)', self.set_annotation)
+        self.settings_menu.addAction('Set Filters', self.set_filters)
         self.settings_menu.addAction('Add Mask File', self.add_mask)
         self.settings_menu.addAction('Add Sample Meta Data', self.merge_meta_data)
         self.settings_menu.addAction('Clean Up Files', self.clean_up)
@@ -342,11 +343,7 @@ class App(QMainWindow):
     def load_presets_menu(self):
         """Add preset genomes to menu"""
 
-        genomes = {'Mbovis AF212297':{'sequence':app.mbovis_genome, 'gb':app.mbovis_gb},
-                   'MTB H37Rv':{'sequence':app.mtb_genome, 'gb':app.mtb_gb},
-                   'MAP-K10':{'sequence':app.map_genome, 'gb':app.map_gb},
-                   'M.smegmatis MC2 155':{'sequence':app.msmeg_genome, 'gb':app.msmeg_gb}
-                   }
+        genomes = app.preset_genomes
         for name in genomes:
             seqname = genomes[name]['sequence']
             gbfile = genomes[name]['gb']
@@ -594,6 +591,22 @@ class App(QMainWindow):
         #put annotation in a dataframe
         self.annot = tools.genbank_to_dataframe(self.ref_gb)
         self.update_ref_genome()
+        return
+
+    def set_filters(self):
+        """Set up variant filters"""
+
+        opts = {'filter':{'type':'textarea','default':app.default_filter,'width':300},
+                'mask filter': {'type':'checkbox','default':0},
+                'proximity filter': {'type':'checkbox','default':1},
+                }
+        dlg = widgets.MultipleInputDialog(self, opts, title='Variant filters',
+                            width=350,height=150)
+        dlg.exec_()
+        if not dlg.accepted:
+            return
+        kwds = dlg.values
+
         return
 
     def add_mask(self, filename=None):
@@ -985,6 +998,26 @@ class App(QMainWindow):
                 import webbrowser
                 webbrowser.open_new(out)
         return
+
+    def plot_snp_matrix(self):
+
+        mat = pd.read_csv(self.results['snp_dist'],index_col=0)
+        bv = widgets.BrowserViewer()
+        import toyplot
+        min=mat.min().min()
+        max=mat.max().max()
+        colormap = toyplot.color.brewer.map("BlueGreen", domain_min=min, domain_max=max)
+        locator = toyplot.locator.Explicit(range(len(mat)),list(mat.index))
+        canvas,axes = toyplot.matrix((mat.values,colormap), llocator=locator, tlocator=locator,
+                        label="SNP distance matrix", colorshow=True)
+        toyplot.html.render(canvas, "temp.html")
+        with open('temp.html', 'r') as f:
+            html = f.read()
+            bv.browser.setHtml(html)
+
+        idx = self.right_tabs.addTab(bv, 'snp dist')
+        self.right_tabs.setCurrentIndex(idx)
+
 
     def show_browser_tab(self, link, name):
 

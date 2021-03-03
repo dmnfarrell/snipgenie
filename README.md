@@ -65,37 +65,54 @@ Run `snipgenie` for the cli or `snipgenie-gui` for the desktop version. You requ
 
 This will run the entire process based on a set of options given at the terminal::
 ```
-  -i FILE, --input FILE
-                        input folder(s)
-  -e LABELSEP, --labelsep LABELSEP
-                        symbol to split the sample labels on
-  -r FILE, --reference FILE
-                        reference genome filename
-  -g FILE, --genbank_file FILE
-                        annotation file, optional
-  -w, --overwrite       overwrite intermediate files
-  -t, --trim            whether to trim fastq files
-  -Q QUALITY, --quality QUALITY
-                        right trim quality, default 25
-  -f FILTERS, --filters FILTERS
-                        variant calling post-filters
-  -m MASK, --mask MASK  mask regions with bed file
-  -c, --custom          apply custom filters
-  -T THREADS, --threads THREADS
-                        cpu threads to use
-  -b, --buildtree       whether to try to build a phylogenetic tree
-  -o FILE, --outdir FILE
-                        Results folder
-  -q, --qc              Get version
-  -v, --version         Get version
-  -d, --dummy           Check samples but don't run
+-h, --help            show this help message and exit
+-i FILE, --input FILE
+                      input folder(s)
+-e LABELSEP, --labelsep LABELSEP
+                      symbol to split the sample labels on
+-r FILE, --reference FILE
+                      reference genome filename
+-S SPECIES, --species SPECIES
+                      set the species reference genome, overrides -r
+-g FILE, --genbank_file FILE
+                      annotation file, optional
+-w, --overwrite       overwrite intermediate files
+-t, --trim            whether to trim fastq files
+-Q QUALITY, --quality QUALITY
+                      right trim quality, default 25
+-f FILTERS, --filters FILTERS
+                      variant calling post-filters
+-m MASK, --mask MASK  mask regions with bed file
+-c, --custom          apply custom filters (proximity filter)
+-T THREADS, --threads THREADS
+                      cpu threads to use
+-a ALIGNER, --aligner ALIGNER
+                      aligner to use
+-b, --buildtree       whether to try to build a phylogenetic tree
+-N BOOTSTRAPS, --bootstraps BOOTSTRAPS
+                      number of bootstraps to build tree
+-o FILE, --outdir FILE
+                      Results folder
+-q, --qc              Get version
+-d, --dummy           Check samples but don't run
+-x, --test            Test run
+-v, --version         Get version
 ```
 
 ### Examples
 
+Call with your own reference fasta file:
+
 ```
 snipgenie -r reference.fa -i data_files -o results
 ```
+
+Use an in built species genome as reference. This will also supply an annotation file. The current options are `Mbovis-AF212297, MTB-H37Rv, MAP-K10, M.smegmatis-MC2155`:
+
+```
+snipgenie -S Mbovis-AF212297 -i data_files -o results
+```
+
 Provide more than one folder:
 
 ```

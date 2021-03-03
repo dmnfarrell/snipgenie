@@ -20,7 +20,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 
-from __future__ import absolute_import, print_function
 import sys,os,subprocess,glob,re
 import time, datetime
 import platform
@@ -53,6 +52,12 @@ msmeg_genome = os.path.join(sequence_path, 'Msmeg-MC2.fa')
 msmeg_gb = os.path.join(datadir, 'Msmeg-MC2.gb')
 mbovis_mask =  os.path.join(datadir, 'Mbovis_AF212297_mask.bed')
 
+preset_genomes = {'Mbovis-AF212297':{'sequence':mbovis_genome, 'gb':mbovis_gb},
+           'MTB-H37Rv':{'sequence':mtb_genome, 'gb':mtb_gb},
+           'MAP-K10':{'sequence':map_genome, 'gb':map_gb},
+           'M.smegmatis-MC2155':{'sequence':msmeg_genome, 'gb':msmeg_gb}
+           }
+
 #windows only path to binaries
 bin_path = os.path.join(config_path, 'binaries')
 #this is a custom filter
@@ -66,7 +71,7 @@ if not os.path.exists(config_path):
         os.makedirs(config_path)
 
 defaults = {'threads':None, 'labelsep':'_','trim':False, 'quality':25,
-            'aligner': 'bwa',
+            'aligner': 'bwa', 'species': None,
             'filters': default_filter, 'custom_filters': False, 'mask': None,
             'reference': None, 'gb_file': None, 'overwrite':False,
             'omit_samples': [],
@@ -595,7 +600,7 @@ class WorkFlow(object):
         for i in defaults:
             if i not in self.__dict__:
                 self.__dict__[i] = defaults[i]
-        print ('The following options will be used')
+        print ('The following options were supplied')
         print ('-------')
         for i in self.__dict__:
             print (i, ':', self.__dict__[i])
@@ -607,9 +612,20 @@ class WorkFlow(object):
 
         if not os.path.exists(self.outdir):
             os.makedirs(self.outdir, exist_ok=True)
-        if self.reference == None:
+        if self.species != None:
+            s = self.species
+            if s not in preset_genomes:
+                valid = '; '.join(list(preset_genomes.keys()))
+                print ('Invalid species value! Use one of: %s' %valid)
+                return
+            self.reference = preset_genomes[s]['sequence']
+            self.gb_file = preset_genomes[s]['gb']
+            if s == 'Mbovis-AF212297':
+                self.mask = mbovis_mask
+        elif self.reference == None:
             self.reference = mbovis_genome
             self.gb_file = mbovis_gb
+
         self.filenames = get_files_from_paths(self.input)
         if self.threads == None:
             import multiprocessing
@@ -730,6 +746,7 @@ def test_run():
     testdatadir = 'testing'
     out = 'subread_results'
     args = {'threads':4, 'outdir': out, 'input': testdatadir,
+            'species':'Mbovis-AF212297',
             'aligner':'subread', 'filters':'QUAL>=40 && DP4>=4',
             'reference': None, 'overwrite':True}
     W = WorkFlow(**args)
@@ -754,6 +771,8 @@ def main():
                         help="symbol to split the sample labels on")
     parser.add_argument("-r", "--reference", dest="reference", default=None,
                         help="reference genome filename", metavar="FILE")
+    parser.add_argument("-S", "--species", dest="species", default=None,
+                        help="set the species reference genome, overrides -r")
     parser.add_argument("-g", "--genbank_file", dest="gb_file", default=None,
                         help="annotation file, optional", metavar="FILE")
     parser.add_argument("-w", "--overwrite", dest="overwrite", action="store_true", default=False,
@@ -765,7 +784,7 @@ def main():
     parser.add_argument("-f", "--filters", dest="filters", default=default_filter,
                         help="variant calling post-filters" )
     parser.add_argument("-m", "--mask", dest="mask", default=None,
-                        help="mask regions with bed file" )
+                        help="mask regions from a bed file" )
     parser.add_argument("-c", "--custom", dest="custom_filters", action="store_true", default=False,
                         help="apply custom filters" )
     parser.add_argument("-T", "--threads", dest="threads", default=None,

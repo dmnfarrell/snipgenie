@@ -107,7 +107,6 @@ def dialogFromOptions(parent, opts, sections=None,
                 w.setText(str(val))
             elif t == 'textarea':
                 w = QPlainTextEdit()
-                #w.setSizePolicy(sizepolicy)
                 w.insertPlainText(str(val))
             elif t == 'slider':
                 w = QSlider(QtCore.Qt.Horizontal)
@@ -137,6 +136,17 @@ def dialogFromOptions(parent, opts, sections=None,
                 w = QFontComboBox()
                 w.resize(w.sizeHint())
                 w.setCurrentIndex(1)
+            if 'width' in opt:
+                h=20
+                if 'height' in opt:
+                    h=opt['height']
+                w.setMinimumSize(opt['width'],h)
+                w.resize(QtCore.QSize(opt['width'], h))
+
+            #policy = dialog.sizePolicy()
+            #policy.setVerticalStretch(1)
+            #w.setSizePolicy(policy)
+
             col+=1
             gl.addWidget(w,row,col)
             w.setStyleSheet(style)
@@ -643,7 +653,9 @@ class FileViewer(QDialog):
         return
 
 class PlotViewer(QDialog):
+    """matplotlib plots widget"""
     def __init__(self, parent=None):
+
         super(PlotViewer, self).__init__(parent)
         from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
         self.setGeometry(QtCore.QRect(200, 200, 600, 600))
@@ -664,6 +676,50 @@ class PlotViewer(QDialog):
         self.fig = fig
         #self.ax = ax
         return
+
+class BrowserViewer(QDialog):
+    """matplotlib plots widget"""
+    def __init__(self, parent=None):
+
+        super(BrowserViewer, self).__init__(parent)
+        self.add_widgets()
+        return
+
+    def add_widgets(self):
+        """Add widgets"""
+
+        layout = self.layout = QVBoxLayout()
+        self.main = QWidget()
+        vbox = QVBoxLayout(self.main)
+        layout.addWidget(self.main)
+        from PySide2.QtWebEngineWidgets import QWebEngineView
+        self.browser = QWebEngineView()
+        vbox = QVBoxLayout()
+        self.setLayout(vbox)
+        vbox.addWidget(self.browser)
+        self.browser.setMinimumHeight(500)
+
+        toolswidget = QWidget()
+        toolswidget.setMaximumHeight(100)
+
+        vbox.addWidget(toolswidget)
+        l = QVBoxLayout(toolswidget)
+        self.zoomslider = w = QSlider(QtCore.Qt.Horizontal)
+        w.setSingleStep(5)
+        w.setMinimum(5)
+        w.setMaximum(50)
+        w.setValue(10)
+        l.addWidget(w)
+        w.valueChanged.connect(self.zoom)
+        return
+
+    def load_page(self, url):
+        self.browser.setUrl(url)
+
+    def zoom(self):
+        zoom = self.zoomslider.value()/10
+        self.browser.setZoomFactor(zoom)
+
 
 class SimpleBamViewer(QDialog):
     """Sequence records features viewer using dna_features_viewer"""

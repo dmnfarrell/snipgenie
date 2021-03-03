@@ -18,7 +18,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 
-from __future__ import absolute_import, print_function
 import sys, os, string, types, re
 import platform, tempfile
 import shutil, glob, collections
@@ -143,7 +142,7 @@ def subread_align(file1, file2, idx, out, threads=2,
     samtoolscmd = tools.get_cmd('samtools')
     subreadcmd = tools.get_cmd('subread-align')
     params = '-t 1 --SAMoutput -m 3 -M 2'
-    cmd = '{sc} {p} -T {t} -i {i} -r {f1} -R {f2} | {s} view -F 0x04 -bt - | {s} sort -o {o}'.format(
+    cmd = '{sc} {p} -T {t} -i {i} -r "{f1}" -R "{f2}" | {s} view -F 0x04 -bt - | {s} sort -o {o}'.format(
             sc=subreadcmd,p=params,t=threads,i=idx,f1=file1,f2=file2,s=samtoolscmd,o=out)
     if not os.path.exists(out) or overwrite == True:
         print (cmd)

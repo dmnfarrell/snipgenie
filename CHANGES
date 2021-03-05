@@ -9,8 +9,15 @@ CHANGES
 * fix to use only core snps
 * can remove uninformative sites from core
 * can create qc report from cmd line
+* more preset preset genomes
+* can select species at command line
+* added subread aligner
 * map view for gui
-* gui tree viewer 
+* gui tree viewer
+* spoligotyping tool to gui
+* find heterozygous sites
+* plot snp matrix
+* changed name to snipgenie
 
 0.2.0
 -----

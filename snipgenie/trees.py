@@ -26,7 +26,7 @@ from Bio import SeqIO
 from Bio import Phylo, AlignIO
 import numpy as np
 import pandas as pd
-#sys.path.append('ete')
+from  . import tools
 
 def set_tiplabels(t, labelmap):
     for l in t.iter_leaves():
@@ -98,8 +98,9 @@ def get_colormap(values):
 def run_fasttree(infile, bootstraps=100, outpath='.'):
     """Run fasttree"""
 
+    fc = tools.get_cmd('fasttree')
     out = os.path.join(outpath,'fasttree.newick')
-    cmd = 'fasttree -n {b} {i} > {o}'.format(b=bootstraps,i=infile,o=out)
+    cmd = '{fc} -nt {i} > {o}'.format(fc=fc,b=bootstraps,i=infile,o=out)
     tmp = subprocess.check_output(cmd, shell=True)
     return out
 

@@ -104,7 +104,8 @@ def fetch_binaries():
 
     url = "https://github.com/dmnfarrell/snipgenie/raw/master/win_binaries/"
     os.makedirs(bin_path, exist_ok=True)
-    names = ['bcftools.exe','bwa.exe','samtools.exe','tabix.exe','subread-align.exe','subread-buildindex.exe',
+    names = ['bcftools.exe','bwa.exe','samtools.exe','tabix.exe',
+             'subread-align.exe','subread-buildindex.exe','fasttree.exe',
              'msys-2.0.dll','msys-bz2-1.dll','msys-lzma-5.dll','msys-ncursesw6.dll','msys-z.dll']
     for n in names:
         filename = os.path.join(bin_path,n)

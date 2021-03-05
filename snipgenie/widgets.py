@@ -97,7 +97,8 @@ def dialogFromOptions(parent, opts, sections=None,
             if t == 'combobox':
                 w = QComboBox()
                 w.addItems(opt['items'])
-                #w.view().setMinListWidth(100)
+                if 'editable' in opt:
+                     w.setEditable(True)
                 try:
                     w.setCurrentIndex(opt['items'].index(str(opt['default'])))
                 except:
@@ -1285,12 +1286,11 @@ class TreeViewer(QDialog):
         import toyplot
 
         if self.tree==None:
-            return
-        #set colors
-        print (type(self.tree))
+            return      
         if type(self.tree) is toytree.Multitree.MultiTree:
             self.update_multitree()
             return
+        #set colors
         colorlist = [self.colors[tip] if tip in self.colors else "black" for tip in self.tree.get_tip_labels()]
         self.style['tip_labels_colors'] = colorlist
         if self.ts != '':

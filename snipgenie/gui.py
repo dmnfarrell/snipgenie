@@ -419,8 +419,9 @@ class App(QMainWindow):
 
         reply=None
         if ask == True:
-            reply = QMessageBox.question(self, 'Confirm', "This will clear the current project.\nAre you sure?",
-                                        QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self, 'Confirm',
+                                "This will clear the current project.\nAre you sure?",
+                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.No:
             return False
 
@@ -434,6 +435,7 @@ class App(QMainWindow):
         self.ref_gb = None
         self.projectlabel.setText('')
         self.outdirLabel.setText(self.outputdir)
+        self.clear_tabs()
         self.update_ref_genome()
         return
 
@@ -505,6 +507,12 @@ class App(QMainWindow):
 
         return
 
+    def clear_tabs(self):
+        """Clear tabbed panes"""
+
+        #self.right_tabs
+        return
+
     def clean_up(self):
         """Clean up intermediate files"""
 
@@ -532,9 +540,13 @@ class App(QMainWindow):
 
         if filenames is None or len(filenames) == 0:
             return
-
+        retval = self.check_output_folder()
+        if retval == 0:
+            return
+        self.opts.applyOptions()
+        kwds = self.opts.kwds
         df = self.fastq_table.model.df
-        new = app.get_samples(filenames)
+        new = app.get_samples(filenames, sep=kwds['labelsep'])
         new['read_length'] = new.filename.apply(tools.get_fastq_info)
 
         if len(df)>0:
@@ -827,18 +839,21 @@ class App(QMainWindow):
         self.show_snpdist()
         return
 
-    def make_phylo_tree(self, method='raxml'):
+    def make_phylo_tree(self, method='fasttree'):
 
-        outfile = os.path.join(self.outputdir,'RAxML_bipartitions.variants')
         corefasta = os.path.join(self.outputdir, 'core.fa')
         bootstraps = 100
         if method == 'raxml':
+            outfile = os.path.join(self.outputdir,'RAxML_bipartitions.variants')
             treefile = trees.run_RAXML(corefasta, bootstraps=bootstraps, outpath=self.outputdir)
+        elif method == 'fasttree':
+            outfile = os.path.join(self.outputdir,'fasttree.newick')
+            treefile = trees.run_fasttree(corefasta, bootstraps=bootstraps, outpath=self.outputdir)
 
         self.show_tree()
         self.treefile = outfile
         return
-
+        
     def show_tree(self):
 
         self.tree_viewer()
@@ -1280,9 +1295,9 @@ class AppOptions(widgets.BaseOptions):
         self.kwds = {}
         genomes = []
         aligners = ['bwa','subread']
+        separators = ['_','-','|',';','~']
         cpus = [str(i) for i in range(1,os.cpu_count()+1)]
-        self.groups = {'general':['threads','overwrite'],
-                        #'reference':['refgenome','annotation'],
+        self.groups = {'general':['threads','labelsep','overwrite'],
                         'trimming':['quality'],
                         'aligners':['aligner'],
                         'variant calling':['filters'],
@@ -1290,10 +1305,9 @@ class AppOptions(widgets.BaseOptions):
                        }
         self.opts = {'threads':{'type':'combobox','default':4,'items':cpus},
                     'overwrite':{'type':'checkbox','default':False},
-                    #'refgenome':{'type':'combobox','default':'',
-                    #'items':genomes,'label':'genome'},
-                    #'annotation':{'type':'combobox','default':'',
-                    #'items':[],'label':'annotation'},
+                    'labelsep':{'type':'combobox','default':'_',
+                    'items':separators,'label':'label sep','editable':True},
+
                     'aligner':{'type':'combobox','default':'bwa',
                     'items':aligners,'label':'aligner'},
                     'db':{'type':'combobox','default':'card',

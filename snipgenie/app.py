@@ -244,13 +244,7 @@ def align_reads(samples, idx, outdir='mapped', callback=None, aligner='bwa', **k
 def mpileup_region(region,out,bam_files,callback=None):
     """Run bcftools for single region."""
 
-    bcftoolscmd = 'bcftools'
-    if getattr(sys, 'frozen', False):
-        bcftoolscmd = tools.resource_path('bin/bcftools.exe')
-    elif platform.system() == 'Windows':
-        fetch_binaries()
-        cmd = os.path.join('bin_path','bcftools.exe')
-
+    bcftoolscmd = tools.get_cmd('bcftools')
     cmd = 'bcftools mpileup -r {reg} -O b -o {o} -f {r} {b}'.format(r=ref, reg=region, b=bam_files, o=out)
     if callback != None:
         callback(cmd)

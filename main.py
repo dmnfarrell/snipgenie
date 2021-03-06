@@ -22,8 +22,10 @@
 
 try:
     from PySide2.QtWidgets import *
+    from PySide2 import QtCore
 except:
     from PyQt5.QtWidgets import *
+    from PyQt5 import QtCore
 from snipgenie import gui
 
 def main():
@@ -35,7 +37,7 @@ def main():
     parser.add_argument("-f", "--fasta", dest="filename",
                         help="input fasta file", metavar="FILE")
     args = vars(parser.parse_args())
-
+    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QApplication(sys.argv)
     aw = gui.App()
     aw.show()

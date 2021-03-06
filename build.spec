@@ -24,22 +24,22 @@ block_cipher = None
 
 a = Analysis(['main.py'],
              binaries=[('win_binaries/*', 'bin')],
-             hiddenimports=['Bio.SearchIO.HmmerIO'],
              hookspath=[],
              runtime_hooks=[],
-             excludes=['PIL','lib2to3','pywin.debugger', 'pywin.debugger.dbgcon'],
+             excludes=['tkinter','lib2to3','pywin.debugger', 'pywin.debugger.dbgcon'],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher,
              noarchive=False,
              datas=[ ('snipgenie/logo.png', 'snipgenie/'),
-                     ('snipgenie/data/*', 'snipgenie/data/')  ])
+		     ('snipgenie/icons/*', 'snipgenie/icons/'),
+                     ('snipgenie/data/*', 'snipgenie/data/'),
+		     ('snipgenie/styles/*', 'snipgenie/styles/') ])
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 
 #remove some files we don't need
-exclude = ['Qt53D','Qt5Quick','Qt5Web','Qt5Multimedia',
- 		       'sqlite3','d3dcompiler']
+exclude = ['Qt5Multimedia','Qt5Designer','sqlite3','d3dcompiler']
 
 def remove_from_list(input, keys):
    outlist = []

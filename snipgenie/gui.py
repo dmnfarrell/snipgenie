@@ -48,10 +48,9 @@ class App(QMainWindow):
         self.setWindowIcon(QIcon(logoimg))
         self.create_menu()
         self.main = QSplitter(self)
-        #screen_resolution = QDesktopWidget().screenGeometry()
         screen = QGuiApplication.screens()[0]
         screen_resolution  = screen.geometry()
-        if screen_resolution.height() > 1080:
+        if screen_resolution.height() > 1280:
             fac=0.8
             width, height = screen_resolution.width()*fac, screen_resolution.height()*fac
             self.setGeometry(QtCore.QRect(150, 150, width, height))
@@ -85,16 +84,12 @@ class App(QMainWindow):
             self.setStyle(s.value('style'))
             #self.FONT = s.value("font")
             #self.FONTSIZE = int(s.value("fontsize"))
-            #core.COLUMNWIDTH = int(s.value("columnwidth"))
-            #core.TIMEFORMAT = s.value("timeformat")
             r = s.value("recent_files")
             if r != '':
                 self.recent_files = r.split(',')
-            r = s.value("recent_urls")
-            if r != '':
-                self.recent_urls = r.split('^^')
-        except:
-            pass
+
+        except Exception as e:
+            print (e)
         return
 
     def save_settings(self):
@@ -102,8 +97,7 @@ class App(QMainWindow):
 
         self.settings.setValue('window_size', self.size())
         self.settings.setValue('window_position', self.pos())
-        self.settings.setValue('style', self.style)
-        #self.settings.setValue('columnwidth', core.COLUMNWIDTH)
+        #self.settings.setValue('style', self.style)
         #self.settings.setValue('font', self.FONT)
         #self.settings.setValue('fontsize', self.FONTSIZE)
         self.settings.setValue('recent_files',','.join(self.recent_files))
@@ -312,7 +306,7 @@ class App(QMainWindow):
         self.tools_menu.addAction('Fastq Qualities Report', self.fastq_quality_report)
         self.tools_menu.addAction('Show Annotation', self.show_ref_annotation)
         self.tools_menu.addAction('Plot SNP Matrix', self.plot_snp_matrix)
-        self.tools_menu.addAction('Map View', self.show_map)
+        #self.tools_menu.addAction('Map View', self.show_map)
         self.tools_menu.addAction('Phylogeny', self.tree_viewer)
         self.tools_menu.addSeparator()
         self.tools_menu.addAction('Check Heterozygosity', self.check_heterozygosity)
@@ -398,6 +392,7 @@ class App(QMainWindow):
 
         self.projectlabel.setText(filename)
         pickle.dump(data, open(filename,'wb'))
+        self.add_recent_file(filename)
         return
 
     def save_project_dialog(self):
@@ -469,6 +464,7 @@ class App(QMainWindow):
         if 'treeviewer' in data.keys():
             self.tree_viewer()
             self.treeviewer.loadData(data['treeviewer'])
+        self.add_recent_file(filename)    
         return
 
     def load_project_dialog(self):
@@ -853,7 +849,7 @@ class App(QMainWindow):
         self.show_tree()
         self.treefile = outfile
         return
-        
+
     def show_tree(self):
 
         self.tree_viewer()
@@ -1191,7 +1187,7 @@ class App(QMainWindow):
                 return
             elif reply == QMessageBox.Yes:
                 self.save_project()
-        #self.save_settings()
+        self.save_settings()
         event.accept()
         return
 

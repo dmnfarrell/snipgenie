@@ -464,7 +464,7 @@ class App(QMainWindow):
         if 'treeviewer' in data.keys():
             self.tree_viewer()
             self.treeviewer.loadData(data['treeviewer'])
-        self.add_recent_file(filename)    
+        self.add_recent_file(filename)
         return
 
     def load_project_dialog(self):
@@ -860,8 +860,9 @@ class App(QMainWindow):
 
     def tree_viewer(self):
 
+        from . import phylo
         if not hasattr(self, 'treeviewer'):
-            self.treeviewer = widgets.TreeViewer(self)
+            self.treeviewer = phylo.TreeViewer(self)
         if not 'phylogeny' in self.get_tabs():
             idx = self.right_tabs.addTab(self.treeviewer, 'phylogeny')
             self.right_tabs.setCurrentIndex(idx)

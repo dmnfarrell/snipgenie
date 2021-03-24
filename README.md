@@ -145,7 +145,9 @@ LT708304.1 	 306201 	 307872
 
 ## Inputs
 
-Folders are searched recursively for inputs with extensions `*.f*q.gz`. So be careful you don't have files in the folders you don't want included. The following file structure will load both sets of files if you provide the parent folder as input. You can also provide multiple separate folders using -i as shown above.
+You can provide single folder with all the files in one place or multiple folders. Folders are searched recursively for inputs with extensions `*.f*q.gz`. So be careful you don't have files in the folders you don't want included. The following file structure will load both sets of files if you provide the parent folder as input. You can also provide multiple separate folders using -i as shown above.
+
+For example if you provide -i data with the following structure:
 
 ```
 data/
@@ -159,12 +161,29 @@ data/
 
 Filenames are parsed and a sample name is extracted for each pair (if paired end). This is simply done by splitting on the _ symbol. So a file called /path/13-11594_S85_L001-4_R1_001.fastq.gz will be given a sample name 13-11594. As long as the sample names are unique this is ok. If you had a file names like A_2_L001-4_R1_001, A_3_L001-4_R1_001 you should split on '-' instead. You can specify this in the labelsep option. The workflow won't run unless sample names are unique.
 
+## Outputs
+
+These files will be saved to the output folder when the workflow is finished.
+
+```
+calls.vcf - unfiltered variant calls
+filtered.vcf.gz - filtered vcf with variant calls, used to make the core alignment
+raw.bcf - unfiltered output from bcftools mpileup
+core.fa - fasta alignment from core snps, can be used to make a phylogeny
+core.txt - text table of core snps
+csq.tsv - consequence calls (if genbank provided)
+csq.matrix - matrix of consequence calls
+snpdist.csv - comma separated distance matrix using snps
+summary.csv - summary table of samples
+RAxML_bipartitions.variants - ML tree if RAxML was used, optional
+```
+
 ## Use from Python
 
 You can run a workflow from within Python by importing the snipgenie package and invoking the `WorkFlow` class. You need to provide the options in a dictionary with the same keywords as the command line. Notice in this example we are loading files from two folders.
 
 ```python
-import sngenie
+import snipgenie
 args = {'threads':8, 'outdir': 'results', 'labelsep':'-',
         'input':['/my/folder/',
                  '/my/other/folder'],

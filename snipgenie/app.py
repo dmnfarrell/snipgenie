@@ -355,7 +355,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     if not os.path.exists(rawbcf) or overwrite == True:
         if platform.system() == 'Windows' or threads == 1:
             bam_files = ' '.join(bam_files)
-            cmd = '{bc} mpileup -a {a} -O b --min-MQ 60 -o {o} -f {r} {b}'\
+            cmd = '{bc} mpileup -a {a} --max-depth 500 -O b --min-MQ 60 -o {o} -f {r} {b}'\
                 .format(bc=bcftoolscmd,r=ref, b=bam_files, o=rawbcf, a=annotatestr)
             print (cmd)
             subprocess.check_output(cmd, shell=True)
@@ -364,13 +364,18 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
             rawbcf = mpileup_gnuparallel(bam_files, ref, outpath, threads=threads, callback=callback)
     else:
         print ('%s already exists' %rawbcf)
-    #find snps
+    #find snps only
     print ('calling snps..')
     vcfout = os.path.join(outpath,'calls.vcf')
-    cmd = '{bc} call -V indels --ploidy 1 -m -v -o {v} {raw}'.format(bc=bcftoolscmd,v=vcfout,raw=rawbcf)
+    cmd = '{bc} call -V indels --ploidy 1 -m -v -o {o} {raw}'.format(bc=bcftoolscmd,o=vcfout,raw=rawbcf)
     if callback != None:
         callback(cmd)
     print (cmd)
+    subprocess.check_output(cmd,shell=True)
+
+    #also call indels only to separate file
+    indelsout = os.path.join(outpath,'indels.vcf')
+    cmd = '{bc} call -V snps --ploidy 1 -m -v -o {o} {raw}'.format(bc=bcftoolscmd,o=indelsout,raw=rawbcf)
     subprocess.check_output(cmd,shell=True)
 
     #relabel samples in vcf header
@@ -378,6 +383,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
         sample_file = os.path.join(outpath,'samples.txt')
         print (sample_file)
         relabel_vcfheader(vcfout, sample_file)
+        relabel_vcfheader(indelsout, sample_file)
 
     #filter variants
     final = os.path.join(outpath,'filtered.vcf.gz')
@@ -398,17 +404,30 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     #consequence calling
     if gff_file != None:
         csqout = os.path.join(outpath, 'csq.tsv')
-        cmd = '{bc} csq -f {r} -g {g} {f} -Ot -o {o}'.format(bc=bcftoolscmd,r=ref,g=gff_file,f=final,o=csqout)
-        print (cmd)
-        if callback != None:
-            callback(cmd)
-        tmp = subprocess.check_output(cmd,shell=True)
-        csqdf = read_csq_file(csqout)
-        #get presence/absence matrix of csq mutations
-        m = get_aa_snp_matrix(csqdf)
+        m = csq_call(ref, gff_file, final, csqout)
         m.to_csv(os.path.join(outpath,'csq.matrix'))
+        #indels as well
+        csqout = os.path.join(outpath, 'csq_indels.tsv')
+        m = csq_call(ref, gff_file, indelsout, csqout)
+        m.to_csv(os.path.join(outpath,'csq_indels.matrix'))
+
     print ('took %s seconds' %str(round(time.time()-st,0)))
     return final
+
+def csq_call(ref, gff_file, vcf_file, csqout):
+    """Consequence calling"""
+
+    bcftoolscmd = tools.get_cmd('bcftools')
+    cmd = '{bc} csq -f {r} -g {g} {f} -Ot -o {o}'.format(bc=bcftoolscmd,r=ref,g=gff_file,
+                f=vcf_file,o=csqout)
+    print (cmd)
+    #if callback != None:
+    #    callback(cmd)
+    tmp = subprocess.check_output(cmd,shell=True)
+    csqdf = read_csq_file(csqout)
+    #get presence/absence matrix of csq mutations
+    m = get_aa_snp_matrix(csqdf)
+    return m
 
 def relabel_vcfheader(vcf_file, sample_file):
     """Re-label samples in vcf header"""
@@ -789,7 +808,7 @@ def main():
     parser.add_argument("-b", "--buildtree", dest="buildtree", action="store_true", default=False,
                         help="whether to try to build a phylogenetic tree" )
     parser.add_argument("-N", "--bootstraps", dest="bootstraps", default=100,
-                        help="number of bootstraps to build tree" )
+                        help="number of bootstraps to build tree")
     parser.add_argument("-o", "--outdir", dest="outdir",
                         help="Results folder", metavar="FILE")
     parser.add_argument("-q", "--qc", dest="qc", action="store_true",

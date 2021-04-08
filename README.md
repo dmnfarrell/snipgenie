@@ -134,7 +134,7 @@ snipgenie -r reference.fa -i data_files -t 8 -o results` \
 
 ### Mask file
 
-You can selectively mask snp sites such as those contained in repetitive regions from being included in the output. You need to provide a bed file with the following columns: chromosome name, start and end coordinates of the regions.
+You can selectively mask snp sites such as those contained in transposons or repetitive regions from being included in the output. You need to provide a bed file with the following columns: chromosome name, start and end coordinates of the regions. There is currently a built-in mask file used for M.bovis and of you select this genome as reference using the --species option it will be used automatically.
 
 ```
 LT708304.1 	 105359 	 106751

@@ -547,8 +547,8 @@ def get_aa_snp_matrix(df):
 
 def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4, **kwargs):
     """
-    Use bam files from previous run(s) or sets of alignments
-    so we can select a subset only to do calling on.
+    Use bam files from previous sets of alignments
+    so we can arbitrarily combine results from multiple runs.
     kwargs passed to app.variant_calling method
     """
 

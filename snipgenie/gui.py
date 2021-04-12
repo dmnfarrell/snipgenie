@@ -1140,7 +1140,7 @@ class App(QMainWindow):
         X = rdiff.get_matrix(res, cutoff=0.15)
         X['species'] = X.apply(rdiff.apply_rules,1)
         fig,ax = plt.subplots(1,1)
-        plotting.plot_matrix(X.set_index('species',append=True), cmap='cubehelix',ax=ax)
+        plotting.heatmap(X.set_index('species',append=True), cmap='cubehelix',ax=ax)
 
         table = tables.DefaultTable(self.tabs, app=self, dataframe=res)
         self.tabs.addTab(table, 'RD analysis')

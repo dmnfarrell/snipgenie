@@ -28,6 +28,11 @@ import numpy as np
 import pandas as pd
 from  . import tools
 
+qcolors = ['blue','green','crimson','blueviolet','brown','burlywood','cadetblue','chartreuse','chocolate',
+            'coral','gold','cornflowerblue','cornsilk','khaki','orange','pink',
+            'red','lime','mediumvioletred','navy','teal','darkblue','purple','orange',
+            'salmon','maroon']
+
 def set_tiplabels(t, labelmap):
     for l in t.iter_leaves():
         #print (l.name)
@@ -164,10 +169,6 @@ def colors_from_labels(df,name,group):
 
     labels = df[group].unique()
     colors={}
-    qcolors = ['blue','green','crimson','blueviolet','brown','burlywood','cadetblue','chartreuse','chocolate',
-                'coral','gold','cornflowerblue','cornsilk','khaki','orange','pink',
-                'red','lime','mediumvioletred','navy','teal','darkblue','purple','orange',
-                'marooon','salmon']
     i=0
     for l in labels:
         colors[l] = qcolors[i]

@@ -540,7 +540,7 @@ def get_aa_snp_matrix(df):
     """Get presence/absence matrix from csq calls table"""
 
     df = df.drop_duplicates(['gene','aa','sample'])
-    x = df.set_index(['start','gene','aa','sample'])['nuc'].unstack('sample')
+    x = df.set_index(['start','gene','aa','snp_type','sample'])['nuc'].unstack('sample')
     x[x.notna()] = 1
     x = x.fillna(0)
     return x

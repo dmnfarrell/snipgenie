@@ -299,13 +299,12 @@ def mpileup_multiprocess(bam_files, ref, outpath, threads=4, callback=None):
         os.remove(f)
     return rawbcf
 
-def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
+def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None, tempdir='/tmp'):
     """Run mpileup in over multiple regions with GNU parallel, then concat vcf files.
     Assumes alignment to a bacterial reference with a single chromosome."""
 
     bam_files = ' '.join(bam_files)
     rawbcf = os.path.join(outpath,'raw.bcf')
-    tmpdir = '/tmp'
     chr = tools.get_chrom(ref)
     length = tools.get_fasta_length(ref)
     x = np.linspace(1,length,threads+1,dtype=int)
@@ -321,7 +320,7 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
     for start,end in blocks:
         region = '"{c}":{s}-{e}'.format(c=chr,s=start,e=end)
         regions.append(region)
-        out = '{o}/{s}.bcf'.format(o=tmpdir,s=start)
+        out = '{o}/{s}.bcf'.format(o=tempdir,s=start)
         outfiles.append(out)
 
     regstr = ' '.join(regions)
@@ -343,7 +342,7 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None):
 
 def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
                     callback=None, overwrite=False, filters=None, gff_file=None,
-                    mask=None,
+                    mask=None, tempdir='/tmp',
                     custom_filters=False, **kwargs):
     """Call variants with bcftools"""
 
@@ -361,7 +360,8 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
             subprocess.check_output(cmd, shell=True)
         #if linux use mpileup in parallel to speed up
         else:
-            rawbcf = mpileup_gnuparallel(bam_files, ref, outpath, threads=threads, callback=callback)
+            rawbcf = mpileup_gnuparallel(bam_files, ref, outpath, threads=threads,
+                                        tempdir=tempdir, callback=callback)
     else:
         print ('%s already exists' %rawbcf)
     #find snps only
@@ -569,6 +569,12 @@ def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4, **kwargs)
     treefile = trees.run_RAXML(outfasta, outpath=outdir)
     return
 
+def snp_typing(refsnps=None):
+    """Type samples using known population"""
+
+    snps_ireland = os.path.join(datadir, 'snps_ireland.csv')
+    return
+
 class Logger(object):
     """
     This class duplicates sys.stdout to a log file
@@ -675,6 +681,10 @@ class WorkFlow(object):
             tools.gff_bcftools_format(self.gb_file, self.gff_file)
         else:
             self.gff_file = None
+        #set temp dir
+        self.tempdir = os.path.join(self.outdir, 'tmp')
+        if not os.path.exists(self.tempdir):
+            os.makedirs(self.tempdir)
         time.sleep(1)
         return True
 
@@ -713,7 +723,8 @@ class WorkFlow(object):
                                         gff_file=self.gff_file, filters=self.filters,
                                         mask=self.mask,
                                         custom_filters=self.custom_filters,
-                                        overwrite=self.overwrite)
+                                        overwrite=self.overwrite,
+                                        tempdir=self.tempdir)
         print (self.vcf_file)
         print ()
         print ('making SNP matrix')

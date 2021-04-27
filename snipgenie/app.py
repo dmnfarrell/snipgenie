@@ -569,12 +569,6 @@ def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4, **kwargs)
     treefile = trees.run_RAXML(outfasta, outpath=outdir)
     return
 
-def snp_typing(refsnps=None):
-    """Type samples using known population"""
-
-    snps_ireland = os.path.join(datadir, 'snps_ireland.csv')
-    return
-
 class Logger(object):
     """
     This class duplicates sys.stdout to a log file

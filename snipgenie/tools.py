@@ -636,7 +636,13 @@ def concat_seqrecords(recs):
     return SeqRecord(concated, id=recs[0].id)
 
 def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False, omit=None):
-    """Get core snp site calls as sequences from all samples in a vcf file"""
+    """
+    Get core SNP site calls as sequences from a multi sample vcf file.
+    Args:
+        vcf_file: multi-sample vcf (e.g. produced by app.variant_calling)
+        uninformative: whether to include uninformative sites
+        omit: list of samples to exclude if required
+    """
 
     import vcf
     from collections import defaultdict
@@ -673,7 +679,8 @@ def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False, omit=
 
     print ('found %s sites' %len(sites))
     print ('%s sites with at least one missing sample' %len(missing))
-    print ('%s uninformative sites' %len(unf))
+    if uninformative == False:
+        print ('%s uninformative sites' %len(unf))
     if len(sites)==0:
         print ('no sites found may mean one sample is too different')
     recs = []

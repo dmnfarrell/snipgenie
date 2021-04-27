@@ -314,6 +314,8 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.rd_analysis, self.rd_analysis_completed))
         self.tools_menu.addAction('M.bovis Spoligotyping',
             lambda: self.run_threaded_process(self.spoligotyping, self.spotyping_completed))
+        self.tools_menu.addAction('M.bovis SNP typing',
+            lambda: self.run_threaded_process(self.snp_typing, self.processing_completed))
 
         self.settings_menu = QMenu('&Settings', self)
         self.menuBar().addMenu(self.settings_menu)
@@ -782,16 +784,22 @@ class App(QMainWindow):
                                     overwrite=overwrite, filters=filters,
                                     gff_file=gff_file,
                                     callback=progress_callback.emit)
+        self.results['nuc_matrix'] = os.path.join(self.outputdir, 'core.txt')
         self.results['csq_matrix'] = os.path.join(self.outputdir, 'csq.matrix')
-
         return
 
     def show_variants(self):
+        """Show the stored results from variant calling as tables"""
 
         vcf_file = self.results['vcf_file']
         vdf = tools.vcf_to_dataframe(vcf_file)
         table = tables.DefaultTable(self.tabs, app=self, dataframe=vdf)
         i = self.tabs.addTab(table, 'variants')
+        if 'nuc_matrix' in self.results:
+            nucmat = pd.read_csv(self.results['nuc_matrix'],sep=' ')
+            table = tables.DefaultTable(self.tabs, app=self, dataframe=nucmat)
+            i = self.tabs.addTab(table, 'snp_matrix')
+            self.tabs.setCurrentIndex(i)
         if 'csq_matrix' in self.results:
             csqmat = pd.read_csv(self.results['csq_matrix'])
             table = tables.DefaultTable(self.tabs, app=self, dataframe=csqmat)
@@ -800,6 +808,7 @@ class App(QMainWindow):
         return
 
     def show_snpdist(self):
+        """Show SNP distance matrix"""
 
         filename = self.results['snp_dist']
         if not os.path.exists(filename):
@@ -1073,6 +1082,21 @@ class App(QMainWindow):
         w.show_figure(fig)
         i = self.tabs.addTab(w, 'hetero')
         fig.savefig(os.path.join(self.outputdir, 'hetero.png'))
+        return
+
+    def snp_typing(self, progress_callback):
+        """SNP typing for M.bovis"""
+
+        from . import snp_typing
+        df = self.fastq_table.model.df
+        #use ALL snp sites including uninformative
+        nucmat = pd.read_csv(self.results['nuc_matrix'],sep=' ',index_col=0)
+        #print (nucmat)
+        rows = self.fastq_table.getSelectedRows()
+        data = df.iloc[rows]
+        snptable = snp_typing.clade_snps
+        res = snp_typing.type_samples(nucmat)
+
         return
 
     def spoligotyping(self, progress_callback):

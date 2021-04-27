@@ -25,7 +25,7 @@ This software is written in Python. It was developed on Ubuntu linux but is desi
 
 `pip install -e git+https://github.com/dmnfarrell/snipgenie.git#egg=snipgenie`
 
-Notes: You may need to use pip3 on Ubuntu to ensure you use Python 3. Use sudo if installing system-wide.
+Notes: You may need to use pip3 on Ubuntu to ensure you use Python 3. Use sudo if installing system-wide. Running this also requires you have **git** installed. The same command can be used to update to the latest version.
 
 ## Dependencies
 

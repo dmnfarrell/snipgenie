@@ -1,0 +1,26 @@
+<!doctype html>
+
+<html lang="en">
+	<head>
+	  <meta charset="utf-8">
+	   {% block title %}
+	   <title>BTBGenie</title>
+    {% endblock %}
+	</head>
+
+	<body>
+		<div class="divheader">
+			 {% block heading %}
+			 <h3>BTBGenie sample viewer</h3>
+			 {% endblock %}
+			 <span><a href='/'>home</a></span>
+
+		</div>
+
+	{% block main %}
+	{% endblock %}
+
+	</body>
+
+
+</html>

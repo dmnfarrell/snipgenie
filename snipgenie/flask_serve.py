@@ -26,6 +26,7 @@ import pandas as pd
 import string
 #from . import tools, widgets, tables
 from flask import Flask, render_template, request
+from wtforms import Form, TextField, validators, StringField, SelectField, FloatField
 import sqlite3
 import folium
 
@@ -35,6 +36,14 @@ module_path = os.path.dirname(os.path.abspath(__file__))
 DATABASE = '../notebooks/'
 
 webapp = Flask(__name__)
+
+class ControlsForm(Form):
+    name = SelectField('name', choices=[])
+    path = TextField('path', default='results')
+    n = TextField('n', default='2')
+    #kinds = [(i,i) for i in plotkinds]
+    #kind = SelectField('plot kind', choices=kinds)
+    #submit = SubmitField()
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -47,6 +56,49 @@ def help_msg():
     #msg += '<a href="%s"> see help page</a>' %wikipage
     return msg
 
+def get_tree():
+    """show a tree"""
+    
+    return
+
+def show_dataframe(df, map):
+    """Show points from a dataframe"""
+
+    m = map
+    for i,r in df.iterrows():
+        popup = get_popup(r)
+        cm = folium.CircleMarker(location = [r.LONG, r.LAT],
+                               radius = 5,
+                               weight = 1,
+                               popup = popup,
+                               color = 'gray',
+                               fill_color = 'blue',
+                               fill_opacity = 0.5,
+                               fill = True)
+        cm.add_to(m)
+    return
+
+def get_popup(r):
+    """Popup html"""
+
+    html = '<div class="container-fluid"> <div class="row">\
+            <h4>%s</h4> <p>seq type: %s</p>'\
+            '<p>SB: %s </p> <p>closest: %s</p>'\
+            '<p>species: %s </p></div></div>'\
+              %(r['name'],r['clade'],r['SB'],r['nearest'],r.species)
+    return html
+
+def base_map():
+
+    from folium.plugins import MeasureControl
+    coordinate = (53.5, -6.5)
+    map = folium.Map(location=coordinate,
+                    tiles='cartodbpositron',
+                    zoom_start=8,
+                     width=700, height=600)
+    map.add_child(MeasureControl())
+    return map
+
 @webapp.route('/')
 def index():
     """main index page"""
@@ -54,11 +106,14 @@ def index():
     path = request.args.get("path")
     msg = help_msg()
 
-    start_coords = (46.9540700, 142.7360300)
-    folium_map = folium.Map(location=start_coords, zoom_start=14)
+    form = ControlsForm()
+
+    map = base_map()
+    df = pd.read_csv('../notebooks/wicklow_test.csv')
+    show_dataframe(df, map)
     #map = folium_map._repr_html_()
-    folium_map.save('templates/map.html')
-    return render_template("index.html",div='',msg=msg)
+    map.save('templates/map.html')
+    return render_template("index.html",form=form,div='',msg=msg)
 
 
 def main():

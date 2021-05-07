@@ -54,7 +54,7 @@ def snps_to_fasta(snpmat, outfile):
 
     snpmat = snpmat.fillna('N')
     recs = []
-    for col in snpmat.columns[1:]:
+    for col in snpmat.columns:
         seq = ''.join(snpmat[col])
         seqrec = SeqRecord(Seq(seq),id=col)
         recs.append(seqrec)

@@ -213,6 +213,10 @@ _I added new files and tried to re-run but it failed._
 
 This is because the samples don't match the previous variant call output. You might see a `different number of samples` warning. By default the results of mpileup are not overwritten as this is the slowest step. You should first delete the file `raw.bcf` in the output folder and run again.
 
+_I have more than 1000 samples and the bcftools mpileup step fails._
+
+This is likely due to the limit on the number of files that can be opened at the same time. You can increase this limit on Linux using `ulimit -n 2000` or whatever value you need up to 9999. Note that for many samples this step could take several days to run.
+
 ## BTBGENIE
 
 This is software is developed as part of the **BTBGENIE** project, a DAFM funded project for development of genomic epidemiology systems for tracking and eradicating Mycobacterium bovis in Ireland.

@@ -166,12 +166,15 @@ Filenames are parsed and a sample name is extracted for each pair (if paired end
 These files will be saved to the output folder when the workflow is finished.
 
 ```
+raw.bcf - unfiltered output from bcftools mpileup, not overwritten by default
 calls.vcf - unfiltered variant calls
-filtered.vcf.gz - filtered vcf with variant calls, used to make the core alignment
-raw.bcf - unfiltered output from bcftools mpileup
+filtered.vcf.gz - filtered vcf from all variant calls
+snps.vcf.gz - snps only calls, used to make the core alignment
+indels.vcf.gz - indels only, made from filtered calls
 core.fa - fasta alignment from core snps, can be used to make a phylogeny
 core.txt - text table of core snps
 csq.tsv - consequence calls (if genbank provided)
+csq_indels.tsv - consequence calls for indels
 csq.matrix - matrix of consequence calls
 snpdist.csv - comma separated distance matrix using snps
 summary.csv - summary table of samples

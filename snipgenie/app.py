@@ -189,7 +189,6 @@ def check_samples_aligned(samples, outdir):
     print ('%s/%s samples already aligned' %(len(found),len(x)))
     return
 
-
 def align_reads(samples, idx, outdir='mapped', callback=None, aligner='bwa', **kwargs):
     """
     Align multiple files. Requires a dataframe with a 'sample' column to indicate
@@ -365,17 +364,12 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     else:
         print ('%s already exists' %rawbcf)
     #find snps only
-    print ('calling snps..')
+    print ('calling variants..')
     vcfout = os.path.join(outpath,'calls.vcf')
-    cmd = '{bc} call -V indels --ploidy 1 -m -v -o {o} {raw}'.format(bc=bcftoolscmd,o=vcfout,raw=rawbcf)
+    cmd = '{bc} call --ploidy 1 -m -v -o {o} {raw}'.format(bc=bcftoolscmd,o=vcfout,raw=rawbcf)
     if callback != None:
         callback(cmd)
     print (cmd)
-    subprocess.check_output(cmd,shell=True)
-
-    #also call indels only to separate file
-    indelsout = os.path.join(outpath,'indels.vcf')
-    cmd = '{bc} call -V snps --ploidy 1 -m -v -o {o} {raw}'.format(bc=bcftoolscmd,o=indelsout,raw=rawbcf)
     subprocess.check_output(cmd,shell=True)
 
     #relabel samples in vcf header
@@ -383,28 +377,42 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
         sample_file = os.path.join(outpath,'samples.txt')
         print (sample_file)
         relabel_vcfheader(vcfout, sample_file)
-        relabel_vcfheader(indelsout, sample_file)
 
-    #filter variants
-    final = os.path.join(outpath,'filtered.vcf.gz')
-    cmd = '{bc} filter -i "{f}" -o {o} -O z {i}'.format(bc=bcftoolscmd,i=vcfout,o=final,f=filters)
+    #filters
+    filtered = os.path.join(outpath,'filtered.vcf.gz')
+    cmd = '{bc} filter -i "{f}" -o {o} -O z {i}'.format(bc=bcftoolscmd,i=vcfout,o=filtered,f=filters)
     print (cmd)
     tmp = subprocess.check_output(cmd,shell=True)
     if callback != None:
         callback(cmd)
 
+    #get only snps
+    print ('splitting snps and indels..')
+    snpsout = os.path.join(outpath,'snps.vcf.gz')
+    cmd = '{bc} view -v snps -o {o} -O z {i}'.format(bc=bcftoolscmd,o=snpsout,i=filtered)
+    print (cmd)
+    subprocess.check_output(cmd,shell=True)
+
+    #also get indels only to separate file
+    indelsout = os.path.join(outpath,'indels.vcf.gz')
+    #cmd = '{bc} call -V snps --ploidy 1 -m -v -o {o} {raw}'.format(bc=bcftoolscmd,o=indelsout,raw=rawbcf)
+    cmd = '{bc} view -v indels -o {o} -O z {i}'.format(bc=bcftoolscmd,o=indelsout,i=filtered)
+    print (cmd)
+    subprocess.check_output(cmd,shell=True)
+
     #apply mask if required
     if mask != None:
-        mask_filter(final, mask)
+        mask_filter(snpsout, mask)
 
     #custom filters
     if custom_filters == True:
-        site_proximity_filter(final, outdir=outpath)
+        site_proximity_filter(snpsout, outdir=outpath)
 
     #consequence calling
     if gff_file != None:
+        print ('consequence calling..')
         csqout = os.path.join(outpath, 'csq.tsv')
-        m = csq_call(ref, gff_file, final, csqout)
+        m = csq_call(ref, gff_file, snpsout, csqout)
         m.to_csv(os.path.join(outpath,'csq.matrix'))
         #indels as well
         csqout = os.path.join(outpath, 'csq_indels.tsv')
@@ -412,7 +420,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
         m.to_csv(os.path.join(outpath,'csq_indels.matrix'))
 
     print ('took %s seconds' %str(round(time.time()-st,0)))
-    return final
+    return snpsout
 
 def csq_call(ref, gff_file, vcf_file, csqout):
     """Consequence calling"""
@@ -440,6 +448,8 @@ def relabel_vcfheader(vcf_file, sample_file):
     tmp = subprocess.check_output(cmd,shell=True)
     #rewrite file
     shutil.copy(rlout, vcf_file)
+    #remove temp file
+    os.remove(rlout)
     return
 
 def mask_filter(vcf_file, mask_file):
@@ -816,6 +826,8 @@ def main():
                         help="number of bootstraps to build tree")
     parser.add_argument("-o", "--outdir", dest="outdir",
                         help="Results folder", metavar="FILE")
+    #parser.add_argument("-O", "--omit", dest="omit_samples",
+    #                    help="List of sample names to omit of required", metavar="FILE")
     parser.add_argument("-q", "--qc", dest="qc", action="store_true",
                         help="Get version")
     parser.add_argument("-d", "--dummy", dest="dummy",  action="store_true",

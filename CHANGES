@@ -2,6 +2,13 @@
 CHANGES
 =======
 
+0.4.0
+-----
+
+* changes to output files, snps and indels now output
+* snps file made after filtering of calls
+* wgmlst testing
+
 0.3.0
 -----
 

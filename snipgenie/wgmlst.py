@@ -25,29 +25,54 @@ import itertools
 import subprocess
 import numpy as np
 import pandas as pd
-from . import tools
+from . import tools, app
 
 home = os.path.expanduser("~")
 config_path = os.path.join(home,'.config','snipgenie')
 module_path = os.path.dirname(os.path.abspath(__file__))
 datadir = os.path.join(module_path, 'data')
 
-mlst = pd.read_csv(os.path.join(datadir,'mlst_scheme.csv'))
-db = pd.read_csv(os.path.join(datadir,'mlst_db.csv.gz'))
+mbovis_scheme = pd.read_csv(os.path.join(datadir,'mlst_scheme.csv'))
+mbovis_db = os.path.join(datadir,'mlst_db.csv.gz')
 ref_proteins = os.path.join(datadir,'Mbovis_AF212297_proteins.fa')
+
+schemes = {'Mbovis-AF212297': mbovis_scheme}
 
 def get_samples_vcf(vcf_file):
     cmd = 'bcftools query -l %s' %vcf_file
     tmp = subprocess.check_output(cmd, shell=True)
     return tmp.decode().split('\n')
 
-def get_consensus(vcf_file, sample, out_file):
+def get_nucleotide_sequences(gb_file,out_file,idkey='locus_tag'):
+    """protein nucleotide seqs from genbank"""
+
+    recs = SeqIO.to_dict(SeqIO.parse(gb_file,'genbank'))
+    chroms = list(recs.keys())
+    result = []
+    for chrom in chroms:
+        rec = recs[chrom]
+        for f in rec.features[1:]:
+            q=f.qualifiers
+            if f.type != 'CDS':
+                continue
+            seq = rec.seq[f.location.start:f.location.end]
+            try:
+                new = SeqRecord(seq,id=q[idkey][0])
+                result.append(new)
+            except:
+                #print (q)
+                pass
+    SeqIO.write(result,out_file,format='fasta')
+    return result
+
+def get_consensus(vcf_file, sample, out_file='consensus.fa'):
     """Get consensus sequence from vcf"""
 
-    cmd='bcftools index %s' %vcf_file
-    #subprocess.check_output(cmd, shell=True)
-    cmd='cat {r} | bcftools consensus -s {s} {v} > {o}'.format(r=snpg.app.mbovis_genome,v=vcf_file,s=sample,o=out_file)
-    print (cmd)
+    cmd='bcftools index -f %s' %vcf_file
+    subprocess.check_output(cmd, shell=True)
+    cmd='cat {r} | bcftools consensus -s {s} {v} > {o}'.format(r=app.mbovis_genome,
+                                                v=vcf_file,s=sample,o=out_file)
+    #print (cmd)
     subprocess.check_output(cmd, shell=True)
     return
 
@@ -64,17 +89,26 @@ def find_alleles(fastafile):
         dataframe with new alleles to add to db
     """
 
-    db = pd.read_csv('mlst_db.csv')
-    names = ref.name.unique()
-    df = pg.tools.fasta_to_dataframe(fastafile)
+    import pathogenie as pg
+    db = pd.read_csv(mbovis_db)
+    names = db.name.unique()
+    df = pg.tools.fasta_to_dataframe(fastafile).reset_index()
+
     result=[]
     new=[]
-    for name in names[:100]:
+    for name in names:
         #print (name)
         s = db[db.name==name]
-        target = df[df.name==name].iloc[0].sequence
+        gene = df[df.name==name]
+        #print (gene)
+        if len(gene)==0:
+            #print (name)
+            #missing gene in target
+            result.append((name,0))
+            continue
+        target = gene.iloc[0].sequence
         found = s[s.sequence==target]
-        #print (found)
+        #print (target,found)
         if len(found)>0:
             found = found.iloc[0]
             result.append((name,found.allele))
@@ -83,43 +117,42 @@ def find_alleles(fastafile):
             newallele = s.allele.max()+1
             result.append((name,newallele))
             new.append([name,newallele,target])
-    res = pd.DataFrame(result,columns=['name','allele'])
+    prof = pd.DataFrame(result,columns=['name','allele'])
+    prof['allele'] = prof.allele.astype(int)
+    #new additions
     new = pd.DataFrame(new,columns=['name','allele','sequence'])
-    return res, new
+    return prof, new
 
 def update_mlst_db(new):
     """Update the database of MLST profiles"""
 
-    db = pd.read_csv('mlst_db.csv')
+    db = pd.read_csv(mbovis_db)
     db = pd.concat([db,new])
-    db.to_csv('mlst_db.csv',index=False)
+    db.to_csv(mbovis_db, index=False, compression='gzip')
     print ('added %s new alleles' %len(new))
     return
 
-def type_sample(sample, vcf_file, path, threads=4, overwrite=False):
+def type_sample(fastafile, outfile, threads=4, overwrite=False):
     """Type a single sample using wgMLST.
     Args:
-        sample: sample name, must be present in vcf file
-        vcf_file: source vcf
+        fastafile: fasta file to type from assembly or other
+
         path: output folder for annotations
     Returns:
         dataframe of MLST profile
     """
 
-    seqfile = 'consensus.fa'
-    fastafile = os.path.join(path,'%s.fa' %sample)
-    #use consensus for now
-    get_consensus(vcf_file, sample, seqfile)
-    if overwrite == True or not os.path.exists(fastafile):
+    import pathogenie as pg
+    if overwrite == True or not os.path.exists(outfile):
         #annotate
-        featdf,recs = pg.run_annotation(seqfile,
-                                    threads=threads, kingdom='bacteria', trusted=ref_proteins)
+        featdf,recs = pg.run_annotation(fastafile, threads=threads,
+                                        kingdom='bacteria', trusted=ref_proteins)
         #get nucl sequences from annotation
         SeqIO.write(recs,'temp.gb','genbank')
-        get_nucleotide_sequences('temp.gb',fastafile,idkey='protein_id')
+        get_nucleotide_sequences('temp.gb',outfile,idkey='protein_id')
+
     #find alleles
-    res,new = find_alleles(fastafile)
-    #print (res)
+    res,new = find_alleles(outfile)
     #update db
     update_mlst_db(new)
     return res
@@ -129,11 +162,79 @@ def dist_matrix(profiles):
 
     dist=[]
     for s in profiles:
-        x=profs[s]
+        x=profiles[s]
         row=[]
-        for s in profs:
-            d = diff_profiles(x,profs[s])
+        for s in profiles:
+            d = diff_profiles(x,profiles[s])
             row.append(d)
         dist.append(row)
-    D = pd.DataFrame(dist,columns=profs.keys(),index=profs.keys())
+    D = pd.DataFrame(dist,columns=profiles.keys(),index=profiles.keys())
     return D
+
+def tree_from_distmatrix(D):
+    """tree from distance matrix"""
+
+    from skbio import DistanceMatrix
+    from skbio.tree import nj
+    ids = list(D.index)
+    dm = DistanceMatrix(D.values, ids)
+    tree = nj(dm)
+    #print(tree.ascii_art())
+    return tree
+
+def run_samples(vcf_file, outdir, omit=[], **kwargs):
+    """Run samples in a vcf file.
+    Args:
+        vcf_file: multi sample variant file from previous calling
+        outdir: folder for writing intermediate files
+    Returns:
+        dict of mst profiles
+    """
+
+    profs = {}
+    samplenames = get_samples_vcf(vcf_file)
+    for s in samplenames:
+        print (s)
+        if s in omit:
+            continue
+        get_consensus(vcf_file, s)
+        outfile = os.path.join(outdir, '%s.fa' %s)
+        profile = type_sample('consensus.fa', outfile, **kwargs)
+        profs[s] = get_profile_string(profile)
+    return profs
+
+def test():
+
+    return
+
+def main():
+    "Run the application"
+
+    import sys, os
+    from argparse import ArgumentParser
+    parser = ArgumentParser(description='snipgenie wgMLST tool. https://github.com/dmnfarrell/snipgenie')
+    parser.add_argument("-i", "--input", dest="vcf_file", default=None,
+                        help="input vcf", metavar="FILE")
+    parser.add_argument("-o", "--outdir", dest="outdir",
+                        help="Folder to output intermediate results", metavar="FILE")
+    parser.add_argument("-S", "--species", dest="species", default=None,
+                        help="set the species")
+    parser.add_argument("-t", "--threads", dest="threads", default=None,
+                        help="cpu threads to use")
+    parser.add_argument("-x", "--test", dest="test",  action="store_true",
+                        default=False, help="Test run")
+
+    args = vars(parser.parse_args())
+    if args['test'] == True:
+        test()
+    elif args['vcf_file'] != None:
+        profs = run_samples(args['vcf_file'], outdir=args['outdir'])
+        D = dist_matrix(profs)
+        D.to_csv('dist_mlst.csv',index=False)
+        tree = tree_from_distmatrix(D)
+        print()
+        print(tree.ascii_art())
+        tree.write('mlst.newick', 'newick')
+
+if __name__ == '__main__':
+    main()

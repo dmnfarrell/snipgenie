@@ -764,8 +764,8 @@ class WorkFlow(object):
                 return
             #print (treefile)
             #labelmap = dict(zip(sra.filename,sra.geo_loc_name_country))
-            t,ts = trees.create_tree(treefile)#, labelmap)
-            t.render(os.path.join(self.outdir, 'tree.png'))
+            #t,ts = trees.create_tree(treefile)#, labelmap)
+            #t.render(os.path.join(self.outdir, 'tree.png'))
         print ()
         return
 
@@ -804,9 +804,11 @@ def main():
                         help="set the species reference genome, overrides -r")
     parser.add_argument("-g", "--genbank_file", dest="gb_file", default=None,
                         help="annotation file, optional", metavar="FILE")
+    parser.add_argument("-t", "--threads", dest="threads", default=None,
+                        help="cpu threads to use")                        
     parser.add_argument("-w", "--overwrite", dest="overwrite", action="store_true", default=False,
                         help="overwrite intermediate files")
-    parser.add_argument("-t", "--trim", dest="trim", action="store_true", default=False,
+    parser.add_argument("-T", "--trim", dest="trim", action="store_true", default=False,
                         help="whether to trim fastq files" )
     parser.add_argument("-Q", "--quality", dest="quality", default=25,
                         help="right trim quality, default 25")
@@ -816,8 +818,6 @@ def main():
                         help="mask regions from a bed file" )
     parser.add_argument("-c", "--custom", dest="custom_filters", action="store_true", default=False,
                         help="apply custom filters" )
-    parser.add_argument("-T", "--threads", dest="threads", default=None,
-                        help="cpu threads to use")
     parser.add_argument("-a", "--aligner", dest="aligner", default='bwa',
                         help="aligner to use")
     parser.add_argument("-b", "--buildtree", dest="buildtree", action="store_true", default=False,

@@ -76,16 +76,16 @@ This will run the entire process based on a set of options given at the terminal
                       set the species reference genome, overrides -r
 -g FILE, --genbank_file FILE
                       annotation file, optional
+-t THREADS, --threads THREADS
+                      cpu threads to use                      
 -w, --overwrite       overwrite intermediate files
--t, --trim            whether to trim fastq files
+-T, --trim            whether to trim fastq files
 -Q QUALITY, --quality QUALITY
                       right trim quality, default 25
 -f FILTERS, --filters FILTERS
                       variant calling post-filters
 -m MASK, --mask MASK  mask regions with bed file
 -c, --custom          apply custom filters (proximity filter)
--T THREADS, --threads THREADS
-                      cpu threads to use
 -a ALIGNER, --aligner ALIGNER
                       aligner to use
 -b, --buildtree       whether to try to build a phylogenetic tree

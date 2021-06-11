@@ -762,10 +762,8 @@ class WorkFlow(object):
             treefile = trees.run_RAXML(outfasta, bootstraps=self.bootstraps, outpath=self.outdir)
             if treefile == None:
                 return
-            #print (treefile)
-            #labelmap = dict(zip(sra.filename,sra.geo_loc_name_country))
-            #t,ts = trees.create_tree(treefile)#, labelmap)
-            #t.render(os.path.join(self.outdir, 'tree.png'))
+            ls = len(smat)
+            trees.convert_branch_lengths(treefile,os.path.join(self.outdir,'tree.newick'), ls)
         print ()
         return
 

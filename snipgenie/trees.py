@@ -138,6 +138,17 @@ def run_RAXML(infile, name='variants', threads=8, bootstraps=100, outpath='.'):
     out = os.path.join(outpath,'RAxML_bipartitions.variants')
     return out
 
+def convert_branch_lengths(treefile, outfile, snps):
+
+    tree = Phylo.read(treefile, "newick")
+    for parent in tree.find_clades(terminal=False, order="level"):
+            for child in parent.clades:
+                if child.branch_length:
+                    child.branch_length *= snps
+    #Phylo.draw(tree)
+    Phylo.write(tree, outfile, "newick")
+    return
+
 def biopython_draw_tree(filename):
 
     from Bio import Phylo

@@ -4,21 +4,19 @@
 library(ape)
 library(phangorn)
 library('TransPhylo')
-
+library('TreeDist')
 setwd('~/gitprojects/snipgenie/notebooks/')
 
-set.seed(0)
-neg=100/365
+set.seed(1)
+neg=300/365
 off.r=5
 w.shape=10
 w.scale=0.1
-pi=0.25
-
-#simulate outbreak
+pi=0.4
 simu <- simulateOutbreak(neg=neg,pi=pi,off.r=off.r,w.shape=w.shape,
-                         w.scale=w.scale,dateStartOutbreak=2017,dateT=2020)
-
+                         w.scale=w.scale,dateStartOutbreak=2005,dateT=2008)
 plot(simu)
+
 ttree<-extractTTree(simu)
 plot(ttree)
 ptree<-extractPTree(simu)
@@ -28,12 +26,28 @@ plot(p)
 axisPhylo(backward = F)
 write.tree(p,'sim.newick')
 
-seq <- read.dna(file="Mbovis_AF212297.fa",format='fasta')#,as.character=T)
+#load ref tree back in
+reftree <- read.tree('sim.newick')
+#reftree <- root(reftree,'1')
+plot(reftree)
 
-seqdata <- simSeq(p, Q = NULL, bf = NULL,
-           rootseq = c(seq), type = "DNA", model = NULL, levels = NULL,
-           rate = 1, code = 1)
+#load snp and mlst trees
+snptree <- read.tree('sim_results/RAxML_bestTree.variants')
+snptree <- drop.tip(snptree,'ref')
+snptree <- root(snptree,'2')
+plot(snptree)
+mlsttree <- read.tree('mlst.newick')
+mlsttree <- root(mlsttree,'2')
+plot(mlsttree)
 
-write.phyDat(seqdata, file="temp.dat", format="sequential", nbcol = -1,
-             colsep = "")
+#estimate mlst tree from dm
+dm = read.table('dist_mlst.csv',sep=',',header=TRUE,row.names=1,check.names=FALSE)
+dm
+utree <- nj(as.matrix(dm))
+plot(utree)
 
+#compare trees
+TreeDistance(reftree, mlsttree)
+VisualizeMatching(MutualClusteringInfo, snptree, mlsttree)
+
+as.matrix(dm)

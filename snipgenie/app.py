@@ -504,7 +504,7 @@ def site_proximity_filter(vcf_file, dist=10, outdir=None):
             found.extend([sites[i], sites[i+1]])
     #print (found)
     new = sorted(list(set(sites) - set(found)))
-    print ('proximity filter found %s/%s sites' %(len(new),len(sites)))
+    print ('proximity filter found %s/%s sites' %(len(found),len(sites)))
     if outdir == None:
         outdir = tempfile.gettempdir()
     out = os.path.join(outdir,'temp.vcf')
@@ -805,7 +805,7 @@ def main():
     parser.add_argument("-g", "--genbank_file", dest="gb_file", default=None,
                         help="annotation file, optional", metavar="FILE")
     parser.add_argument("-t", "--threads", dest="threads", default=None,
-                        help="cpu threads to use")                        
+                        help="cpu threads to use")
     parser.add_argument("-w", "--overwrite", dest="overwrite", action="store_true", default=False,
                         help="overwrite intermediate files")
     parser.add_argument("-T", "--trim", dest="trim", action="store_true", default=False,

@@ -30,8 +30,7 @@ setup(
     entry_points = {
         'console_scripts': [
             'snipgenie-gui=snipgenie.gui:main',
-            'snipgenie=snipgenie.app:main',
-            'snipgenie-mlst=snipgenie.wgmlst:main']
+            'snipgenie=snipgenie.app:main']
             },
     classifiers = ['Operating System :: OS Independent',
             'Programming Language :: Python :: 2.7',

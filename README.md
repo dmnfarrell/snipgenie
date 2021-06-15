@@ -179,6 +179,7 @@ csq.matrix - matrix of consequence calls
 snpdist.csv - comma separated distance matrix using snps
 summary.csv - summary table of samples
 RAxML_bipartitions.variants - ML tree if RAxML was used, optional
+tree.newick - tree with SNPs branch lengths, if RAxMl used
 ```
 
 ## Use from Python

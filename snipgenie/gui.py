@@ -303,6 +303,11 @@ class App(QMainWindow):
 
         self.tools_menu = QMenu('Tools', self)
         self.menuBar().addMenu(self.tools_menu)
+
+        self.tools_menu.addAction('Get Read Stats',
+            lambda: self.run_threaded_process(self.add_read_lengths, self.processing_completed))
+        self.tools_menu.addAction('Get Mapping Stats',
+            lambda: self.run_threaded_process(self.add_mapping_stats, self.processing_completed))
         self.tools_menu.addAction('Fastq Qualities Report', self.fastq_quality_report)
         self.tools_menu.addAction('Show Annotation', self.show_ref_annotation)
         self.tools_menu.addAction('Plot SNP Matrix', self.plot_snp_matrix)
@@ -900,6 +905,7 @@ class App(QMainWindow):
         self.info.append("finished")
         self.progressbar.setRange(0,1)
         self.running = False
+        self.fastq_table.refresh()
         return
 
     def alignment_completed(self):
@@ -968,6 +974,35 @@ class App(QMainWindow):
         w.show_figure(fig)
         i = self.tabs.addTab(w, name )
         self.tabs.setCurrentIndex(i)
+        return
+
+    def add_read_lengths(self, progress_callback):
+        """get read lengths"""
+
+        df = self.fastq_table.model.df
+        rows = self.fastq_table.getSelectedRows()
+        data = df.iloc[rows]
+        for i,r in data.iterrows():
+            df.loc[i,'reads'] = tools.get_fastq_length(r.filename)
+        return
+
+    def add_mapping_stats(self, progress_callback):
+        """get mapping stats for all files and add to table"""
+
+        df = self.fastq_table.model.df
+        rows = self.fastq_table.getSelectedRows()
+        data = df.iloc[rows]
+
+        def get_stats(x):
+            d = tools.samtools_flagstat(x)
+            s = pd.Series(d)
+            return s
+
+        for i,r in data.iterrows():
+            s = get_stats(r.bam_file)
+            df.loc[i,'mapped'] = s['mapped']
+            df.loc[i,'total'] = s['total']
+        #self.fastq_table.setDataFrame(df)
         return
 
     def mapping_stats(self, row):
@@ -1148,8 +1183,10 @@ class App(QMainWindow):
         from . import rdiff
         rdiff.create_rd_index()
         df = self.fastq_table.model.df
+        rows = self.fastq_table.getSelectedRows()
+        data = df.iloc[rows]
         out = os.path.join(self.outputdir,'rd_analysis')
-        res = rdiff.find_regions(df, out, threads=kwds['threads'],
+        res = rdiff.find_regions(data, out, threads=kwds['threads'],
                                  callback=progress_callback.emit)
         self.rd_result = res
         return

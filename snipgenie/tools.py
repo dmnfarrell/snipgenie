@@ -173,6 +173,14 @@ def get_fastq_info(filename):
     rl = int(df.length.mean())
     return rl
 
+def get_fastq_length(filename):
+    """Return fastq number of reads"""
+
+    cmd = 'expr $(zcat "%s" | wc -l) / 4' %filename
+    tmp = subprocess.check_output(cmd, shell=True)
+    l = int(tmp)
+    return l
+
 def clustal_alignment(filename=None, seqs=None, command="clustalw"):
     """Align 2 sequences with clustal"""
 
@@ -333,7 +341,11 @@ def fastq_to_fasta(filename, out, size=1000):
 
     ext = os.path.splitext(filename)[1]
     if ext=='.gz':
-        fastq_parser = SeqIO.parse(gzopen(filename, "rt"), "fastq")
+        #fastq_parser = SeqIO.parse(gzopen(filename, "rt"), "fastq")
+        #if gzip fails
+        cmd = 'zcat "%s" | head -n %s > temp.fastq' %(filename, int(size))
+        subprocess.check_output(cmd, shell=True)
+        fastq_parser = SeqIO.parse(open('temp.fastq', "r"), "fastq")
     else:
         fastq_parser = SeqIO.parse(open(filename, "r"), "fastq")
     i=0
@@ -551,7 +563,7 @@ def plot_fastq_qualities(filename, ax=None, limit=10000):
             break
     df = pd.DataFrame(res)
     n = int(len(df.columns)/50)
-    df = df[df.columns[::n]]
+    #df = df[df.columns[::n]]
     l = len(df.T)+1
 
     if ax==None:

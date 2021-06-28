@@ -182,6 +182,8 @@ def colors_from_labels(df,name,group):
     colors={}
     i=0
     for l in labels:
+        if i>=len(qcolors):
+            i=0
         colors[l] = qcolors[i]
         i+=1
     df['color'] = df[group].apply(lambda x: colors[x],1)

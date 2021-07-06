@@ -28,8 +28,8 @@ import numpy as np
 import pandas as pd
 from  . import tools
 
-qcolors = ['blue','green','crimson','blueviolet','brown','burlywood','cadetblue','chartreuse','chocolate',
-            'coral','gold','cornflowerblue','cornsilk','khaki','orange','pink',
+qcolors = ['blue','green','crimson','blueviolet','orange','cadetblue','chartreuse','chocolate',
+            'coral','gold','cornflowerblue','cornsilk','khaki','orange','pink','burlywood',
             'red','lime','mediumvioletred','navy','teal','darkblue','purple','orange',
             'salmon','maroon']
 

@@ -228,7 +228,7 @@ def align_reads(samples, idx, outdir='mapped', callback=None, aligner='bwa', **k
             subprocess.check_output(cmd,shell=True)
             print (cmd)
         index = df.index
-        samples.loc[index,'bam_file'] = out
+        samples.loc[index,'bam_file'] = os.path.abspath(out)
         #find mean depth
         #depth = tools.get_bam_depth(out)
         #samples.loc[index,'depth'] = depth
@@ -465,6 +465,7 @@ def mask_filter(vcf_file, mask_file):
     import vcf
     vcf_reader = vcf.Reader(open(vcf_file, 'rb'))
     sites = [record.POS for record in vcf_reader]
+    print('%s sites' %len(sites))
     found = []
     for i in sites:
         m = mask.apply( lambda x: do_mask(x,i),1)
@@ -577,6 +578,8 @@ def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4, **kwargs)
     SeqIO.write(snprecs, outfasta, 'fasta')
     smat.to_csv(os.path.join(outdir,'core.txt'), sep=' ')
     treefile = trees.run_RAXML(outfasta, outpath=outdir)
+    ls = len(smat)
+    trees.convert_branch_lengths(treefile,os.path.join(outdir,'tree.newick'), ls)
     return
 
 class Logger(object):
@@ -759,7 +762,8 @@ class WorkFlow(object):
             if len(bam_files) <= 2:
                 print ('Cannot build tree, too few samples.')
                 return
-            treefile = trees.run_RAXML(outfasta, bootstraps=self.bootstraps, outpath=self.outdir)
+            treefile = trees.run_RAXML(outfasta, threads=self.threads,
+                        bootstraps=self.bootstraps, outpath=self.outdir)
             if treefile == None:
                 return
             ls = len(smat)

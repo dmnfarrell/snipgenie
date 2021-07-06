@@ -10,7 +10,7 @@ samples <- read.table('/storage/btbgenie/mbovis_ireland/all_ireland_samples.csv'
 #samples <- samples[samples$county == "Wicklow",]
 
 mltree <- read.tree('/storage/btbgenie/all_ireland_results/tree.newick')
-#rooted <- root(mltree,"ref")
+mltree <- root(mltree,"TB20-002800")
 mltree <- drop.tip(mltree, c('ref','182-MBovis'))
 #mltree$edge.length[mltree$edge.length<0] <- 0
 
@@ -27,27 +27,22 @@ n <- length(counties)
 
 colors <- c('blue','green','red','blueviolet','orange','cadetblue','chartreuse','chocolate',
            'coral','gold','cornflowerblue','cornsilk','khaki','orange','pink','burlywood',
-           'red','mediumvioletred','navy','lightblue','purple','salmon','maroon')
+           'mediumvioletred','navy','lightblue','purple','salmon','maroon','beige',
+           'yellow','gray','lightgreen')
 
-#library(randomcoloR)
-#colors <- distinctColorPalette(n)
-#colors<-brewer.pal(11, "rainbow")
 cols<-setNames(colors,levels(as.factor(labels)))
 cols
-# Add coloured shapes at tips
-#tiplabels(pch=19, 
-#           col=ifelse(grepl(mltree$tip.label, pattern="lwof"), "red", "blue"), 
-#           cex=2)
-
+mltree$tip.label <- labels
 
 #png('all_ireland_tree.png',width=1200,height=1200)
-plot(mltree, type='fan',cex=1,label.offset=1, edge.width=1,show.tip.label=FALSE)
-tiplabels(pie=to.matrix(labels, levels(as.factor(labels))),cex=0.18,piecol=cols)
+plot(mltree, type='fan',cex=1,label.offset=1, edge.width=1,show.tip.label=TRUE)
+tiplabels(pie=to.matrix(labels, levels(as.factor(labels))),cex=0.14,piecol=cols)
 add.scale.bar(lwd=3, cex=2, xpd=TRUE)
-legcolors <- c("red","khaki","orange","lightblue","blueviolet","green","cornsilk")
-legend("topleft", legend=c("Clare","Monaghan","NI","Wicklow","Cork","Cavan","Meath"), pch=22, pt.bg=legcolors, pt.cex=2.5)
+legcolors <- c("green","burlywood","mediumvioletred","gray","red","blue","pink")
+legend("topleft", legend=c("Clare","Monaghan","NI","Wicklow","Cork","Cavan","Meath"), 
+       pch=22, pt.bg=legcolors, pt.cex=2.5)
 #dev.off()
-
-plotTree(mltree,ftype="off",ylim=c(-0.2*Ntip(mltree),Ntip(mltree)),lwd=1,
-         xlim=c(max(nodeHeights(mltree)),0),direction="leftwards")
+to.matrix(labels, levels(as.factor(labels)))
+#plotTree(mltree,ftype="off",ylim=c(-0.2*Ntip(mltree),Ntip(mltree)),lwd=1,
+#         xlim=c(max(nodeHeights(mltree)),0),direction="leftwards")
 

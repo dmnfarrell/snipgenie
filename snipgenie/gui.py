@@ -459,8 +459,8 @@ class App(QMainWindow):
         self.projectlabel.setText(self.proj_file)
         self.outdirLabel.setText(self.outputdir)
         print (self.results)
-        if 'vcf_file' in self.results:
-            self.show_variants()
+        #if 'vcf_file' in self.results:
+        #    self.show_variants()
         if 'snp_dist' in self.results:
             self.show_snpdist()
         #load any saved maps

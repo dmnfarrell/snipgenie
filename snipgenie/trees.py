@@ -29,7 +29,7 @@ import pandas as pd
 from  . import tools
 
 qcolors = ['blue','green','crimson','blueviolet','orange','cadetblue','chartreuse','chocolate',
-            'coral','gold','cornflowerblue','cornsilk','khaki','orange','pink','burlywood',
+            'coral','gold','cornflowerblue','palegreen','khaki','orange','pink','burlywood',
             'red','lime','mediumvioletred','navy','teal','darkblue','purple','orange',
             'salmon','maroon']
 

@@ -558,9 +558,9 @@ def get_aa_snp_matrix(df):
 
 def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4, **kwargs):
     """
-    Use bam files from previous sets of alignments
-    so we can arbitrarily combine results from multiple runs.
-    kwargs passed to app.variant_calling method
+    Run workflow with bam files from a previous sets of alignments.
+    We can arbitrarily combine results from multiple runs this way.
+    kwargs are passed to variant_calling method
     """
 
     if gff_file!=None:
@@ -577,6 +577,9 @@ def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4, **kwargs)
     outfasta = os.path.join(outdir, 'core.fa')
     SeqIO.write(snprecs, outfasta, 'fasta')
     smat.to_csv(os.path.join(outdir,'core.txt'), sep=' ')
+    aln = AlignIO.read(outfasta, 'fasta')
+    snp_dist = tools.snp_dist_matrix(aln)
+    snp_dist.to_csv(os.path.join(outdir,'snpdist.csv'), sep=',')
     treefile = trees.run_RAXML(outfasta, outpath=outdir)
     ls = len(smat)
     trees.convert_branch_lengths(treefile,os.path.join(outdir,'tree.newick'), ls)
@@ -751,6 +754,7 @@ class WorkFlow(object):
         samples.to_csv(os.path.join(self.outdir,'samples.csv'),index=False)
         summ = results_summary(samples)
         summ.to_csv(os.path.join(self.outdir,'summary.csv'),index=False)
+        self.summary = summ
         print ('Done. Sample summary:')
         print ('---------------------')
         print (summ)

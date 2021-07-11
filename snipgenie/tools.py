@@ -733,17 +733,20 @@ def samtools_tview(bam_file, chrom, pos, width=200, ref='', display='T'):
     tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
     return tmp
 
-def samtools_depth(bam_file, chrom, start, end):
+def samtools_depth(bam_file, chrom=None, start=None, end=None):
     """Get depth from bam file"""
 
     samtoolscmd = get_cmd('samtools')
-    cmd = '{sc} depth -r {c}:{s}-{e} {b}'.format(b=bam_file,c=chrom,s=start,e=end,sc=samtoolscmd)
+    if chrom != None and start != None:
+        cmd = '{sc} depth -r {c}:{s}-{e} {b}'.format(b=bam_file,c=chrom,s=start,e=end,sc=samtoolscmd)
+    else:
+        cmd = '{sc} depth {b}'.format(b=bam_file,sc=samtoolscmd)
     tmp=subprocess.check_output(cmd, shell=True, universal_newlines=True)
     from io import StringIO
     c = pd.read_csv(StringIO(tmp),sep='\t',names=['chr','pos','depth'])
     return c
 
-def get_mean_depth(filename, chrom, start, end, how='mean'):
+def get_mean_depth(bam_file, chrom=None, start=None, end=None, how='mean'):
     """Get mean depth from bam file"""
 
     c = samtools_depth(bam_file, chrom, start, end)

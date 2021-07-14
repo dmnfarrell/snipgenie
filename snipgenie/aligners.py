@@ -43,25 +43,41 @@ def build_bwa_index(fastafile, path=None):
     print (cmd)
     return
 
-def bwa_align(file1, file2, idx, out, threads=4, overwrite=False, options='', filter=None):
+def bwa_align(file1, file2, idx, out, threads=4, overwrite=False,
+              options='', filter=None, unmapped=None):
     """Align reads to a reference with bwa.
     Args:
         file1, file2: fastq files
         idx: bwa index name
         out: output bam file name
         options: extra command line options e.g. -k INT for seed length
+        unmapped: path to file for unmapped reads if required
     """
 
     bwacmd = tools.get_cmd('bwa')
     samtoolscmd = tools.get_cmd('samtools')
     if file2 == None:
         file2=''
-    cmd = '{b} mem -M -t {t} {p} {i} "{f1}" "{f2}" | {s} view -F 0x04 -bt - | {s} sort -o {o}'.format(
+    cmd = '{b} mem -M -t {t} {p} {i} "{f1}" "{f2}" | {s} view -bt - | {s} sort -o {o}'.format(
                 b=bwacmd,i=idx,s=samtoolscmd,
                 f1=file1,f2=file2,o=out,t=threads,p=options)
     if not os.path.exists(out) or overwrite == True:
         print (cmd)
         tmp = subprocess.check_output(cmd, shell=True)
+
+        #write out unmapped reads
+        if unmapped != None:
+            f1 = os.path.join(unmapped,os.path.basename(file1))
+            f2 = os.path.join(unmapped,os.path.basename(file2))
+            #cmd = '{s} view -b -f 4 {o} > {u}'.format(s=samtoolscmd,o=out,u=unmapped)
+            #cmd = '{s} view -b -f 4 {o} | {s} fastq -1 {f1} -2 {f2} \
+            #         -0 /dev/null -s /dev/null -n'.format(s=samtoolscmd,o=out,u=unmapped,f1=f1,f2=f2)
+
+            uf =  os.path.join(unmapped,os.path.basename(out))+'.fasta'
+            cmd = '{s} view -b -f 4 {o} | {s} fasta -0 /dev/null {o} > {f}'.format(
+                    s=samtoolscmd,o=out,u=unmapped,f=uf)
+            #print (cmd)
+            tmp = subprocess.check_output(cmd, shell=True)
     return
 
 def build_bowtie_index(fastafile, path=None):

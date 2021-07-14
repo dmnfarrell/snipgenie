@@ -70,7 +70,8 @@ if not os.path.exists(config_path):
     except:
         os.makedirs(config_path)
 
-defaults = {'threads':None, 'labelsep':'_','trim':False, 'quality':25,
+defaults = {'threads':None, 'labelsep':'_','trim':False, 'unmapped':False,
+            'quality':25,
             'aligner': 'bwa', 'species': None,
             'filters': default_filter, 'custom_filters': False, 'mask': None,
             'reference': None, 'gb_file': None, 'overwrite':False,
@@ -189,15 +190,24 @@ def check_samples_aligned(samples, outdir):
     print ('%s/%s samples already aligned' %(len(found),len(x)))
     return
 
-def align_reads(samples, idx, outdir='mapped', callback=None, aligner='bwa', **kwargs):
+def align_reads(samples, idx, outdir='mapped', callback=None, aligner='bwa',
+                unmapped=None, **kwargs):
     """
     Align multiple files. Requires a dataframe with a 'sample' column to indicate
     paired files grouping. If a trimmed column is present these files will align_reads
     instead of the raw ones.
+    Args:
+        samples: dataframe with sample names
+        idx: bwa index name
+        outdir: output folder
+        unmapped_dir: folder for unmapped files if required
     """
 
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
+    if unmapped != None and not os.path.exists(unmapped):
+        os.makedirs(unmapped, exist_ok=True)
+
     new = []
     samtoolscmd = tools.get_cmd('samtools')
     for name,df in samples.groupby('sample'):
@@ -214,8 +224,12 @@ def align_reads(samples, idx, outdir='mapped', callback=None, aligner='bwa', **k
             #unpaired reads
             files.append(None)
         out = os.path.join(outdir,name+'.bam')
+        #if unmapped != None:
+        #    un = os.path.join(unmapped,name+'.bam')
+        #else:
+        #    un = None
         if aligner == 'bwa':
-            aligners.bwa_align(files[0],files[1], idx=idx, out=out, **kwargs)
+            aligners.bwa_align(files[0],files[1], idx=idx, out=out, unmapped=unmapped, **kwargs)
         elif aligner == 'bowtie':
             idx = os.path.splitext(os.path.basename(idx))[0]
             aligners.bowtie_align(files[0],files[1], idx=idx, out=out, **kwargs)
@@ -563,8 +577,6 @@ def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4, **kwargs)
     kwargs are passed to variant_calling method
     """
 
-    if gff_file!=None:
-        tools.gff_bcftools_format(ref, gff_file)
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
     df = get_samples(bam_files, sep='_')
@@ -721,16 +733,22 @@ class WorkFlow(object):
         print ('--------------')
         print ('Using reference genome: %s' %self.reference)
         path = os.path.join(self.outdir, 'mapped')
+        if self.unmapped == True:
+            unmapped = os.path.join(self.outdir, 'unmapped')
+        else:
+            unmapped = None
         check_samples_aligned(samples, path)
         samples = align_reads(samples, idx=self.reference, outdir=path,
-                        aligner=self.aligner,
+                        aligner=self.aligner, unmapped=unmapped,
                         threads=self.threads, overwrite=self.overwrite)
         print ()
         print ('calling variants')
         print ('----------------')
         bam_files = list(samples.bam_file.unique())
-        self.vcf_file = variant_calling(bam_files, self.reference, self.outdir, threads=self.threads,
-                                        gff_file=self.gff_file, filters=self.filters,
+        self.vcf_file = variant_calling(bam_files, self.reference, self.outdir,
+                                        threads=self.threads,
+                                        gff_file=self.gff_file,
+                                        filters=self.filters,
                                         mask=self.mask,
                                         custom_filters=self.custom_filters,
                                         overwrite=self.overwrite,
@@ -773,6 +791,9 @@ class WorkFlow(object):
             ls = len(smat)
             trees.convert_branch_lengths(treefile,os.path.join(self.outdir,'tree.newick'), ls)
         print ()
+
+        #check unmapped reads
+
         return
 
 def test_run():
@@ -816,6 +837,8 @@ def main():
                         help="overwrite intermediate files")
     parser.add_argument("-T", "--trim", dest="trim", action="store_true", default=False,
                         help="whether to trim fastq files" )
+    parser.add_argument("-U", "--unmapped", dest="unmapped", action="store_true", default=False,
+                        help="whether to save unmapped reads" )
     parser.add_argument("-Q", "--quality", dest="quality", default=25,
                         help="right trim quality, default 25")
     parser.add_argument("-f", "--filters", dest="filters", default=default_filter,
@@ -827,7 +850,7 @@ def main():
     parser.add_argument("-a", "--aligner", dest="aligner", default='bwa',
                         help="aligner to use")
     parser.add_argument("-b", "--buildtree", dest="buildtree", action="store_true", default=False,
-                        help="whether to try to build a phylogenetic tree" )
+                        help="whether to build a phylogenetic tree, requires RaXML" )
     parser.add_argument("-N", "--bootstraps", dest="bootstraps", default=100,
                         help="number of bootstraps to build tree")
     parser.add_argument("-o", "--outdir", dest="outdir",

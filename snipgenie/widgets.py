@@ -772,6 +772,11 @@ class SimpleBamViewer(QDialog):
         bl.addWidget(zoominbtn)
         zoominbtn.clicked.connect(self.zoom_in)
 
+        self.startw = QLineEdit()
+        bl.addWidget(self.startw)
+        self.startw.setMaximumWidth(100)
+        self.startw.returnPressed.connect(self.goto)
+
         self.geneselect = QComboBox()
         self.geneselect.currentIndexChanged.connect(self.find_gene)
         bl.addWidget(self.geneselect)
@@ -784,8 +789,6 @@ class SimpleBamViewer(QDialog):
         self.font.setPointSize(self.fontsize)
         self.font.setStyleHint(QFont.TypeWriter)
         self.textview.setFont(self.font)
-        #self.textview.setAutoFillBackground(True)
-        #self.textview.setStyleSheet("QTextEdit { background-color: rgb(0, 0, 0); }")
         l.addWidget(self.textview)
 
         bottom = QWidget()
@@ -839,6 +842,12 @@ class SimpleBamViewer(QDialog):
         sl.setMaximum(length)
         sl.setTickInterval(length/20)
         self.redraw()
+        return
+
+    def goto(self):
+
+        loc = int(self.startw.text())
+        self.redraw(loc)
         return
 
     def find_gene(self):

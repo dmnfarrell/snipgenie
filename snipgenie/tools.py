@@ -216,7 +216,7 @@ def get_blast_results(filename):
     return res
 
 def local_blast(database, query, output=None, maxseqs=50, evalue=0.001,
-                    compress=False, cmd='blastn', cpus=4, show_cmd=False, **kwargs):
+                    compress=False, cmd='blastn', threads=4, show_cmd=False, **kwargs):
     """Blast a local database.
     Args:
         database: local blast db name
@@ -232,7 +232,7 @@ def local_blast(database, query, output=None, maxseqs=50, evalue=0.001,
     cline = NcbiblastnCommandline(query=query, cmd=cmd, task='blastn', db=database,
                                  max_target_seqs=maxseqs,
                                  outfmt=outfmt, out=output,
-                                 evalue=evalue, num_threads=cpus, **kwargs)
+                                 evalue=evalue, num_threads=threads, **kwargs)
     if show_cmd == True:
         print (cline)
     stdout, stderr = cline()
@@ -333,6 +333,18 @@ def fastq_to_dataframe(filename, size=1000):
     df = pd.DataFrame(res, columns=['id','seq'])
     df['length'] = df.seq.str.len()
     return df
+
+def bam_to_fastq(filename):
+    """bam to fastq using samtools"""
+
+    name = os.path.basename(filename,threads=4)
+
+    cmd = '{s} fastq -@ {t} {f} \
+    -1 {n}_R1.fastq.gz -2 {n}_R2.fastq.gz \
+    -0 /dev/null -s /dev/null -n'.format(s=samtoolscmd,f=filename,n=name,t=threads)
+    print (cmd)
+    subprocess.check_output(cmd, shell=True)
+    return
 
 def fastq_to_fasta(filename, out, size=1000):
     """Convert fastq to fasta

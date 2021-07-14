@@ -65,38 +65,39 @@ Run `snipgenie` for the cli or `snipgenie-gui` for the desktop version. You requ
 
 This will run the entire process based on a set of options given at the terminal::
 ```
--h, --help            show this help message and exit
--i FILE, --input FILE
-                      input folder(s)
--e LABELSEP, --labelsep LABELSEP
-                      symbol to split the sample labels on
--r FILE, --reference FILE
-                      reference genome filename
--S SPECIES, --species SPECIES
-                      set the species reference genome, overrides -r
--g FILE, --genbank_file FILE
-                      annotation file, optional
--t THREADS, --threads THREADS
-                      cpu threads to use                      
--w, --overwrite       overwrite intermediate files
--T, --trim            whether to trim fastq files
--Q QUALITY, --quality QUALITY
-                      right trim quality, default 25
--f FILTERS, --filters FILTERS
-                      variant calling post-filters
--m MASK, --mask MASK  mask regions with bed file
--c, --custom          apply custom filters (proximity filter)
--a ALIGNER, --aligner ALIGNER
-                      aligner to use
--b, --buildtree       whether to try to build a phylogenetic tree
--N BOOTSTRAPS, --bootstraps BOOTSTRAPS
-                      number of bootstraps to build tree
--o FILE, --outdir FILE
-                      Results folder
--q, --qc              Get version
--d, --dummy           Check samples but don't run
--x, --test            Test run
--v, --version         Get version
+  -h, --help            show this help message and exit
+  -i FILE, --input FILE
+                        input folder(s)
+  -e LABELSEP, --labelsep LABELSEP
+                        symbol to split the sample labels on
+  -r FILE, --reference FILE
+                        reference genome filename
+  -S SPECIES, --species SPECIES
+                        set the species reference genome, overrides -r
+  -g FILE, --genbank_file FILE
+                        annotation file, optional
+  -t THREADS, --threads THREADS
+                        cpu threads to use
+  -w, --overwrite       overwrite intermediate files
+  -T, --trim            whether to trim fastq files
+  -U, --unmapped        whether to save unmapped reads
+  -Q QUALITY, --quality QUALITY
+                        right trim quality, default 25
+  -f FILTERS, --filters FILTERS
+                        variant calling post-filters
+  -m MASK, --mask MASK  mask regions from a bed file
+  -c, --custom          apply custom filters
+  -a ALIGNER, --aligner ALIGNER
+                        aligner to use
+  -b, --buildtree       whether to build a phylogenetic tree, requires RaXML
+  -N BOOTSTRAPS, --bootstraps BOOTSTRAPS
+                        number of bootstraps to build tree
+  -o FILE, --outdir FILE
+                        Results folder
+  -q, --qc              Get version
+  -d, --dummy           Check samples but don't run
+  -x, --test            Test run
+  -v, --version         Get version
 ```
 
 ### Examples

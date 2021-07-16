@@ -8,6 +8,7 @@ CHANGES
 * changes to output files, snps and indels now output
 * snps file made after filtering of calls
 * make tree with snp branch lengths
+* can save unmapped reads
 
 0.3.0
 -----

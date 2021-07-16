@@ -337,8 +337,8 @@ def fastq_to_dataframe(filename, size=1000):
 def bam_to_fastq(filename):
     """bam to fastq using samtools"""
 
+    samtoolscmd = get_cmd('samtools')
     name = os.path.basename(filename,threads=4)
-
     cmd = '{s} fastq -@ {t} {f} \
     -1 {n}_R1.fastq.gz -2 {n}_R2.fastq.gz \
     -0 /dev/null -s /dev/null -n'.format(s=samtoolscmd,f=filename,n=name,t=threads)
@@ -722,7 +722,8 @@ def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False, omit=
 def samtools_flagstat(filename):
     """Parse samtools flagstat output into dictionary"""
 
-    cmd = 'samtools flagstat %s' %filename
+    samtoolscmd = get_cmd('samtools')
+    cmd = '{s} flagstat {f}'.format(f=filename,s=samtoolscmd)
     tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
     x = tmp.split('\n')
     x = [int(i.split('+')[0]) for i in x[:-1]]

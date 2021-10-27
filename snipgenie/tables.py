@@ -59,25 +59,20 @@ class DataFrameTable(QTableView):
         #self.setSelectionBehavior(QTableView.SelectColumns)
         #self.horizontalHeader = ColumnHeader()
         header = self.horizontalHeader()
-        #header.setResizeMode(QHeaderView.ResizeToContents)
         vh = self.verticalHeader()
         vh.setVisible(True)
         vh.setDefaultSectionSize(28)
         hh = self.horizontalHeader()
         hh.setVisible(True)
-        #hh.setStretchLastSection(True)
-        #hh.setSectionResizeMode(QHeaderView.Interactive)
         hh.setSectionsMovable(True)
         hh.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         hh.customContextMenuRequested.connect(self.columnHeaderMenu)
         hh.sectionClicked.connect(self.columnClicked)
         self.setDragEnabled(True)
-        #self.setSortingEnabled(True)
         self.viewport().setAcceptDrops(True)
         self.setDropIndicatorShown(True)
         self.resizeColumnsToContents()
         self.setCornerButtonEnabled(True)
-        self.setSortingEnabled(True)
 
         self.font = QFont("Arial", fontsize)
         #print (fontsize)
@@ -85,8 +80,8 @@ class DataFrameTable(QTableView):
         tm = DataFrameModel(dataframe)
         self.setModel(tm)
         self.model = tm
-        #self.resizeColumnsToContents()
         self.setWordWrap(False)
+        self.setCornerButtonEnabled(True)
         return
 
     def createToolbar(self):
@@ -163,32 +158,38 @@ class DataFrameTable(QTableView):
     def showSelection(self, item):
 
         cellContent = item.data()
-        print(cellContent)  # test
+        #print(cellContent)  # test
         row = item.row()
         model = item.model()
         columnsTotal= model.columnCount(None)
         return
 
     def getSelectedRows(self):
-        rows=[]
-        for idx in self.selectionModel().selectedRows():
-            rows.append(idx.row())
+
+        sm = self.selectionModel()
+        rows = [(i.row()) for i in sm.selectedIndexes()]
+        rows = list(dict.fromkeys(rows).keys())
         return rows
 
     def getSelectedColumns(self):
-        #indexes = self.selectionModel().selectedIndexes()
-        return self.selectionModel().selectedColumns()
+        """Get selected column indexes"""
+
+        sm = self.selectionModel()
+        cols = [(i.column()) for i in sm.selectedIndexes()]
+        cols = list(dict.fromkeys(cols).keys())
+        return cols
 
     def getSelectedDataFrame(self):
+        """Get selection as a dataframe"""
 
         df = self.model.df
-        #print (self.selectionModel().selectedRows())
-        rows=[]
-        for idx in self.selectionModel().selectedRows():
-            rows.append(idx.row())
-        cols=[]
-        #print (self.selectionModel().selectedColumns())
-        return df.iloc[rows]
+        sm = self.selectionModel()
+        rows = [(i.row()) for i in sm.selectedIndexes()]
+        cols = [(i.column()) for i in sm.selectedIndexes()]
+        #get unique rows/cols keeping order
+        rows = list(dict.fromkeys(rows).keys())
+        cols = list(dict.fromkeys(cols).keys())
+        return df.iloc[rows,cols]
 
     def handleDoubleClick(self, item):
 
@@ -219,7 +220,7 @@ class DataFrameTable(QTableView):
         if not answer:
             return
         self.storeCurrent()
-        print (rows, cols)
+        #print (rows, cols)
         self.model.df.iloc[rows,cols] = np.nan
         return
 
@@ -237,13 +238,18 @@ class DataFrameTable(QTableView):
         column = self.model.df.columns[idx]
         #model = self.model
         menu = QMenu(self)
-        #setIndexAction = menu.addAction("Set as Index")
+        sortAction = menu.addAction("Sort \u2193")
+        sortDescAction = menu.addAction("Sort \u2191")
         deleteColumnAction = menu.addAction("Delete Column")
         renameColumnAction = menu.addAction("Rename Column")
         addColumnAction = menu.addAction("Add Column")
         #sortAction = menu.addAction("Sort By")
         action = menu.exec_(self.mapToGlobal(pos))
-        if action == deleteColumnAction:
+        if action == sortAction:
+            self.sort(idx)
+        elif action == sortDescAction:
+            self.sort(idx, ascending=False)
+        elif action == deleteColumnAction:
             self.deleteColumn(column)
         elif action == renameColumnAction:
             self.renameColumn(column)
@@ -354,6 +360,18 @@ class DataFrameTable(QTableView):
             self.refresh()
         return
 
+    def sort(self, idx, ascending=True):
+        """Sort by selected columns"""
+
+        df = self.model.df
+        sel = self.getSelectedColumns()
+        if len(sel)>1:
+            for i in sel:
+                self.model.sort(i, ascending)
+        else:
+            self.model.sort(idx, ascending)
+        return
+
 class DataFrameModel(QtCore.QAbstractTableModel):
     def __init__(self, dataframe=None, *args):
         super(DataFrameModel, self).__init__()
@@ -422,12 +440,12 @@ class DataFrameModel(QtCore.QAbstractTableModel):
             return self.df.index[col]
         return None
 
-    def sort(self, Ncol, order):
+    def sort(self, idx, ascending=True):
         """Sort table by given column number """
 
         self.layoutAboutToBeChanged.emit()
-        col = self.df.columns[Ncol]
-        self.df = self.df.sort_values(col)
+        col = self.df.columns[idx]
+        self.df = self.df.sort_values(col, ascending=ascending)
         self.layoutChanged.emit()
         return
 
@@ -499,7 +517,7 @@ class FilesTable(DataFrameTable):
     def edit(self, index, trigger, event):
         """Override edit to disable editing of first two columns"""
 
-        if index.column() < 5:
+        if index.column() < 10:
             return False
         else:
             QTableView.edit(self, index, trigger, event)
@@ -511,7 +529,7 @@ class FilesTable(DataFrameTable):
     def resizeColumns(self):
 
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        #self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         return
 
     def deleteRows(self, rows):

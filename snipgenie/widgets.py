@@ -535,8 +535,13 @@ class DynamicDialog(QDialog):
         return kwds
 
 class Editor(QTextEdit):
-    def __init__(self, parent=None, **kwargs):
+    def __init__(self, parent=None, fontsize=12, **kwargs):
         super(Editor, self).__init__(parent, **kwargs)
+        font = QFont("Monospace")
+        font.setPointSize(fontsize)
+        font.setStyleHint(QFont.TypeWriter)
+        self.setFont(font)
+        return
 
     def zoom(self, delta):
         if delta < 0:

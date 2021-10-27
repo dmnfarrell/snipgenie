@@ -858,7 +858,7 @@ def get_spoligotype(filename, reads_limit=500000, threshold=2):
         else:
             s.append('0')
     s =''.join(s)
-    print (s)
+    #print (s)
     return s
 
 def get_sb_number(binary_str):

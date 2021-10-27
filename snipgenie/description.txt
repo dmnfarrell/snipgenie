@@ -1,30 +1,73 @@
 Background
 ----------
 
-This is a Python package for doing variant calling and making phylogenies using
-WGS data from microbial species.
+SNiPgenie is a tool for microbial variant calling and phylogenetic analysis from
+raw read data. It was primarily written to be used with bacterial isolates of M. bovis
+but can be applied to other species. You need a good quality reference genome to align to.
 
 Dependencies
 ------------
 
-numpy
-pandas
-biopython
-matplotlib
-future
-pyside2 (for gui only)
+* numpy
+* pandas
+* biopython
+* matplotlib
+* pyvcf
+* pyfaidx
+* bcbio_gff
+* pyside2 (for gui only)
+
+Other binaries required:
+
+* bwa
+* samtools
+* bcftools
+* tabix
+* parallel
+
+These binaries can be installed with apt in Ubuntu::
+
+  sudo apt install bwa samtools bcftools tabix parallel
 
 Installation
 ------------
 
-  clone the repo and run setup.py
+From pypi::
+
+  pip install snipgenie
+
+From github::
+
+  pip install -e git+https://github.com/dmnfarrell/snipgenie.git#egg=snipgenie
 
 Usage
 -----
 
-  pathogenie
+Call with your own reference fasta file::
+
+  snipgenie -r reference.fa -i data_files -o results
+
+Use an in built species genome as reference. This will also supply an annotation file.
+The current options are `Mbovis-AF212297, MTB-H37Rv, MAP-K10, M.smegmatis-MC2155`::
+
+  snipgenie -S Mbovis-AF212297 -i data_files -o results
+
+
+Provide more than one folder::
+
+  snipgenie -r reference.fa -i data_files1 -i data_files2 -o results
+
+
+Provide an annotation (genbank format) for consequence calling::
+
+  snipgenie -r reference.fa -g reference.gb -i data_files -o results
+
+Add your own filters and provide threads::
+
+  snipgenie -r reference.fa -i data_files -t 8 -o results` \
+  -f 'QUAL>=40 && INFO/DP>=20 && MQ>40'
 
 Links
 -----
 
-* https://github.com/dmnfarrell/snpgenie
+* https://github.com/dmnfarrell/snipgenie

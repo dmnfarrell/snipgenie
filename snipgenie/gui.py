@@ -29,7 +29,7 @@ import pandas as pd
 import numpy as np
 import pylab as plt
 from Bio import SeqIO
-from . import tools, aligners, app, widgets, tables, plotting, trees
+from . import tools, aligners, app, appnew, widgets, tables, plotting, trees
 
 home = os.path.expanduser("~")
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
@@ -60,6 +60,7 @@ class App(QMainWindow):
         self.recent_files = ['']
         self.main.setFocus()
         self.setCentralWidget(self.main)
+        self.create_tool_bar()
         self.setup_gui()
         self.load_settings()
         self.show_recent_files()
@@ -137,6 +138,40 @@ class App(QMainWindow):
         self.masklabel.setText(self.mask_file)
         return
 
+    def create_tool_bar(self):
+        """Create main toolbar"""
+
+        items = {'New project': {'action': lambda: self.new_project(ask=True),'file':'document-new'},
+                 'Open': {'action':self.load_project,'file':'document-open'},
+                 'Save': {'action': lambda: self.save_project(),'file':'save'},
+                 'Zoom out': {'action':self.zoom_out,'file':'zoom-out'},
+                 'Zoom in': {'action':self.zoom_in,'file':'zoom-in'},
+                 'Align Reads': {
+                    'action': lambda: self.run_threaded_process(self.align_files, self.alignment_completed),
+                    'file':'align-reads'},
+                 'Call Variants': {
+                    'action': lambda: self.run_threaded_process(self.variant_calling, self.processing_completed),
+                    'file':'call-variants'},
+                 'Make Phylogeny': {
+                    'action': lambda: self.run_threaded_process(self.make_phylo_tree, self.phylogeny_completed),
+                    'file':'phylogeny'},
+                 'Quit': {'action':self.quit,'file':'application-exit'}
+                }
+
+        toolbar = QToolBar("Main Toolbar")
+        self.addToolBar(toolbar)
+        for i in items:
+            if 'file' in items[i]:
+                iconfile = os.path.join(iconpath,items[i]['file']+'.png')
+                icon = QIcon(iconfile)
+            else:
+                icon = QIcon.fromTheme(items[i]['icon'])
+            btn = QAction(icon, i, self)
+            btn.triggered.connect(items[i]['action'])
+            #btn.setCheckable(True)
+            toolbar.addAction(btn)
+        return
+
     def setup_gui(self):
         """Add all GUI elements"""
 
@@ -190,13 +225,9 @@ class App(QMainWindow):
         self.right_tabs.setTabsClosable(True)
         self.right_tabs.tabCloseRequested.connect(self.close_right_tab)
         l2.addWidget(self.right_tabs)
-        self.info = widgets.Editor(right, readOnly=True)
-        font = QFont("Monospace")
-        font.setPointSize(9)
-        font.setStyleHint(QFont.TypeWriter)
-        self.info.setFont(font)
+        self.info = widgets.Editor(right, readOnly=True, fontsize=12)
         self.right_tabs.addTab(self.info, 'log')
-        self.info.setText("Welcome")
+        self.info.append("Welcome")
         self.m.setSizes([50,200,150])
         self.m.setStretchFactor(1,0)
 
@@ -219,6 +250,11 @@ class App(QMainWindow):
         self.statusBar.addWidget(self.progressbar, 3)
         self.progressbar.setAlignment(Qt.AlignRight)
         self.setStatusBar(self.statusBar)
+
+        #redirect stdout
+        self._stdout = StdoutRedirect()
+        self._stdout.start()
+        self._stdout.printOccur.connect(lambda x : self.info.insertPlainText(x))
         return
 
     @QtCore.Slot(int)
@@ -297,7 +333,8 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.variant_calling, self.processing_completed))
         self.analysis_menu.addAction('Create SNP alignment',
             lambda: self.run_threaded_process(self.snp_alignment, self.snp_align_completed))
-        self.analysis_menu.addAction('Make Phylogeny', self.make_phylo_tree)
+        self.analysis_menu.addAction('Make Phylogeny',
+            lambda: self.run_threaded_process(self.make_phylo_tree, self.phylogeny_completed))
         self.analysis_menu.addSeparator()
         self.analysis_menu.addAction('Run Workflow', self.run)
 
@@ -472,6 +509,7 @@ class App(QMainWindow):
             self.tree_viewer()
             self.treeviewer.loadData(data['treeviewer'])
         self.add_recent_file(filename)
+        self.check_fastq_table()
         return
 
     def load_project_dialog(self):
@@ -538,6 +576,13 @@ class App(QMainWindow):
         self.treefile = None
         return
 
+    def check_fastq_table(self):
+        """Update samples file to reflect table"""
+
+        df = self.fastq_table.model.df
+        app.write_samples(df, self.outputdir)
+        return
+
     def load_fastq_table(self, filenames):
         """Append/Load fasta inputs into table"""
 
@@ -550,11 +595,13 @@ class App(QMainWindow):
         kwds = self.opts.kwds
         df = self.fastq_table.model.df
         new = app.get_samples(filenames, sep=kwds['labelsep'])
-        new['read_length'] = new.filename.apply(tools.get_fastq_info)
+        #pivoted
+        new = app.get_pivoted_samples(new)
+        new['read_length'] = new.filename1.apply(tools.get_fastq_info)
 
         if len(df)>0:
             new = pd.concat([df,new],sort=False).reset_index(drop=True)
-            new = new.drop_duplicates('filename')
+            new = new.drop_duplicates('filename1')
         self.fastq_table.setDataFrame(new)
         self.fastq_table.resizeColumns()
         app.write_samples(df, self.outputdir)
@@ -682,7 +729,8 @@ class App(QMainWindow):
             if reply == QMessageBox.Cancel:
                 return
             elif reply == QMessageBox.Yes:
-                self.fastq_table.model.df = pd.read_csv(results_file)
+                df = pd.read_csv(results_file)
+                self.fastq_table.model.df = df
                 self.fastq_table.refresh()
                 self.results['vcf_file'] = os.path.join(self.outputdir, 'filtered.vcf.gz')
         self.outdirLabel.setText(self.outputdir)
@@ -733,15 +781,16 @@ class App(QMainWindow):
         if retval == 0:
             return
         if self.ref_genome == None:
-            self.show_info('no reference genome!')
+            print('no reference genome!')
             return
         self.running = True
         self.opts.applyOptions()
         kwds = self.opts.kwds
         overwrite = kwds['overwrite']
         df = self.fastq_table.model.df
-        #rows = self.fastq_table.getSelectedRows()
-        #df = df.loc[rows]
+        rows = self.fastq_table.getSelectedRows()
+        new = df.loc[rows]
+        #print (new)
         msg = 'Aligning reads..\nThis may take some time.'
         progress_callback.emit(msg)
         ref = self.ref_genome
@@ -754,14 +803,25 @@ class App(QMainWindow):
         path = os.path.join(self.outputdir, 'mapped')
         if not os.path.exists(path):
             os.makedirs(path)
-        samples = app.align_reads(df, idx=ref, outdir=path, overwrite=overwrite, threads=kwds['threads'],
+        new = appnew.align_reads(new, idx=ref, outdir=path, overwrite=overwrite,
+                        threads=kwds['threads'],
                         aligner=kwds['aligner'],
                         callback=progress_callback.emit)
-        samples.to_csv(os.path.join(self.outputdir,'samples.csv'),index=False)
-        summ = app.results_summary(samples)
-        summ.to_csv(os.path.join(self.outputdir,'summary.csv'),index=False)
+        self.update_table(new)
+        #df.to_csv(os.path.join(self.outputdir,'samples.csv'),index=False)
+        #summ = appnew.results_summary(samples)
+        #summ.to_csv(os.path.join(self.outputdir,'summary.csv'),index=False)
         #rewrite samples in case check_missing
-        app.write_samples(samples, self.outputdir)
+        #appnew.write_samples(df, self.outputdir)
+        return
+
+    def update_table(self, new):
+        """Update table with changed rows"""
+
+        df = self.fastq_table.model.df
+        print (new)
+        cols = new.columns
+        df.loc[df['sample'].isin(new['sample']), cols] = new[cols]
         return
 
     def variant_calling(self, progress_callback=None):
@@ -829,7 +889,7 @@ class App(QMainWindow):
         self.opts.applyOptions()
         kwds = self.opts.kwds
         vcf_file = self.results['vcf_file']
-        progress_callback.emit('Making SNP alignment')
+        print('Making SNP alignment')
         result, smat = tools.fasta_alignment_from_vcf(vcf_file,
                                                 callback=progress_callback.emit)
         #print (result)
@@ -849,7 +909,8 @@ class App(QMainWindow):
         self.show_snpdist()
         return
 
-    def make_phylo_tree(self, method='fasttree'):
+    def make_phylo_tree(self, progress_callback=None, method='raxml'):
+        """Make phylogenetic tree"""
 
         corefasta = os.path.join(self.outputdir, 'core.fa')
         bootstraps = 100
@@ -860,11 +921,14 @@ class App(QMainWindow):
             outfile = os.path.join(self.outputdir,'fasttree.newick')
             treefile = trees.run_fasttree(corefasta, bootstraps=bootstraps, outpath=self.outputdir)
 
-        self.show_tree()
         self.treefile = outfile
         return
 
+    def phylogeny_completed(self):
+        self.show_tree()
+
     def show_tree(self):
+        """Show current tree"""
 
         self.tree_viewer()
         filename = os.path.join(self.outputdir,'RAxML_bipartitions.variants')
@@ -873,6 +937,7 @@ class App(QMainWindow):
         return
 
     def tree_viewer(self):
+        """Show tree viewer"""
 
         from . import phylo
         if not hasattr(self, 'treeviewer'):
@@ -902,10 +967,11 @@ class App(QMainWindow):
     def processing_completed(self):
         """Generic process completed"""
 
-        self.info.append("finished")
+        #self.info.append("finished")
         self.progressbar.setRange(0,1)
         self.running = False
         self.fastq_table.refresh()
+        print ('finished')
         return
 
     def alignment_completed(self):
@@ -938,7 +1004,7 @@ class App(QMainWindow):
 
     def progress_fn(self, msg):
 
-        print (msg)
+        #print (msg)
         self.info.append(msg)
         self.info.verticalScrollBar().setValue(1)
         return
@@ -954,26 +1020,27 @@ class App(QMainWindow):
         return
 
     def quality_summary(self, row):
-        """Summary of a single fastq file"""
+        """Summary of a single sample, both files"""
 
         df = self.fastq_table.model.df
         row = self.fastq_table.getSelectedRows()[0]
         data = df.iloc[row]
-        name = 'qual:'+data['name']
-        if name in self.get_tab_names():
-            return
-        w = widgets.PlotViewer(self)
-        fig,ax = plt.subplots(2,1, figsize=(7,5), dpi=65, facecolor=(1,1,1), edgecolor=(0,0,0))
-        axs=ax.flat
-        if not os.path.exists(data.filename):
-            self.show_info('This file is missing.')
-            return
-        tools.plot_fastq_qualities(data.filename, ax=axs[0])
-        tools.plot_fastq_gc_content(data.filename, ax=axs[1])
-        plt.tight_layout()
-        w.show_figure(fig)
-        i = self.tabs.addTab(w, name )
-        self.tabs.setCurrentIndex(i)
+        for name,fname in zip([data.name1, data.name2], [data.filename1, data.filename2]):
+            label = 'qual:'+name
+            if label in self.get_tab_names():
+                return
+            w = widgets.PlotViewer(self)
+            fig,ax = plt.subplots(2,1, figsize=(7,5), dpi=65, facecolor=(1,1,1), edgecolor=(0,0,0))
+            axs=ax.flat
+            if not os.path.exists(fname):
+                self.show_info('This file is missing.')
+                return
+            tools.plot_fastq_qualities(fname, ax=axs[0])
+            tools.plot_fastq_gc_content(fname, ax=axs[1])
+            plt.tight_layout()
+            w.show_figure(fig)
+            i = self.tabs.addTab(w, label )
+            self.tabs.setCurrentIndex(i)
         return
 
     def add_read_lengths(self, progress_callback):
@@ -1024,7 +1091,7 @@ class App(QMainWindow):
         df = self.fastq_table.model.df
         row = self.fastq_table.getSelectedRows()[0]
         data = df.iloc[row]
-        name = 'aln:'+data['name']
+        name = 'aln:'+data['sample']
         if name in self.get_tab_names():
             return
         #text view using samtools tview
@@ -1073,7 +1140,7 @@ class App(QMainWindow):
 
         idx = self.right_tabs.addTab(bv, 'snp dist')
         self.right_tabs.setCurrentIndex(idx)
-
+        return
 
     def show_browser_tab(self, link, name):
 
@@ -1131,30 +1198,29 @@ class App(QMainWindow):
         data = df.iloc[rows]
         snptable = snp_typing.clade_snps
         res = snp_typing.type_samples(nucmat)
-
         return
 
     def spoligotyping(self, progress_callback):
         """Mbovis spo typing tool"""
 
-        msg = 'This tool is designed for strain typing of M.bovis isolates. '
-        reply = QMessageBox.question(self, 'Continue?', msg,
-                                        QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.No:
-            return
+        #msg = 'This tool is designed for strain typing of M.bovis isolates. '
+        #reply = QMessageBox.question(self, 'Continue?', msg,
+        #                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        #if reply == QMessageBox.No:
+        #    return
 
         df = self.fastq_table.model.df
         rows = self.fastq_table.getSelectedRows()
         data = df.iloc[rows]
         res=[]
+        cols = ['sample','spotype','sb']
         for i,r in data.iterrows():
             name = r['sample']
-            s = tools.get_spoligotype(r.filename, reads_limit=500000, threshold=2)
+            s = tools.get_spoligotype(r.filename1, reads_limit=500000, threshold=2)
             sb = tools.get_sb_number(s)
-            #print (name, sb)
-            res.append([name,sb])
-        print (pd.DataFrame(res))
-
+            print (name, s, sb)
+            #set new values in place
+            df.loc[i,cols] = [name,s,sb]
         return
 
     def spotyping_completed(self):
@@ -1183,6 +1249,9 @@ class App(QMainWindow):
         from . import rdiff
         rdiff.create_rd_index()
         df = self.fastq_table.model.df
+        #get non-redundant samples with pairs (pivoted)
+        # todo
+
         rows = self.fastq_table.getSelectedRows()
         data = df.iloc[rows]
         out = os.path.join(self.outputdir,'rd_analysis')
@@ -1217,12 +1286,14 @@ class App(QMainWindow):
 
         w = self.fastq_table
         w.zoomIn()
+        self.info.zoomIn()
         return
 
     def zoom_out(self):
 
         w = self.fastq_table
         w.zoomOut()
+        self.info.zoomOut()
         return
 
     def show_info(self, msg):
@@ -1344,6 +1415,27 @@ class WorkerSignals(QtCore.QObject):
     result = QtCore.Signal(object)
     progress = QtCore.Signal(str)
 
+class StdoutRedirect(QObject):
+    printOccur = Signal(str, str, name="print")
+
+    def __init__(self, *param):
+        QObject.__init__(self, None)
+        self.daemon = True
+        self.sysstdout = sys.stdout.write
+        self.sysstderr = sys.stderr.write
+
+    def stop(self):
+        sys.stdout.write = self.sysstdout
+        sys.stderr.write = self.sysstderr
+
+    def start(self):
+        sys.stdout.write = self.write
+        sys.stderr.write = lambda msg : self.write(msg, color="red")
+
+    def write(self, s, color="black"):
+        sys.stdout.flush()
+        self.printOccur.emit(s, color)
+
 class AppOptions(widgets.BaseOptions):
     """Class to provide a dialog for global plot options"""
 
@@ -1354,14 +1446,14 @@ class AppOptions(widgets.BaseOptions):
         genomes = []
         aligners = ['bwa','subread']
         separators = ['_','-','|',';','~']
-        cpus = [str(i) for i in range(1,os.cpu_count()+1)]
+        cpus = os.cpu_count()
         self.groups = {'general':['threads','labelsep','overwrite'],
                         'trimming':['quality'],
                         'aligners':['aligner'],
                         'variant calling':['filters'],
                         'blast':['db','identity','coverage']
                        }
-        self.opts = {'threads':{'type':'combobox','default':4,'items':cpus},
+        self.opts = {'threads':{'type':'spinbox','default':4,'range':(1,cpus)},
                     'overwrite':{'type':'checkbox','default':False},
                     'labelsep':{'type':'combobox','default':'_',
                     'items':separators,'label':'label sep','editable':True},

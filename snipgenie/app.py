@@ -165,6 +165,18 @@ def get_samples(filenames, sep='-'):
     df = df.drop_duplicates('filename')
     return df
 
+def get_pivoted_samples(df):
+    """Get pivoted samples by pair, returns a table with one sample per row and
+       filenames in separate columns.
+    """
+
+    p = pd.pivot_table(df,index='sample',columns='pair',values=['filename','name'],
+                        aggfunc='first')
+    c = list(zip(p.columns.get_level_values(0),p.columns.get_level_values(1)))
+    p.columns = [i[0]+str(i[1]) for i in c]
+    p = p.reset_index()
+    return p
+
 def check_samples_unique(samples):
     """Check that sample names are unique"""
 
@@ -389,7 +401,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     #relabel samples in vcf header
     if relabel == True:
         sample_file = os.path.join(outpath,'samples.txt')
-        print (sample_file)
+        #print (sample_file)
         relabel_vcfheader(vcfout, sample_file)
 
     #filters

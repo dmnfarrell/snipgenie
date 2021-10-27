@@ -195,3 +195,12 @@ def remove_nodes(tree, names):
     for n in names:
         node = tree.search_nodes(name=n)[0]
         node.delete()
+
+def run_tree_cluster(f,dist):
+
+    import io
+    cmd = 'TreeCluster.py  -i {f} -t {d}'.format(f=f,d=dist)
+    print (cmd)
+    cl=subprocess.check_output(cmd, shell=True)
+    cl=pd.read_csv(io.BytesIO(cl),sep='\t')
+    return cl

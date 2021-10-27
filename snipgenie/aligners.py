@@ -69,10 +69,6 @@ def bwa_align(file1, file2, idx, out, threads=4, overwrite=False,
         if unmapped != None:
             f1 = os.path.join(unmapped,os.path.basename(file1))
             f2 = os.path.join(unmapped,os.path.basename(file2))
-            #cmd = '{s} view -b -f 4 {o} > {u}'.format(s=samtoolscmd,o=out,u=unmapped)
-            #cmd = '{s} view -b -f 4 {o} | {s} fastq -1 {f1} -2 {f2} \
-            #         -0 /dev/null -s /dev/null -n'.format(s=samtoolscmd,o=out,u=unmapped,f1=f1,f2=f2)
-
             uf =  os.path.join(unmapped,os.path.basename(out))+'.fasta'
             cmd = '{s} view -b -f 4 {o} | {s} fasta -0 /dev/null {o} > {f}'.format(
                     s=samtoolscmd,o=out,u=unmapped,f=uf)

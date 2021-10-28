@@ -6,7 +6,7 @@ with open('snipgenie/description.txt') as f:
 
 setup(
     name = 'snipgenie',
-    version = '0.4.0',
+    version = '0.5.0',
     description = 'variant calling and phylogenies from microbial WGS data',
     long_description = long_description,
     url='https://github.com/dmnfarrell/snipgenie',

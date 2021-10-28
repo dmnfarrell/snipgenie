@@ -566,6 +566,12 @@ class Editor(QTextEdit):
         elif action == zoomoutAction:
             self.zoom(-1)
 
+    def insert(self, txt):
+        
+        self.insertPlainText(txt)
+        self.verticalScrollBar().setValue(self.verticalScrollBar().maximum())
+        return
+
 class PlainTextEditor(QPlainTextEdit):
     def __init__(self, parent=None, **kwargs):
         super(PlainTextEditor, self).__init__(parent, **kwargs)

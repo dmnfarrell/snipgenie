@@ -2,6 +2,13 @@
 CHANGES
 =======
 
+0.5.0
+-----
+
+* changed sample table format to single rows per sample
+* updates to GUI
+* fixes to RD analysis
+
 0.4.0
 -----
 

@@ -244,13 +244,21 @@ class TreeViewer(QWidget):
         self.update()
         return
 
+    def clear(self):
+
+        self.tree = None
+        self.update()
+        return
+
     def update(self):
         """Update the plot"""
 
         import toytree
         import toyplot
 
-        if self.tree==None:
+        if self.tree == None:
+            self.browser.setHtml('')
+            self.tipitems.clear()
             return
         if type(self.tree) is toytree.Multitree.MultiTree:
             self.update_multitree()

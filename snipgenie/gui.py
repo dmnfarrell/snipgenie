@@ -225,7 +225,7 @@ class App(QMainWindow):
         self.right_tabs.setTabsClosable(True)
         self.right_tabs.tabCloseRequested.connect(self.close_right_tab)
         l2.addWidget(self.right_tabs)
-        self.info = widgets.Editor(right, readOnly=True, fontsize=12)
+        self.info = widgets.Editor(right, readOnly=True, fontsize=11)
         self.right_tabs.addTab(self.info, 'log')
         self.info.append("Welcome")
         self.m.setSizes([50,200,150])
@@ -254,7 +254,7 @@ class App(QMainWindow):
         #redirect stdout
         self._stdout = StdoutRedirect()
         self._stdout.start()
-        self._stdout.printOccur.connect(lambda x : self.info.insertPlainText(x))
+        self._stdout.printOccur.connect(lambda x : self.info.insert(x))
         return
 
     @QtCore.Slot(int)
@@ -335,8 +335,8 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.snp_alignment, self.snp_align_completed))
         self.analysis_menu.addAction('Make Phylogeny',
             lambda: self.run_threaded_process(self.make_phylo_tree, self.phylogeny_completed))
-        self.analysis_menu.addSeparator()
-        self.analysis_menu.addAction('Run Workflow', self.run)
+        #self.analysis_menu.addSeparator()
+        #self.analysis_menu.addAction('Run Workflow', self.run)
 
         self.tools_menu = QMenu('Tools', self)
         self.menuBar().addMenu(self.tools_menu)
@@ -470,6 +470,8 @@ class App(QMainWindow):
         self.proj_file = None
         self.fastq_table.setDataFrame(pd.DataFrame({'name':[]}))
         self.tabs.clear()
+        if hasattr(self, 'treeviewer'):
+            self.treeviewer.clear()
         self.ref_genome = None
         self.ref_gb = None
         self.projectlabel.setText('')
@@ -495,19 +497,20 @@ class App(QMainWindow):
         self.proj_file = filename
         self.projectlabel.setText(self.proj_file)
         self.outdirLabel.setText(self.outputdir)
-        print (self.results)
+        #print (self.results)
         #if 'vcf_file' in self.results:
         #    self.show_variants()
         if 'snp_dist' in self.results:
             self.show_snpdist()
         #load any saved maps
-        if 'gisviewer' in data.keys():
-            self.show_map()
-            self.gisviewer.loadData(data['gisviewer'])
+        #if 'gisviewer' in data.keys():
+            #self.show_map()
+            #self.gisviewer.loadData(data['gisviewer'])
         #load tree view
         if 'treeviewer' in data.keys():
             self.tree_viewer()
             self.treeviewer.loadData(data['treeviewer'])
+        self.right_tabs.setCurrentIndex(0)
         self.add_recent_file(filename)
         self.check_fastq_table()
         return
@@ -572,6 +575,13 @@ class App(QMainWindow):
         bcf = os.path.join(self.outputdir, 'raw.bcf')
         if os.path.exists(bcf):
              os.remove(bcf)
+        df = self.fastq_table.model.df
+        cols = ['bam_file','mapped','total']
+        for col in cols:        
+            if col in df.columns:
+                df = df.drop(columns=col)
+        self.fastq_table.model.df = df
+        self.fastq_table.refresh()
         self.results = {}
         self.treefile = None
         return
@@ -925,6 +935,8 @@ class App(QMainWindow):
         return
 
     def phylogeny_completed(self):
+
+        self.processing_completed()
         self.show_tree()
 
     def show_tree(self):
@@ -967,7 +979,6 @@ class App(QMainWindow):
     def processing_completed(self):
         """Generic process completed"""
 
-        #self.info.append("finished")
         self.progressbar.setRange(0,1)
         self.running = False
         self.fastq_table.refresh()
@@ -987,7 +998,7 @@ class App(QMainWindow):
     def run(self):
         """Run all steps"""
 
-        self.run_threaded_process(self.run_trimming, self.processing_completed)
+        #self.run_threaded_process(self.run_trimming, self.processing_completed)
         return
 
     def run_threaded_process(self, process, on_complete):
@@ -1235,7 +1246,6 @@ class App(QMainWindow):
     def rd_analysis(self, progress_callback):
         """Run RD analysis for MTBC species"""
 
-
         '''msg = 'This tool is for Region of Difference analysis of MTBC isolates only. '\
             'arse.'
         reply = QMessageBox.question(self, 'Continue?', msg,
@@ -1249,36 +1259,30 @@ class App(QMainWindow):
         from . import rdiff
         rdiff.create_rd_index()
         df = self.fastq_table.model.df
-        #get non-redundant samples with pairs (pivoted)
-        # todo
-
         rows = self.fastq_table.getSelectedRows()
         data = df.iloc[rows]
+        if len(data) == 0:
+            return
         out = os.path.join(self.outputdir,'rd_analysis')
-        res = rdiff.find_regions(data, out, threads=kwds['threads'],
-                                 callback=progress_callback.emit)
-        self.rd_result = res
+        res = rdiff.run_samples(data, out, threads=kwds['threads'])
+
+        X = rdiff.get_matrix(res, cutoff=0.15)
+        X['species'] = X.apply(rdiff.apply_rules,1)
+        self.rd_result = X
         return
 
     def rd_analysis_completed(self):
-        """Alignment/calling completed"""
+        """RD analysis completed"""
 
         self.info.append("finished")
         self.progressbar.setRange(0,1)
-        res = self.rd_result
-        from . import rdiff
-        X = rdiff.get_matrix(res, cutoff=0.15)
-        X['species'] = X.apply(rdiff.apply_rules,1)
+        X = self.rd_result
+        #add plot
         fig,ax = plt.subplots(1,1)
         plotting.heatmap(X.set_index('species',append=True), cmap='cubehelix',ax=ax)
-
-        table = tables.DefaultTable(self.tabs, app=self, dataframe=res)
-        self.tabs.addTab(table, 'RD analysis')
-        #add plot
         w = widgets.PlotViewer(self)
         w.show_figure(fig)
         i = self.tabs.addTab(w, 'RD')
-
         self.running = False
         return
 

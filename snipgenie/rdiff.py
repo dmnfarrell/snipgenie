@@ -54,13 +54,30 @@ def create_rd_index(names=None):
     SeqIO.write(seqs, 'RD.fa', 'fasta')
     aligners.build_bwa_index('RD.fa')
 
-def find_regions(df, path, threads=4, callback=None):
-    """Align reads to regions of difference and get coverage stats.
+def run_samples(df, path, threads=4):
+    """Run a set of samples
     Args:
         df: a samples dataframe from snpgenie
         path: folder with raw reads
+    """
+
+    res = []
+    for i,r in df.iterrows():
+        name = r['sample']
+        f1 = r.filename1
+        f2 = r.filename2
+        s = find_regions(f1, f2, path, name, threads=threads)
+        res.append(s)
+    res = pd.concat(res)
+    return res
+
+def find_regions(f1, f2, path, name, threads=4):
+    """Align reads to regions of difference and get coverage stats.
+    Args:
+        f1: first filename
+        path: folder with raw reads
     Returns:
-        dataframe of rd results
+        list of mapping values with depths
     """
 
     from io import StringIO
@@ -68,36 +85,22 @@ def find_regions(df, path, threads=4, callback=None):
     ref = 'RD.fa'
     rg = Fasta(mtbref)
     k = list(rg.keys())[0]
-    res = []
     if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)
-    #iterate over samples by grouping so we can get pairs if present
-    for i,g in df.groupby('sample'):
-        out = os.path.join(path,i+'.bam')
-        print (i)
-        if len(g) > 1:
-            f1 = g.iloc[0].filename; f2 = g.iloc[1].filename
-        else:
-            f1 = g.iloc[0].filename; f2 = None
-        if not os.path.exists(out):
-            aligners.bwa_align(f1, f2, ref, out, threads=threads, overwrite=False)
-        #get the average sequencing depth
-        cmd = 'zcat %s | paste - - - - | cut -f2 | wc -c' %f1
-        tmp = subprocess.check_output(cmd,shell=True)
-        #print (rg)
-        avdepth = int(tmp)*2/len(rg[k])
-        #print (avdepth)
-        cmd = 'samtools coverage --min-BQ 0 %s' %out
-        tmp = subprocess.check_output(cmd,shell=True)
-        s = pd.read_csv(StringIO(tmp.decode()),sep='\t')
-        s['name'] = i
-        #print (s)
-        s['ratio'] = s.meandepth/avdepth
-        res.append(s)
-        if callback != None:
-            callback(i)
-    res = pd.concat(res)
-    return res
+    out = os.path.join(path,name+'.bam')
+    if not os.path.exists(out):
+        aligners.bwa_align(f1, f2, ref, out, threads=threads, overwrite=False)
+    #get the average sequencing depth
+    cmd = 'zcat %s | paste - - - - | cut -f2 | wc -c' %f1
+    tmp = subprocess.check_output(cmd,shell=True)
+    avdepth = int(tmp)*2/len(rg[k])
+    #print (avdepth)
+    cmd = 'samtools coverage --min-BQ 0 %s' %out
+    tmp = subprocess.check_output(cmd,shell=True)
+    s = pd.read_csv(StringIO(tmp.decode()),sep='\t')
+    s['name'] = name
+    s['ratio'] = s.meandepth/avdepth
+    return s
 
 def get_matrix(res, cutoff=0.15):
     """Get presence/absence matrix for RDs"""
@@ -106,7 +109,6 @@ def get_matrix(res, cutoff=0.15):
     X=X.clip(lower=cutoff).replace(cutoff,0)
     X=X.clip(upper=cutoff).replace(cutoff,1)
     X=X.sort_values(by=X.columns[0])
-    #print (X[:4])
     return X
 
 def apply_rules(x):

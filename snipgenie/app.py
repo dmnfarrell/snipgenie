@@ -393,8 +393,6 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     print ('calling variants..')
     vcfout = os.path.join(outpath,'calls.vcf')
     cmd = '{bc} call --ploidy 1 -m -v -o {o} {raw}'.format(bc=bcftoolscmd,o=vcfout,raw=rawbcf)
-    if callback != None:
-        callback(cmd)
     print (cmd)
     subprocess.check_output(cmd,shell=True)
 

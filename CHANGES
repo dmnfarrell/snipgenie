@@ -8,6 +8,7 @@ CHANGES
 * changed sample table format to single rows per sample
 * updates to GUI
 * fixes to RD analysis
+* added minimap2 aligner for ont reads
 
 0.4.0
 -----

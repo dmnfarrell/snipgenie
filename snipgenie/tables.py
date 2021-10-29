@@ -491,6 +491,7 @@ class FilesTable(DataFrameTable):
     def addActions(self, event, row):
 
         menu = self.menu
+        detailsAction = menu.addAction("Sample Details")
         fastqqualityAction = menu.addAction("Quality Summary")
         plotbamAction = menu.addAction("Show Read Alignments")
         mappingstatsAction = menu.addAction("Mapping Statistics")
@@ -500,7 +501,9 @@ class FilesTable(DataFrameTable):
         # Map the logical row index to a real index for the source model
         #model = self.model
         rows = self.getSelectedRows()
-        if action == fastqqualityAction:
+        if action == detailsAction:
+            self.app.sample_details(row)
+        elif action == fastqqualityAction:
             #print (row)
             self.app.quality_summary(row)
         elif action == mappingstatsAction:
@@ -515,9 +518,9 @@ class FilesTable(DataFrameTable):
         return
 
     def edit(self, index, trigger, event):
-        """Override edit to disable editing of first two columns"""
+        """Override edit to disable editing of columns"""
 
-        if index.column() < 10:
+        if index.column() < 20:
             return False
         else:
             QTableView.edit(self, index, trigger, event)
@@ -534,8 +537,9 @@ class FilesTable(DataFrameTable):
 
     def deleteRows(self, rows):
 
-        answer = QMessageBox.question(self, 'Delete Rows?',
-                             'Are you sure?', QMessageBox.Yes, QMessageBox.No)
+        answer = QMessageBox.question(self, 'Delete Entry?',
+                             'Are you sure? This will not remove the sample file.',
+                             QMessageBox.Yes, QMessageBox.No)
         if answer == QMessageBox.No:
             return
         idx = self.model.df.index[rows]

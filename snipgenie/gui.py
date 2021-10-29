@@ -29,7 +29,7 @@ import pandas as pd
 import numpy as np
 import pylab as plt
 from Bio import SeqIO
-from . import tools, aligners, app, appnew, widgets, tables, plotting, trees
+from . import tools, aligners, app, widgets, tables, plotting, trees
 
 home = os.path.expanduser("~")
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
@@ -87,7 +87,8 @@ class App(QMainWindow):
             #self.FONTSIZE = int(s.value("fontsize"))
             r = s.value("recent_files")
             if r != '':
-                self.recent_files = r.split(',')
+                rct = r.split(',')
+                self.recent_files = [f for f in rct if os.path.exists(f)]
 
         except Exception as e:
             print (e)
@@ -227,7 +228,7 @@ class App(QMainWindow):
         l2.addWidget(self.right_tabs)
         self.info = widgets.Editor(right, readOnly=True, fontsize=11)
         self.right_tabs.addTab(self.info, 'log')
-        self.info.append("Welcome")
+        self.info.append("Welcome\n")
         self.m.setSizes([50,200,150])
         self.m.setStretchFactor(1,0)
 
@@ -349,7 +350,7 @@ class App(QMainWindow):
         self.tools_menu.addAction('Show Annotation', self.show_ref_annotation)
         self.tools_menu.addAction('Plot SNP Matrix', self.plot_snp_matrix)
         #self.tools_menu.addAction('Map View', self.show_map)
-        self.tools_menu.addAction('Phylogeny', self.tree_viewer)
+        self.tools_menu.addAction('Tree Viewer', self.tree_viewer)
         self.tools_menu.addSeparator()
         self.tools_menu.addAction('Check Heterozygosity', self.check_heterozygosity)
         self.tools_menu.addAction('RD Analysis (MTBC)',
@@ -577,7 +578,7 @@ class App(QMainWindow):
              os.remove(bcf)
         df = self.fastq_table.model.df
         cols = ['bam_file','mapped','total']
-        for col in cols:        
+        for col in cols:
             if col in df.columns:
                 df = df.drop(columns=col)
         self.fastq_table.model.df = df
@@ -801,28 +802,27 @@ class App(QMainWindow):
         rows = self.fastq_table.getSelectedRows()
         new = df.loc[rows]
         #print (new)
-        msg = 'Aligning reads..\nThis may take some time.'
-        progress_callback.emit(msg)
+        print ('Aligning reads. This may take some time.')
         ref = self.ref_genome
         if kwds['aligner'] == 'bwa':
             aligners.build_bwa_index(self.ref_genome)
         elif kwds['aligner'] == 'subread':
             aligners.build_subread_index(self.ref_genome)
 
-        progress_callback.emit('Using reference genome: %s' %ref)
+        print('Using reference genome: %s' %ref)
         path = os.path.join(self.outputdir, 'mapped')
         if not os.path.exists(path):
             os.makedirs(path)
-        new = appnew.align_reads(new, idx=ref, outdir=path, overwrite=overwrite,
+        new = app.align_reads(new, idx=ref, outdir=path, overwrite=overwrite,
                         threads=kwds['threads'],
                         aligner=kwds['aligner'],
                         callback=progress_callback.emit)
         self.update_table(new)
         #df.to_csv(os.path.join(self.outputdir,'samples.csv'),index=False)
-        #summ = appnew.results_summary(samples)
+        #summ = app.results_summary(samples)
         #summ.to_csv(os.path.join(self.outputdir,'summary.csv'),index=False)
         #rewrite samples in case check_missing
-        #appnew.write_samples(df, self.outputdir)
+        #app.write_samples(df, self.outputdir)
         return
 
     def update_table(self, new):
@@ -851,9 +851,9 @@ class App(QMainWindow):
 
         gff_file = os.path.join(path, self.ref_gb+'.gff')
         tools.gff_bcftools_format(self.ref_gb, gff_file)
-        #use trimmed files if present in table
-        bam_files = list(df.bam_file.unique())
 
+        bam_files = list(df.bam_file.dropna().unique())
+        print ('Calling with %s of %s samples aligned' %(len(bam_files), len(df)))
         self.results['vcf_file'] = app.variant_calling(bam_files, self.ref_genome, path,
                                     threads=threads, relabel=True,
                                     overwrite=overwrite, filters=filters,
@@ -988,7 +988,7 @@ class App(QMainWindow):
     def alignment_completed(self):
         """Alignment/calling completed"""
 
-        self.info.append("finished")
+        print("finished")
         self.progressbar.setRange(0,1)
         df = self.fastq_table.getDataFrame()
         self.fastq_table.refresh()
@@ -1015,7 +1015,6 @@ class App(QMainWindow):
 
     def progress_fn(self, msg):
 
-        #print (msg)
         self.info.append(msg)
         self.info.verticalScrollBar().setValue(1)
         return
@@ -1028,6 +1027,16 @@ class App(QMainWindow):
         t = tables.DataFrameTable(self.tabs, dataframe=df)
         i = self.tabs.addTab(t, 'ref_annotation')
         self.tabs.setCurrentIndex(i)
+        return
+
+    def sample_details(self, row):
+
+        df = self.fastq_table.model.df
+        row = self.fastq_table.getSelectedRows()[0]
+        data = df.iloc[row]
+        pd.set_option('display.max_colwidth', None)
+        print (data)
+        print ()
         return
 
     def quality_summary(self, row):
@@ -1077,6 +1086,9 @@ class App(QMainWindow):
             return s
 
         for i,r in data.iterrows():
+            if pd.isnull(r.bam_file):
+                print ('no bam file')
+                continue
             s = get_stats(r.bam_file)
             df.loc[i,'mapped'] = s['mapped']
             df.loc[i,'total'] = s['total']
@@ -1089,6 +1101,12 @@ class App(QMainWindow):
         df = self.fastq_table.model.df
         row = self.fastq_table.getSelectedRows()[0]
         data = df.iloc[row]
+        if 'bam_file' not in df.columns:
+            print ('No bam file info. Have reads been aligned?')
+            return
+        if pd.isnull(data.bam_file):
+            print ('no bam file')
+            return
         d = tools.samtools_flagstat(data.bam_file)
         df = pd.DataFrame(d.items())
         self.info.append(data.bam_file)
@@ -1124,7 +1142,7 @@ class App(QMainWindow):
         out = os.path.join(self.outputdir,'qc_report.pdf')
         if not os.path.exists(out):
             def func(progress_callback):
-                tools.pdf_qc_reports(df.filename, out)
+                tools.pdf_qc_reports(df.filename1, out)
                 import webbrowser
                 webbrowser.open_new(out)
             self.run_threaded_process(func, self.processing_completed)
@@ -1221,8 +1239,9 @@ class App(QMainWindow):
         #    return
 
         df = self.fastq_table.model.df
-        rows = self.fastq_table.getSelectedRows()
-        data = df.iloc[rows]
+        data = self.get_selected()
+        if data is None or len(data) == 0:
+            return
         res=[]
         cols = ['sample','spotype','sb']
         for i,r in data.iterrows():
@@ -1237,7 +1256,7 @@ class App(QMainWindow):
     def spotyping_completed(self):
         """Typing completed"""
 
-        self.info.append("finished")
+        print("finished")
         self.progressbar.setRange(0,1)
         self.fastq_table.refresh()
         self.running = False
@@ -1246,22 +1265,14 @@ class App(QMainWindow):
     def rd_analysis(self, progress_callback):
         """Run RD analysis for MTBC species"""
 
-        '''msg = 'This tool is for Region of Difference analysis of MTBC isolates only. '\
-            'arse.'
-        reply = QMessageBox.question(self, 'Continue?', msg,
-                                        QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.No:
-            return'''
-
         self.running == True
         self.opts.applyOptions()
         kwds = self.opts.kwds
         from . import rdiff
         rdiff.create_rd_index()
-        df = self.fastq_table.model.df
-        rows = self.fastq_table.getSelectedRows()
-        data = df.iloc[rows]
-        if len(data) == 0:
+
+        data = self.get_selected()
+        if data is None or len(data) == 0:
             return
         out = os.path.join(self.outputdir,'rd_analysis')
         res = rdiff.run_samples(data, out, threads=kwds['threads'])
@@ -1274,9 +1285,22 @@ class App(QMainWindow):
     def rd_analysis_completed(self):
         """RD analysis completed"""
 
-        self.info.append("finished")
+        print("finished")
         self.progressbar.setRange(0,1)
+        if not hasattr(self, 'rd_result'):
+            return
         X = self.rd_result
+        df = self.fastq_table.model.df
+
+        right = X[['species']]
+        #df = df.merge(X[['species']],left_on='sample',right_index=True,how='left')
+        df = df.set_index('sample').join(right,rsuffix='_x')
+        if 'species_x' in df.columns:
+            df['species'] = df.species.fillna(df.species_x)
+            df = df.drop('species_x', axis=1)
+        df.reset_index(inplace=True)
+        self.fastq_table.model.df = df
+        self.fastq_table.refresh()
         #add plot
         fig,ax = plt.subplots(1,1)
         plotting.heatmap(X.set_index('species',append=True), cmap='cubehelix',ax=ax)
@@ -1285,6 +1309,17 @@ class App(QMainWindow):
         i = self.tabs.addTab(w, 'RD')
         self.running = False
         return
+
+    def get_selected(self):
+        """Get selected rows of fastq table"""
+
+        df = self.fastq_table.model.df
+        rows = self.fastq_table.getSelectedRows()
+        if len(rows) == 0:
+            print ('no samples selected')
+            return
+        data = df.iloc[rows]
+        return data
 
     def zoom_in(self):
 
@@ -1448,12 +1483,13 @@ class AppOptions(widgets.BaseOptions):
         self.parent = parent
         self.kwds = {}
         genomes = []
-        aligners = ['bwa','subread']
+        aligners = ['bwa','subread','minimap2']
+        platforms = ['illumina','ont']
         separators = ['_','-','|',';','~']
         cpus = os.cpu_count()
         self.groups = {'general':['threads','labelsep','overwrite'],
                         'trimming':['quality'],
-                        'aligners':['aligner'],
+                        'aligners':['aligner','platform'],
                         'variant calling':['filters'],
                         'blast':['db','identity','coverage']
                        }
@@ -1461,9 +1497,10 @@ class AppOptions(widgets.BaseOptions):
                     'overwrite':{'type':'checkbox','default':False},
                     'labelsep':{'type':'combobox','default':'_',
                     'items':separators,'label':'label sep','editable':True},
-
                     'aligner':{'type':'combobox','default':'bwa',
                     'items':aligners,'label':'aligner'},
+                    'platform':{'type':'combobox','default':'illumina',
+                    'items':platforms,'label':'platform'},
                     'db':{'type':'combobox','default':'card',
                     'items':[],'label':'database'},
                     'filters':{'type':'entry','default':app.default_filter},

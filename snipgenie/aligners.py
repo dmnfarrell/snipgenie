@@ -148,6 +148,7 @@ def build_subread_index(fastafile):
 
 def subread_align(file1, file2, idx, out, threads=2,
                 overwrite=False, verbose=True):
+    """Align reads with subread"""
 
     os.environ["SUBREAD_INDEXES"] = SUBREAD_INDEXES
     idx = os.path.join(SUBREAD_INDEXES, idx)
@@ -161,13 +162,18 @@ def subread_align(file1, file2, idx, out, threads=2,
         result = subprocess.check_output(cmd, shell=True, stderr= subprocess.STDOUT)
     return
 
-def minimap2_align(file, ref, out, threads=4, overwrite=False):
-    """Align ONT reads with minimap2"""
+def minimap2_align(file1, file2, idx, out, platform='illumina', threads=4, overwrite=False):
+    """Align illumina/ONT reads with minimap2"""
 
     samtoolscmd = tools.get_cmd('samtools')
     minimapcmd = tools.get_cmd('minimap2')
-    cmd = '{m} -t {t} -ax map-ont {r} {q} | {s} view -F 0x04 -bt - | {s} sort -o {o}'\
-    .format(r=ref,q=query,s=samtoolscmd,m=minimapcmd,o=out,t=threads)
+    if platform == 'illumina':
+        cmd = '{m} -t {t} -ax sr {r} {f1} {f2} | {s} view -F 0x04 -bt - | {s} sort -o {o}'\
+                .format(r=idx,f1=file1,f2=file2,s=samtoolscmd,m=minimapcmd,o=out,t=threads)
+    else:
+        cmd = '{m} -t {t} -ax map-ont {r} {f1} | {s} view -F 0x04 -bt - | {s} sort -o {o}'\
+                .format(r=idx,f1=file1,s=samtoolscmd,m=minimapcmd,o=out,t=threads)
     if not os.path.exists(out) or overwrite == True:
+        print (cmd)
         result = subprocess.check_output(cmd, shell=True, stderr= subprocess.STDOUT)
     return

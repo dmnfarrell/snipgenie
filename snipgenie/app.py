@@ -72,7 +72,7 @@ if not os.path.exists(config_path):
 
 defaults = {'threads':None, 'labelsep':'_','trim':False, 'unmapped':False,
             'quality':25,
-            'aligner': 'bwa', 'species': None,
+            'aligner': 'bwa', 'platform': 'illumina', 'species': None,
             'filters': default_filter, 'custom_filters': False, 'mask': None,
             'reference': None, 'gb_file': None, 'overwrite':False,
             'omit_samples': [],
@@ -184,8 +184,8 @@ def check_samples_unique(samples):
     if len(x[x>2]) > 0:
         return False
 
-def results_summary(df):
-    return df.groupby('sample').first()[['name','bam_file','read_length']].reset_index()
+#def results_summary(df):
+#    return df.groupby('sample').first()[['name','bam_file','read_length']].reset_index()
 
 def write_samples(df, path):
     """Write out sample names using dataframe from get_samples"""
@@ -202,15 +202,15 @@ def check_samples_aligned(samples, outdir):
     print ('%s/%s samples already aligned' %(len(found),len(x)))
     return
 
-def align_reads(samples, idx, outdir='mapped', callback=None, aligner='bwa',
+def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform='illumina',
                 unmapped=None, **kwargs):
     """
     Align multiple files. Requires a dataframe with a 'sample' column to indicate
     paired files grouping. If a trimmed column is present these files will align_reads
     instead of the raw ones.
     Args:
-        samples: dataframe with sample names
-        idx: bwa index name
+        df: dataframe with sample names and filenames
+        idx: index name
         outdir: output folder
         unmapped_dir: folder for unmapped files if required
     """
@@ -222,39 +222,35 @@ def align_reads(samples, idx, outdir='mapped', callback=None, aligner='bwa',
 
     new = []
     samtoolscmd = tools.get_cmd('samtools')
-    for name,df in samples.groupby('sample'):
-        #print (name)
-        if callback != None:
-            callback('aligning %s' %name)
+    for i,r in df.iterrows():
+        name = r['sample']
+        file1 = r.filename1
+        file2 = r.filename2
         if 'trimmed' in df.columns:
             files = list(df.trimmed)
             if callback != None:
-                callback('using trimmed')
-        else:
-            files = list(df.filename)
-        if len(files) == 1:
-            #unpaired reads
-            files.append(None)
+                print('using trimmed')
+
         out = os.path.join(outdir,name+'.bam')
-        #if unmapped != None:
-        #    un = os.path.join(unmapped,name+'.bam')
-        #else:
-        #    un = None
         if aligner == 'bwa':
-            aligners.bwa_align(files[0],files[1], idx=idx, out=out, unmapped=unmapped, **kwargs)
+            aligners.bwa_align(file1, file2, idx=idx, out=out, unmapped=unmapped, **kwargs)
         elif aligner == 'bowtie':
             idx = os.path.splitext(os.path.basename(idx))[0]
-            aligners.bowtie_align(files[0],files[1], idx=idx, out=out, **kwargs)
+            aligners.bowtie_align(file1, file2, idx=idx, out=out, **kwargs)
         elif aligner == 'subread':
             idx = os.path.splitext(os.path.basename(idx))[0]
-            aligners.subread_align(files[0],files[1], idx=idx, out=out, **kwargs)
+            aligners.subread_align(file1, file2, idx=idx, out=out, **kwargs)
+        elif aligner == 'minimap2':
+            #idx = os.path.splitext(os.path.basename(idx))[0]
+            aligners.minimap2_align(file1, file2, idx=idx, out=out, platform=platform, **kwargs)
         bamidx = out+'.bai'
         if not os.path.exists(bamidx) or kwargs['overwrite']==True:
+            print('aligning %s' %name)
             cmd = '{s} index {o}'.format(o=out,s=samtoolscmd)
             subprocess.check_output(cmd,shell=True)
             print (cmd)
-        index = df.index
-        samples.loc[index,'bam_file'] = os.path.abspath(out)
+        #index = df.index
+        df.loc[i,'bam_file'] = os.path.abspath(out)
         #find mean depth
         #depth = tools.get_bam_depth(out)
         #samples.loc[index,'depth'] = depth
@@ -262,9 +258,8 @@ def align_reads(samples, idx, outdir='mapped', callback=None, aligner='bwa',
         #stat = tools.samtools_flagstats(out)
         #perc = stat['mapped']/stat['total']*100
         #samples.loc[index,'perc_mapped'] = perc
-        if callback != None:
-            callback(out)
-    return samples
+
+    return df
 
 def mpileup_region(region,out,bam_files,callback=None):
     """Run bcftools for single region."""
@@ -353,8 +348,8 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None, tempd
     cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b --min-MQ 10 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
             .format(r=ref, reg=regstr, b=bam_files, o=filesstr, a=annotatestr)
     print (cmd)
-    if callback != None:
-        callback(cmd)
+    #if callback != None:
+    #    callback(cmd)
     subprocess.check_output(cmd, shell=True)
     #concat files
     cmd = 'bcftools concat {i} -O b -o {o}'.format(i=' '.join(outfiles),o=rawbcf)
@@ -393,13 +388,15 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     print ('calling variants..')
     vcfout = os.path.join(outpath,'calls.vcf')
     cmd = '{bc} call --ploidy 1 -m -v -o {o} {raw}'.format(bc=bcftoolscmd,o=vcfout,raw=rawbcf)
+    #if callback != None:
+    #    callback(cmd)
     print (cmd)
     subprocess.check_output(cmd,shell=True)
 
     #relabel samples in vcf header
     if relabel == True:
         sample_file = os.path.join(outpath,'samples.txt')
-        #print (sample_file)
+        print (sample_file)
         relabel_vcfheader(vcfout, sample_file)
 
     #filters
@@ -555,9 +552,9 @@ def trim_files(df, outpath, overwrite=False, threads=4, quality=30):
     if not os.path.exists(outpath):
         os.makedirs(outpath, exist_ok=True)
     for i,row in df.iterrows():
-        outfile = os.path.join(outpath, os.path.basename(row.filename))
+        outfile = os.path.join(outpath, os.path.basename(row.filename1))
         if not os.path.exists(outfile) or overwrite == True:
-            tools.trim_reads(row.filename, outfile, threads=threads, quality=quality, method=method)
+            tools.trim_reads(row.filename1, outfile, threads=threads, quality=quality, method=method)
             print (outfile)
         df.loc[i,'trimmed'] = outfile
     return df
@@ -590,6 +587,7 @@ def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4, **kwargs)
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
     df = get_samples(bam_files, sep='_')
+    df = app.get_pivoted_samples(df)
     write_samples(df, outdir)
     vcf_file = variant_calling(bam_files, ref, outdir, threads=threads,
                                    relabel=True, gff_file=gff_file,
@@ -685,11 +683,12 @@ class WorkFlow(object):
         else:
             self.threads = int(self.threads)
         df = get_samples(self.filenames, sep=self.labelsep)
+        df = get_pivoted_samples(df)
         if len(df) == 0:
             print ('no samples provided. files should be fastq.gz type')
             return False
 
-        df['read_length'] = df.filename.apply(tools.get_fastq_info)
+        df['read_length'] = df.filename1.apply(tools.get_fastq_info)
         self.fastq_table = df
         sample_size = len(df['sample'].unique())
         print ('%s samples were loaded:' %sample_size)
@@ -749,7 +748,8 @@ class WorkFlow(object):
             unmapped = None
         check_samples_aligned(samples, path)
         samples = align_reads(samples, idx=self.reference, outdir=path,
-                        aligner=self.aligner, unmapped=unmapped,
+                        aligner=self.aligner, platform=self.platform,
+                        unmapped=unmapped,
                         threads=self.threads, overwrite=self.overwrite)
         print ()
         print ('calling variants')
@@ -778,14 +778,14 @@ class WorkFlow(object):
         snp_dist = tools.snp_dist_matrix(aln)
         snp_dist.to_csv(os.path.join(self.outdir,'snpdist.csv'), sep=',')
 
-        #save summary tables
+        #save sample table
         samples.to_csv(os.path.join(self.outdir,'samples.csv'),index=False)
-        summ = results_summary(samples)
-        summ.to_csv(os.path.join(self.outdir,'summary.csv'),index=False)
-        self.summary = summ
+        #summ = results_summary(samples)
+        #summ.to_csv(os.path.join(self.outdir,'summary.csv'),index=False)
+        #self.summary = summ
         print ('Done. Sample summary:')
         print ('---------------------')
-        print (summ)
+        print (samples)
         print ()
 
         if self.buildtree == True:
@@ -801,7 +801,6 @@ class WorkFlow(object):
             ls = len(smat)
             trees.convert_branch_lengths(treefile,os.path.join(self.outdir,'tree.newick'), ls)
         print ()
-
         #check unmapped reads
 
         return
@@ -857,8 +856,10 @@ def main():
                         help="mask regions from a bed file" )
     parser.add_argument("-c", "--custom", dest="custom_filters", action="store_true", default=False,
                         help="apply custom filters" )
+    parser.add_argument("-p", "--platform", dest="platform", default='illumina',
+                        help="sequencing platform, change to ont if using oxford nanopore")
     parser.add_argument("-a", "--aligner", dest="aligner", default='bwa',
-                        help="aligner to use")
+                        help="aligner to use, bwa, subread, bowtie or minimap2")
     parser.add_argument("-b", "--buildtree", dest="buildtree", action="store_true", default=False,
                         help="whether to build a phylogenetic tree, requires RaXML" )
     parser.add_argument("-N", "--bootstraps", dest="bootstraps", default=100,

@@ -88,7 +88,7 @@ This will run the entire process based on a set of options given at the terminal
   -m MASK, --mask MASK  mask regions from a bed file
   -c, --custom          apply custom filters
   -a ALIGNER, --aligner ALIGNER
-                        aligner to use
+                        aligner to use, bwa, subread, bowtie or minimap2
   -b, --buildtree       whether to build a phylogenetic tree, requires RaXML
   -N BOOTSTRAPS, --bootstraps BOOTSTRAPS
                         number of bootstraps to build tree
@@ -132,6 +132,10 @@ Add your own filters and provide threads:
 snipgenie -r reference.fa -i data_files -t 8 -o results` \
  -f 'QUAL>=40 && INFO/DP>=20 && MQ>40'
 ```
+
+### Aligners
+
+You can use one of the following aligners: bwa, subread, bowtie or minimap2. These should be present on your system, unless using the Windows version. Note that for oxford nanopore reads you should use minimap2 and specify the platform as 'ont'.
 
 ### Mask file
 
@@ -178,7 +182,7 @@ csq.tsv - consequence calls (if genbank provided)
 csq_indels.tsv - consequence calls for indels
 csq.matrix - matrix of consequence calls
 snpdist.csv - comma separated distance matrix using snps
-summary.csv - summary table of samples
+samples.csv - summary table of samples
 RAxML_bipartitions.variants - ML tree if RAxML was used, optional
 tree.newick - tree with SNPs branch lengths, if RAxMl used
 ```

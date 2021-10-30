@@ -89,6 +89,8 @@ This will run the entire process based on a set of options given at the terminal
   -c, --custom          apply custom filters
   -a ALIGNER, --aligner ALIGNER
                         aligner to use, bwa, subread, bowtie or minimap2
+  -p PLATFORM, --platform PLATFORM
+                        sequencing platform, change to ont if using oxford nanopore
   -b, --buildtree       whether to build a phylogenetic tree, requires RaXML
   -N BOOTSTRAPS, --bootstraps BOOTSTRAPS
                         number of bootstraps to build tree
@@ -135,7 +137,7 @@ snipgenie -r reference.fa -i data_files -t 8 -o results` \
 
 ### Aligners
 
-You can use one of the following aligners: bwa, subread, bowtie or minimap2. These should be present on your system, unless using the Windows version. Note that for oxford nanopore reads you should use minimap2 and specify the platform as 'ont'.
+You can use any one of the following aligners: bwa, subread, bowtie or minimap2. These should be present on your system, unless using the Windows version. Note that for oxford nanopore reads you should use minimap2 and specify the platform as 'ont'.
 
 ### Mask file
 

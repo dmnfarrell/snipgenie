@@ -206,12 +206,13 @@ def setWidgetValues(widgets, values):
             elif type(w) is QPlainTextEdit:
                 w.insertPlainText(str(val))
             elif type(w) is QComboBox or type(w) is QFontComboBox:
-                w.setCurrentIndex(1)
+                index = w.findText(val)
+                w.setCurrentIndex(index)
             elif type(w) is QCheckBox:
                 w.setChecked(val)
             elif type(w) is QSlider:
                 w.setValue(val)
-            elif type(w) is QSpinBox:
+            elif type(w) in [QSpinBox,QDoubleSpinBox]:
                 w.setValue(val)
     return
 
@@ -502,6 +503,12 @@ class BaseOptions(object):
         self.applyOptions()
         return
 
+    def updateWidgets(self, kwds):
+
+        for k in kwds:
+            setWidgetValues(self.widgets, {k: kwds[k]})
+        return
+
     def increment(self, key, inc):
         """Increase the value of a widget"""
 
@@ -567,7 +574,7 @@ class Editor(QTextEdit):
             self.zoom(-1)
 
     def insert(self, txt):
-        
+
         self.insertPlainText(txt)
         self.verticalScrollBar().setValue(self.verticalScrollBar().maximum())
         return

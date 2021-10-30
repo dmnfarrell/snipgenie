@@ -91,7 +91,8 @@ def find_regions(f1, f2, path, name, threads=4):
     if not os.path.exists(out):
         aligners.bwa_align(f1, f2, ref, out, threads=threads, overwrite=False)
     #get the average sequencing depth
-    cmd = 'zcat %s | paste - - - - | cut -f2 | wc -c' %f1
+    cmd = 'zcat "%s" | paste - - - - | cut -f2 | wc -c' %f1
+
     tmp = subprocess.check_output(cmd,shell=True)
     avdepth = int(tmp)*2/len(rg[k])
     #print (avdepth)
@@ -132,3 +133,5 @@ def apply_rules(x):
             return 'BCG (Merieux)'
     elif x.RD711 == 0:
         return 'Africanum'
+    else:
+        return 'Unknown'

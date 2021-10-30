@@ -135,8 +135,10 @@ class App(QMainWindow):
         return
 
     def update_mask(self):
-
-        self.masklabel.setText(self.mask_file)
+        if self.mask_file == None:
+            self.masklabel.setText('')
+        else:
+            self.masklabel.setText(os.path.basename(self.mask_file))
         return
 
     def create_tool_bar(self):
@@ -365,7 +367,7 @@ class App(QMainWindow):
         self.settings_menu.addAction('Set Output Folder', self.set_output_folder)
         self.settings_menu.addAction('Set Reference Sequence', self.set_reference)
         self.settings_menu.addAction('Set Annnotation (genbank)', self.set_annotation)
-        self.settings_menu.addAction('Set Filters', self.set_filters)
+        #self.settings_menu.addAction('Set Filters', self.set_filters)
         self.settings_menu.addAction('Add Mask File', self.add_mask)
         self.settings_menu.addAction('Add Sample Meta Data', self.merge_meta_data)
         self.settings_menu.addAction('Clean Up Files', self.clean_up)
@@ -386,10 +388,15 @@ class App(QMainWindow):
         for name in genomes:
             seqname = genomes[name]['sequence']
             gbfile = genomes[name]['gb']
-            def func(seqname,gbfile):
+            if 'mask' in genomes[name]:
+                mask = genomes[name]['mask']
+            else:
+                mask = None
+            def func(seqname,gbfile,mask):
                 self.set_reference(seqname)
                 self.set_annotation(gbfile)
-            receiver = lambda seqname=seqname, gb=gbfile: func(seqname, gb)
+                self.set_mask(mask)
+            receiver = lambda seqname=seqname, gb=gbfile, mask=mask: func(seqname, gb, mask)
             self.presets_menu.addAction('%s' %name, receiver)
         return
 
@@ -424,7 +431,7 @@ class App(QMainWindow):
         filename = self.proj_file
         data={}
         data['inputs'] = self.fastq_table.getDataFrame()
-        keys = ['outputdir','results','ref_genome','ref_gb']
+        keys = ['outputdir','results','ref_genome','ref_gb','mask_file']
         for k in keys:
             if hasattr(self, k):
                 data[k] = self.__dict__[k]
@@ -434,7 +441,8 @@ class App(QMainWindow):
         if hasattr(self, 'treeviewer'):
             d=self.treeviewer.saveData()
             data['treeviewer'] = d
-
+        self.opts.applyOptions()
+        data['options'] = self.opts.kwds
         self.projectlabel.setText(filename)
         pickle.dump(data, open(filename,'wb'))
         self.add_recent_file(filename)
@@ -475,10 +483,12 @@ class App(QMainWindow):
             self.treeviewer.clear()
         self.ref_genome = None
         self.ref_gb = None
+        self.mask_file = None
         self.projectlabel.setText('')
         self.outdirLabel.setText(self.outputdir)
         self.clear_tabs()
         self.update_ref_genome()
+        self.update_mask()
         return
 
     def load_project(self, filename=None):
@@ -486,15 +496,18 @@ class App(QMainWindow):
 
         self.new_project()
         data = pickle.load(open(filename,'rb'))
-        keys = ['sheets','outputdir','results','ref_genome','ref_gb']
+        keys = ['sheets','outputdir','results','ref_genome','ref_gb','mask_file']
         for k in keys:
             if k in data:
                 self.__dict__[k] = data[k]
 
+        if 'options' in data:
+            self.opts.updateWidgets(data['options'])
         ft = self.fastq_table
         ft.setDataFrame(data['inputs'])
         ft.resizeColumns()
         self.update_ref_genome()
+        self.update_mask()
         self.proj_file = filename
         self.projectlabel.setText(self.proj_file)
         self.outdirLabel.setText(self.outputdir)
@@ -666,26 +679,16 @@ class App(QMainWindow):
         self.update_ref_genome()
         return
 
-    def set_filters(self):
-        """Set up variant filters"""
+    def set_mask(self, filename):
 
-        opts = {'filter':{'type':'textarea','default':app.default_filter,'width':300},
-                'mask filter': {'type':'checkbox','default':0},
-                'proximity filter': {'type':'checkbox','default':1},
-                }
-        dlg = widgets.MultipleInputDialog(self, opts, title='Variant filters',
-                            width=350,height=150)
-        dlg.exec_()
-        if not dlg.accepted:
-            return
-        kwds = dlg.values
+        self.mask_file = filename
+        self.update_mask()
 
-        return
+    def add_mask(self, filename):
+        """Add mask bed file"""
 
-    def add_mask(self, filename=None):
-
-        msg = "This will add a mask file"
-        reply = QMessageBox.question(self, 'Warning!', msg,
+        msg = "This will add a bed file as a mask. See help for format. Continue?"
+        reply = QMessageBox.question(self, 'Add bed file', msg,
                                         QMessageBox.No | QMessageBox.Yes )
         if reply == QMessageBox.No:
             return
@@ -748,10 +751,11 @@ class App(QMainWindow):
         return
 
     def check_output_folder(self):
-        """check if we have an output dir"""
+        """Check if we have an output dir"""
 
         if self.outputdir == None:
-            self.show_info('You should set an output folder from the Settings menu')
+            self.show_info('You should set an output folder from the Settings menu!',
+                        color='red')
             return 0
         return 1
 
@@ -816,6 +820,7 @@ class App(QMainWindow):
         new = app.align_reads(new, idx=ref, outdir=path, overwrite=overwrite,
                         threads=kwds['threads'],
                         aligner=kwds['aligner'],
+                        platform=kwds['platform'],
                         callback=progress_callback.emit)
         self.update_table(new)
         #df.to_csv(os.path.join(self.outputdir,'samples.csv'),index=False)
@@ -846,6 +851,7 @@ class App(QMainWindow):
         overwrite = kwds['overwrite']
         threads = int(kwds['threads'])
         filters = kwds['filters']
+        proximity = kwds['proximity']
         df = self.fastq_table.model.df
         path = self.outputdir
 
@@ -857,7 +863,8 @@ class App(QMainWindow):
         self.results['vcf_file'] = app.variant_calling(bam_files, self.ref_genome, path,
                                     threads=threads, relabel=True,
                                     overwrite=overwrite, filters=filters,
-                                    gff_file=gff_file,
+                                    gff_file=gff_file, mask=self.mask_file,
+                                    custom_filters=proximity,
                                     callback=progress_callback.emit)
         self.results['nuc_matrix'] = os.path.join(self.outputdir, 'core.txt')
         self.results['csq_matrix'] = os.path.join(self.outputdir, 'csq.matrix')
@@ -1045,7 +1052,11 @@ class App(QMainWindow):
         df = self.fastq_table.model.df
         row = self.fastq_table.getSelectedRows()[0]
         data = df.iloc[row]
-        for name,fname in zip([data.name1, data.name2], [data.filename1, data.filename2]):
+        if 'filename2' in df.columns:
+            colnames = zip([data.name1, data.name2], [data.filename1, data.filename2])
+        else:
+            colnames = [[data.name1, data.filename1]]
+        for name,fname in colnames:
             label = 'qual:'+name
             if label in self.get_tab_names():
                 return
@@ -1070,7 +1081,7 @@ class App(QMainWindow):
         rows = self.fastq_table.getSelectedRows()
         data = df.iloc[rows]
         for i,r in data.iterrows():
-            df.loc[i,'reads'] = tools.get_fastq_length(r.filename)
+            df.loc[i,'reads'] = tools.get_fastq_length(r.filename1)
         return
 
     def add_mapping_stats(self, progress_callback):
@@ -1232,12 +1243,6 @@ class App(QMainWindow):
     def spoligotyping(self, progress_callback):
         """Mbovis spo typing tool"""
 
-        #msg = 'This tool is designed for strain typing of M.bovis isolates. '
-        #reply = QMessageBox.question(self, 'Continue?', msg,
-        #                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        #if reply == QMessageBox.No:
-        #    return
-
         df = self.fastq_table.model.df
         data = self.get_selected()
         if data is None or len(data) == 0:
@@ -1335,9 +1340,13 @@ class App(QMainWindow):
         self.info.zoomOut()
         return
 
-    def show_info(self, msg):
+    def show_info(self, msg, color=None):
 
-        self.info.append(msg)
+        if color != None:
+            #self.info.appendHtml("<p style=\"color:red\">" + msg + "</p>")
+            self.info.append("<font color=%s>%s</font>" %(color,msg))
+        else:
+            self.info.append(msg)
         self.info.verticalScrollBar().setValue(
             self.info.verticalScrollBar().maximum())
         return
@@ -1490,8 +1499,8 @@ class AppOptions(widgets.BaseOptions):
         self.groups = {'general':['threads','labelsep','overwrite'],
                         'trimming':['quality'],
                         'aligners':['aligner','platform'],
-                        'variant calling':['filters'],
-                        'blast':['db','identity','coverage']
+                        'variant calling':['filters','proximity'],
+                        #'blast':['db','identity','coverage']
                        }
         self.opts = {'threads':{'type':'spinbox','default':4,'range':(1,cpus)},
                     'overwrite':{'type':'checkbox','default':False},
@@ -1501,12 +1510,13 @@ class AppOptions(widgets.BaseOptions):
                     'items':aligners,'label':'aligner'},
                     'platform':{'type':'combobox','default':'illumina',
                     'items':platforms,'label':'platform'},
-                    'db':{'type':'combobox','default':'card',
-                    'items':[],'label':'database'},
                     'filters':{'type':'entry','default':app.default_filter},
-                    'identity':{'type':'entry','default':90},
-                    'coverage':{'type':'entry','default':50},
+                    'proximity': {'type':'checkbox','default':0},
                     'quality':{'type':'spinbox','default':30}
+                    #'db':{'type':'combobox','default':'card',
+                    #'items':[],'label':'database'},
+                    #'identity':{'type':'entry','default':90},
+                    #'coverage':{'type':'entry','default':50},
                     }
         return
 

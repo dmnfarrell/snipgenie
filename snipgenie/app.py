@@ -52,7 +52,8 @@ msmeg_genome = os.path.join(sequence_path, 'Msmeg-MC2.fa')
 msmeg_gb = os.path.join(datadir, 'Msmeg-MC2.gb')
 mbovis_mask =  os.path.join(datadir, 'Mbovis_AF212297_mask.bed')
 
-preset_genomes = {'Mbovis-AF212297':{'sequence':mbovis_genome, 'gb':mbovis_gb},
+preset_genomes = {
+           'Mbovis-AF212297':{'sequence':mbovis_genome, 'gb':mbovis_gb, 'mask':mbovis_mask},
            'MTB-H37Rv':{'sequence':mtb_genome, 'gb':mtb_gb},
            'MAP-K10':{'sequence':map_genome, 'gb':map_gb},
            'M.smegmatis-MC2155':{'sequence':msmeg_genome, 'gb':msmeg_gb}
@@ -156,7 +157,7 @@ def get_samples(filenames, sep='-'):
         #if we can't get sample name try another delimeter?
         if name == sample:
             sample = name.split('_')[0]
-        x = [name, sample, filename]
+        x = [name, sample, os.path.abspath(filename)]
         res.append(x)
 
     df = pd.DataFrame(res, columns=cols)
@@ -191,7 +192,7 @@ def write_samples(df, path):
     """Write out sample names using dataframe from get_samples"""
 
     filename = os.path.join(path, 'samples.txt')
-    df.drop_duplicates('sample')['sample'].to_csv(filename,index=False,header=False)
+    df.to_csv(filename,index=False,header=False)
     return filename
 
 def check_samples_aligned(samples, outdir):
@@ -225,7 +226,10 @@ def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform
     for i,r in df.iterrows():
         name = r['sample']
         file1 = r.filename1
-        file2 = r.filename2
+        if 'filename2' in df.columns:
+            file2 = r.filename2
+        else:
+            file2 = None
         if 'trimmed' in df.columns:
             files = list(df.trimmed)
             if callback != None:
@@ -785,7 +789,8 @@ class WorkFlow(object):
         #self.summary = summ
         print ('Done. Sample summary:')
         print ('---------------------')
-        print (samples)
+        pd.set_option('display.max_rows', 500)
+        print (samples.drop(columns=['filename1','filename2']))
         print ()
 
         if self.buildtree == True:

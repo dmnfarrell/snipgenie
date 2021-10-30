@@ -111,7 +111,7 @@ def bowtie_align(file1, file2, idx, out, remaining=None, threads=2,
         return
     os.environ["BOWTIE_INDEXES"] = BOWTIE_INDEXES
     if file2 != None:
-        filestr = '-1 {f1} -2 {f2}'.format(f1=file1,f2=file2)
+        filestr = '-1 "{f1}" -2 "{f2}"'.format(f1=file1,f2=file2)
     else:
         filestr = file1
     cmd = '{c} -q -p {t} -S {p} {r} {f} | {s} view -F 0x04 -bt - | {s} sort -o {o}'\

@@ -359,8 +359,8 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.rd_analysis, self.rd_analysis_completed))
         self.tools_menu.addAction('M.bovis Spoligotyping',
             lambda: self.run_threaded_process(self.spoligotyping, self.spotyping_completed))
-        self.tools_menu.addAction('M.bovis SNP typing',
-            lambda: self.run_threaded_process(self.snp_typing, self.processing_completed))
+        #self.tools_menu.addAction('M.bovis SNP typing',
+        #    lambda: self.run_threaded_process(self.snp_typing, self.processing_completed))
 
         self.settings_menu = QMenu('&Settings', self)
         self.menuBar().addMenu(self.settings_menu)
@@ -628,7 +628,7 @@ class App(QMainWindow):
             new = new.drop_duplicates('filename1')
         self.fastq_table.setDataFrame(new)
         self.fastq_table.resizeColumns()
-        app.write_samples(df, self.outputdir)
+        app.write_samples(df[['sample']], self.outputdir)
         return
 
     def load_fastq_folder_dialog(self):
@@ -1232,12 +1232,16 @@ class App(QMainWindow):
         from . import snp_typing
         df = self.fastq_table.model.df
         #use ALL snp sites including uninformative
-        nucmat = pd.read_csv(self.results['nuc_matrix'],sep=' ',index_col=0)
+        if not 'snp_dist' in self.results:
+            print ('You need to create a SNP alignment first')
+            return
+        snpmat = pd.read_csv(self.results['snp_dist'],sep=' ',index_col=0)
         #print (nucmat)
         rows = self.fastq_table.getSelectedRows()
         data = df.iloc[rows]
         snptable = snp_typing.clade_snps
-        res = snp_typing.type_samples(nucmat)
+        res = snp_typing.type_samples(snpmat)
+        print (res)
         return
 
     def spoligotyping(self, progress_callback):
@@ -1382,7 +1386,7 @@ class App(QMainWindow):
         """Open the online documentation"""
 
         #import webbrowser
-        link='https://github.com/dmnfarrell/btbgenie'
+        link='https://github.com/dmnfarrell/snipgenie'
         #webbrowser.open(link,autoraise=1)
         from PySide2.QtWebEngineWidgets import QWebEngineView
         browser = QWebEngineView()

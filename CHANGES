@@ -6,9 +6,12 @@ CHANGES
 -----
 
 * changed sample table format to single rows per sample
-* updates to GUI
 * fixes to RD analysis
 * added minimap2 aligner for ont reads
+* added platform keyword if using ont
+* settings in gui saved
+* mask in preset for gui
+* redirect stdout to log in gui
 
 0.4.0
 -----

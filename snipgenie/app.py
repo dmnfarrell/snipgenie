@@ -185,9 +185,6 @@ def check_samples_unique(samples):
     if len(x[x>2]) > 0:
         return False
 
-#def results_summary(df):
-#    return df.groupby('sample').first()[['name','bam_file','read_length']].reset_index()
-
 def write_samples(df, path):
     """Write out sample names using dataframe from get_samples"""
 
@@ -592,7 +589,7 @@ def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4, **kwargs)
         os.makedirs(outdir, exist_ok=True)
     df = get_samples(bam_files, sep='_')
     df = app.get_pivoted_samples(df)
-    write_samples(df, outdir)
+    write_samples(df[['sample']], outdir)
     vcf_file = variant_calling(bam_files, ref, outdir, threads=threads,
                                    relabel=True, gff_file=gff_file,
                                    **kwargs)
@@ -730,7 +727,7 @@ class WorkFlow(object):
         samples = self.fastq_table
         if not os.path.exists(self.outdir):
             os.makedirs(self.outdir, exist_ok=True)
-        write_samples(samples, self.outdir)
+        write_samples(samples[['sample']], self.outdir)
         if len(samples)==0:
             print ('no samples found')
             return

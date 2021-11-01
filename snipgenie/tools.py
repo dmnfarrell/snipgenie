@@ -838,7 +838,6 @@ def gff_bcftools_format(in_file, out_file):
 def get_spoligotype(filename, reads_limit=500000, threshold=2):
     """Get mtb spoligotype from WGS reads"""
 
-    #ref = '../snipgenie/data/dr_spacers.fa'
     ref = os.path.join(datadir, 'dr_spacers.fa')
     #convert reads to fasta
     fastq_to_fasta(filename, 'temp.fa', reads_limit)
@@ -863,7 +862,7 @@ def get_spoligotype(filename, reads_limit=500000, threshold=2):
 
 def get_sb_number(binary_str):
     """Get SB number from binary pattern usinf database reference"""
-
+    
     df = pd.read_csv(os.path.join(datadir, 'Mbovis.org_db.csv'))
     x = df[df['binary'] == binary_str]
     if len(x) == 0:

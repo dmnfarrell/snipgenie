@@ -210,6 +210,8 @@ The package includes a desktop application with additional features like a fastq
 
 <img src=img/scr1.png width=600px>
 
+You can view a short video on using the GUI [here](youtu.be/ieljx3NiTqE).
+
 ## FAQ
 
 _The run was stopped during execution, can it be resumed?_

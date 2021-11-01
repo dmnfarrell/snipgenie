@@ -1247,6 +1247,9 @@ class App(QMainWindow):
     def spoligotyping(self, progress_callback):
         """Mbovis spo typing tool"""
 
+        self.running == True
+        self.opts.applyOptions()
+        kwds = self.opts.kwds
         df = self.fastq_table.model.df
         data = self.get_selected()
         if data is None or len(data) == 0:
@@ -1255,7 +1258,7 @@ class App(QMainWindow):
         cols = ['sample','spotype','sb']
         for i,r in data.iterrows():
             name = r['sample']
-            s = tools.get_spoligotype(r.filename1, reads_limit=500000, threshold=2)
+            s = tools.get_spoligotype(r.filename1, threads=kwds['threads'])
             sb = tools.get_sb_number(s)
             print (name, s, sb)
             #set new values in place

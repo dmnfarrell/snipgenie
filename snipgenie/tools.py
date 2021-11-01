@@ -835,7 +835,7 @@ def gff_bcftools_format(in_file, out_file):
         GFF.write([new], out_handle)
         return
 
-def get_spoligotype(filename, reads_limit=500000, threshold=2):
+def get_spoligotype(filename, reads_limit=3000000, threshold=2, threads=4):
     """Get mtb spoligotype from WGS reads"""
 
     ref = os.path.join(datadir, 'dr_spacers.fa')
@@ -844,9 +844,9 @@ def get_spoligotype(filename, reads_limit=500000, threshold=2):
     #make blast db from reads
     make_blast_database('temp.fa')
     #blast spacers to db
-    bl = blast_fasta('temp.fa', ref, evalue=0.1,
-                           maxseqs=100000, show_cmd=False)
-    bl=bl[(bl.qcovs>95) & (bl.mismatch<2)]
+    bl = blast_fasta('temp.fa', ref, evalue=0.1, threads=threads,
+                           maxseqs=reads_limit, show_cmd=False)
+    bl=bl[(bl.qcovs>90) & (bl.mismatch<=threshold)]
     x = bl.groupby('qseqid').agg({'pident':np.size}).reset_index()
     x = x[x.pident>=threshold]
     found = list(x.qseqid)
@@ -862,7 +862,7 @@ def get_spoligotype(filename, reads_limit=500000, threshold=2):
 
 def get_sb_number(binary_str):
     """Get SB number from binary pattern usinf database reference"""
-    
+
     df = pd.read_csv(os.path.join(datadir, 'Mbovis.org_db.csv'))
     x = df[df['binary'] == binary_str]
     if len(x) == 0:

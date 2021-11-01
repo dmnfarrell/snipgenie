@@ -37,7 +37,8 @@ For Linux installs, you require Python 3 and the following packages. These will 
 * biopython
 * pyvcf
 * pyfaidx
-* pyside2 (only if using GUI)
+* pyside2 (GUI only)
+* toytree (GUI only)
 
 Other binaries required:
 

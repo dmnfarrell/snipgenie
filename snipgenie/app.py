@@ -51,10 +51,11 @@ map_gb = os.path.join(datadir, 'MAP-K10.gb')
 msmeg_genome = os.path.join(sequence_path, 'Msmeg-MC2.fa')
 msmeg_gb = os.path.join(datadir, 'Msmeg-MC2.gb')
 mbovis_mask =  os.path.join(datadir, 'Mbovis_AF212297_mask.bed')
+mtb_mask =  os.path.join(datadir, 'MTB-H37Rv_mask.bed')
 
 preset_genomes = {
            'Mbovis-AF212297':{'sequence':mbovis_genome, 'gb':mbovis_gb, 'mask':mbovis_mask},
-           'MTB-H37Rv':{'sequence':mtb_genome, 'gb':mtb_gb},
+           'MTB-H37Rv':{'sequence':mtb_genome, 'gb':mtb_gb, 'mask':mtb_mask},
            'MAP-K10':{'sequence':map_genome, 'gb':map_gb},
            'M.smegmatis-MC2155':{'sequence':msmeg_genome, 'gb':msmeg_gb}
            }

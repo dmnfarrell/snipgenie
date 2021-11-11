@@ -425,11 +425,11 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
 
     #apply mask if required
     if mask != None:
-        mask_filter(snpsout, mask)
+        mask_filter(snpsout, mask, outdir=outpath, overwrite=True)
 
     #custom filters
     if custom_filters == True:
-        site_proximity_filter(snpsout, outdir=outpath)
+        site_proximity_filter(snpsout, outdir=outpath, overwrite=True)
 
     #consequence calling
     if gff_file != None:
@@ -475,7 +475,7 @@ def relabel_vcfheader(vcf_file, sample_file):
     os.remove(rlout)
     return
 
-def mask_filter(vcf_file, mask_file):
+def mask_filter(vcf_file, mask_file, overwrite=False, outdir=None):
     """Remove any masked sites using a bed file, overwrites input"""
 
     print('using mask bed file', mask_file)
@@ -498,23 +498,13 @@ def mask_filter(vcf_file, mask_file):
             found.append(i)
     print('found %s sites in masked regions' %len(found))
     new = sorted(list(set(sites) - set(found)))
-
-    tempdir = tempfile.gettempdir()
-    out = os.path.join(tempdir,'temp.vcf')
-    vcf_reader = vcf.Reader(open(vcf_file, 'rb'))
-    vcf_writer = vcf.Writer(open(out, 'w'), vcf_reader)
-    for record in vcf_reader:
-        if record.POS in new:
-            #print (record)
-            vcf_writer.write_record(record)
-    vcf_writer.close()
-    #overwrite input vcf
-    bcftoolscmd = tools.get_cmd('bcftools')
-    cmd = 'bcftools view {o} -O z -o {gz}'.format(o=out,gz=vcf_file)
-    tmp = subprocess.check_output(cmd,shell=True)
+    if outdir == None:
+        outdir = tempfile.gettempdir()
+    if overwrite == True:
+        overwrite_vcf(vcf_file, new, outdir)
     return
 
-def site_proximity_filter(vcf_file, dist=10, outdir=None):
+def old_site_proximity_filter(vcf_file, dist=10, outdir=None):
     """Remove any pairs of sites within dist of each other"""
 
     import vcf
@@ -528,7 +518,7 @@ def site_proximity_filter(vcf_file, dist=10, outdir=None):
             found.extend([sites[i], sites[i+1]])
     #print (found)
     new = sorted(list(set(sites) - set(found)))
-    print ('proximity filter found %s/%s sites' %(len(found),len(sites)))
+    print ('proximity filter removed %s/%s sites' %(len(set(found)),len(sites)))
     if outdir == None:
         outdir = tempfile.gettempdir()
     out = os.path.join(outdir,'temp.vcf')
@@ -542,6 +532,55 @@ def site_proximity_filter(vcf_file, dist=10, outdir=None):
     #overwrite input vcf
     bcftoolscmd = tools.get_cmd('bcftools')
     cmd = 'bcftools view {o} -O z -o {gz}'.format(o=out,gz=vcf_file)
+    tmp = subprocess.check_output(cmd,shell=True)
+    return
+
+def site_proximity_filter(vcf_file, dist=10, overwrite=False, outdir=None):
+    """Remove any pairs of sites within dist of each other.
+    Args:
+        vcf_file: input vcf file with positions to filter
+        dist: distance threshold
+        overwrite: whether to overwrite the vcf
+    """
+
+    #get vcf into dataframe
+    df = tools.vcf_to_dataframe(vcf_file)
+    df = df[df.REF != df.ALT]
+    sites = list(df.pos.unique())
+    found = []
+    #check distances in sites per sample
+    for s, g in df.groupby(['sample']):
+        pos = list(g.pos)
+        for i in range(len(pos)-1):
+            if pos[i+1] - pos[i] <= dist:
+                found.extend([pos[i], pos[i+1]])
+    #all unique positions
+    found = list(set(found))
+    new = sorted(list(set(sites) - set(found)))
+    print ('proximity filter removed %s/%s sites' %(len(found),len(sites)))
+    if overwrite == True:
+        overwrite_vcf(vcf_file, new, outdir)
+    return
+
+def overwrite_vcf(vcf_file, sites, outdir=None):
+    """Make a new vcf with subset of sites"""
+
+    if outdir == None:
+        outdir = tempfile.gettempdir()
+
+    import vcf
+    out = os.path.join(outdir,'temp.vcf')
+    vcf_reader = vcf.Reader(open(vcf_file, 'rb'))
+    vcf_writer = vcf.Writer(open(out, 'w'), vcf_reader)
+    for record in vcf_reader:
+        if record.POS in sites:
+            #print (record)
+            vcf_writer.write_record(record)
+    vcf_writer.close()
+    #copy or overwrite input vcf
+    bcftoolscmd = tools.get_cmd('bcftools')
+    cmd = 'bcftools view {o} -O z -o {gz}'.format(o=out,gz=vcf_file)
+    print (cmd)
     tmp = subprocess.check_output(cmd,shell=True)
     return
 

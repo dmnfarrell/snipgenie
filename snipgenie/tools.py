@@ -521,12 +521,12 @@ def vcf_to_dataframe(vcf_file):
     vcf_reader = vcf.Reader(file,'r')
     res=[]
     cols = ['sample','REF','ALT','mut','DP','ADF','ADR','AD','chrom','var_type',
-            'sub_type','start','end','QUAL']
+            'sub_type','pos','start','end','QUAL']
     i=0
     for rec in vcf_reader:
         #if i>50:
         #    break
-        x = [rec.CHROM, rec.var_type, rec.var_subtype, rec.start, rec.end, rec.QUAL]
+        x = [rec.CHROM, rec.var_type, rec.var_subtype, rec.POS, rec.start, rec.end, rec.QUAL]
         for sample in rec.samples:
             if sample.gt_bases == None:
                 mut=''
@@ -540,13 +540,14 @@ def vcf_to_dataframe(vcf_file):
                 #inf = sample.site.INFO
                 cdata = sample.data
                 row = [sample.sample, rec.REF, sample.gt_bases, mut, cdata[2], cdata[4] ,cdata[5], cdata[6]] + x
-
             res.append(row)
+
     res = pd.DataFrame(res,columns=cols)
     res = res[~res.start.isnull()]
-    #res['start'] = res.start.astype(int)
+    res['pos'] = res.pos.astype(int)
     #res['end'] = res.end.astype(int)
     return res
+
 
 def get_snp_matrix(df):
     """SNP matrix from multi sample vcf dataframe"""
@@ -701,7 +702,8 @@ def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False, omit=
             result[name].append(S[name])
         sites.append(record.POS)
 
-    print ('found %s sites' %len(sites))
+    sites = list(set(sites))
+    print ('used %s sites for core snps' %len(sites))
     print ('%s sites with at least one missing sample' %len(missing))
     if uninformative == False:
         print ('%s uninformative sites' %len(unf))

@@ -14,7 +14,7 @@ This software is written in Python. It was developed on Ubuntu linux but is desi
 * load multiple fastq files and process together
 * view fastq quality statistics
 * trim reads
-* align to reference
+* align to reference (fasta file with single chromosome)
 * view bam alignments
 * call variants
 * filter variants

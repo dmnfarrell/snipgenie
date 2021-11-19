@@ -347,7 +347,7 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None, tempd
 
     regstr = ' '.join(regions)
     filesstr = ' '.join(outfiles)
-    cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b --min-MQ 10 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
+    cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b --min-MQ 60 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
             .format(r=ref, reg=regstr, b=bam_files, o=filesstr, a=annotatestr)
     print (cmd)
     #if callback != None:
@@ -628,7 +628,7 @@ def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4, **kwargs)
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
     df = get_samples(bam_files, sep='_')
-    df = app.get_pivoted_samples(df)
+    df = get_pivoted_samples(df)
     write_samples(df[['sample']], outdir)
     vcf_file = variant_calling(bam_files, ref, outdir, threads=threads,
                                    relabel=True, gff_file=gff_file,

@@ -48,14 +48,13 @@ class App(QMainWindow):
         self.setWindowIcon(QIcon(logoimg))
         self.create_menu()
         self.main = QSplitter(self)
-        screen = QGuiApplication.screens()[0]
-        screen_resolution  = screen.geometry()
-        if screen_resolution.height() > 1280:
-            fac=0.8
-            width, height = screen_resolution.width()*fac, screen_resolution.height()*fac
-            self.setGeometry(QtCore.QRect(150, 150, width, height))
+        screen_resolution = QGuiApplication.primaryScreen().availableGeometry()
+        width, height = screen_resolution.width()*0.7, screen_resolution.height()*.7
+        if screen_resolution.width()>1280:
+            self.setGeometry(QtCore.QRect(200, 200, width, height))
         else:
             self.showMaximized()
+        self.setMinimumSize(400,300)
 
         self.recent_files = ['']
         self.main.setFocus()
@@ -381,7 +380,7 @@ class App(QMainWindow):
         self.help_menu.addAction('&Help', self.online_documentation)
         self.help_menu.addAction('&About', self.about)
 
-    def load_presets_menu(self):
+    def load_presets_menu(self,ask=True):
         """Add preset genomes to menu"""
 
         genomes = app.preset_genomes
@@ -392,11 +391,18 @@ class App(QMainWindow):
                 mask = genomes[name]['mask']
             else:
                 mask = None
-            def func(seqname,gbfile,mask):
-                self.set_reference(seqname)
+            def func(seqname,gbfile,mask,ask):
+
+                if ask == True:
+                    msg = 'This will replace the current reference with a preset.'
+                    reply = QMessageBox.question(self, 'Warning!', msg,
+                                                    QMessageBox.No | QMessageBox.Yes )
+                    if reply == QMessageBox.No:
+                        return
+                self.set_reference(seqname, ask=False)
                 self.set_annotation(gbfile)
                 self.set_mask(mask)
-            receiver = lambda seqname=seqname, gb=gbfile, mask=mask: func(seqname, gb, mask)
+            receiver = lambda seqname=seqname, gb=gbfile, mask=mask, ask=ask: func(seqname, gb, mask, ask)
             self.presets_menu.addAction('%s' %name, receiver)
         return
 
@@ -651,14 +657,15 @@ class App(QMainWindow):
         self.load_fastq_table(filenames)
         return
 
-    def set_reference(self, filename=None):
+    def set_reference(self, filename=None, ask=True):
         """Reset the reference sequence"""
 
         msg = "This will change the reference genome. You will need to re-run any previous alignments. Are you sure?"
-        reply = QMessageBox.question(self, 'Warning!', msg,
-                                        QMessageBox.No | QMessageBox.Yes )
-        if reply == QMessageBox.No:
-            return
+        if ask == True:
+            reply = QMessageBox.question(self, 'Warning!', msg,
+                                            QMessageBox.No | QMessageBox.Yes )
+            if reply == QMessageBox.No:
+                return
         if filename == None:
             filter="Fasta Files(*.fa *.fna *.fasta)"
             filename, _ = QFileDialog.getOpenFileName(self, 'Open File', './',

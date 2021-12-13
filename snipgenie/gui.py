@@ -79,15 +79,17 @@ class App(QMainWindow):
 
         s = self.settings = QtCore.QSettings('snipgenie','default')
         try:
-            self.resize(s.value('window_size'))
-            self.move(s.value('window_position'))
-            self.setStyle(s.value('style'))
-            #self.FONT = s.value("font")
-            #self.FONTSIZE = int(s.value("fontsize"))
-            r = s.value("recent_files")
-            if r != '':
-                rct = r.split(',')
-                self.recent_files = [f for f in rct if os.path.exists(f)]
+            winsize = s.value('window_size')
+            if winsize != None:
+                self.resize(s.value('window_size'))
+                self.move(s.value('window_position'))
+                self.setStyle(s.value('style'))
+                #self.FONT = s.value("font")
+                #self.FONTSIZE = int(s.value("fontsize"))
+                r = s.value("recent_files")
+                if r != '':
+                    rct = r.split(',')
+                    self.recent_files = [f for f in rct if os.path.exists(f)]
 
         except Exception as e:
             print (e)
@@ -680,6 +682,8 @@ class App(QMainWindow):
 
         if filename == None:
             filename = self.add_file("Genbank Files(*.gb *.gbk *.gbff)")
+        if not filename:
+            return
         self.ref_gb = filename
         #put annotation in a dataframe
         self.annot = tools.genbank_to_dataframe(self.ref_gb)
@@ -691,7 +695,7 @@ class App(QMainWindow):
         self.mask_file = filename
         self.update_mask()
 
-    def add_mask(self, filename):
+    def add_mask(self, filename=None):
         """Add mask bed file"""
 
         msg = "This will add a bed file as a mask. See help for format. Continue?"

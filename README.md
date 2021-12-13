@@ -211,7 +211,7 @@ The package includes a desktop application with additional features like a fastq
 
 <img src=img/scr1.png width=600px>
 
-You can view a short video on using the GUI [here](youtu.be/ieljx3NiTqE).
+You can view a short video on using the GUI [here](https://www.youtube.com/watch?v=ieljx3NiTqE).
 
 ## FAQ
 

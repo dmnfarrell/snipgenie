@@ -156,6 +156,24 @@ def biopython_draw_tree(filename):
     Phylo.draw(tree)
     return
 
+def toytree_draw(tre, meta, labelcol,colorcol):
+    """Draw colored tree with toytree"""
+
+    tipnames = tre.get_tip_labels()
+    mapping = dict(zip(meta['sample'],meta[labelcol]))
+    mapping['ref'] = 'AF2122/97'
+    tiplabels = [mapping[i] if i in mapping else 'NA' for i in tipnames]
+    mapping = dict(zip(meta['sample'],meta[colorcol]))
+    colormap = colors_from_labels(meta,'sample',colorcol)
+    tip_colors = [colormap[mapping[i]] if i in mapping else 'Black' for i in tipnames]
+    node_sizes=[0 if i else 8 for i in tre.get_node_values(None, 1, 0)]
+    node_colors = [colormap[mapping[n]] if n in mapping else 'black' for n in tre.get_node_values('name', True, True)]
+
+    canvas,t,r=tre.draw(layout='r',width=600,height=800,tip_labels=tiplabels,node_markers="o",node_hover=True,edge_widths=1,
+             tip_labels_colors=tip_colors,node_sizes=node_sizes,scalebar=True,node_colors=node_colors)#tip_labels_align=True);
+    #canvas.legend(leg,corner=("top", 100, 100, 70));
+    return
+
 def create_tree(filename=None, tree=None, ref=None, labelmap=None, colormap=None, color_bg=False, format=1):
     """Draw a tree """
 

@@ -6,7 +6,7 @@ with open('snipgenie/description.txt') as f:
 
 setup(
     name = 'snipgenie',
-    version = '0.5.0',
+    version = '0.6.0',
     description = 'variant calling and phylogenies from microbial WGS data',
     long_description = long_description,
     url='https://github.com/dmnfarrell/snipgenie',
@@ -30,7 +30,8 @@ setup(
     entry_points = {
         'console_scripts': [
             'snipgenie-gui=snipgenie.gui:main',
-            'snipgenie=snipgenie.app:main']
+            'snipgenie=snipgenie.app:main',
+            'snipgenie-wgmlst=snipgenie.wgmlst:main']
             },
     classifiers = ['Operating System :: OS Independent',
             'Programming Language :: Python :: 2.7',

@@ -64,6 +64,7 @@ def run_samples(df, path, threads=4):
     res = []
     for i,r in df.iterrows():
         name = r['sample']
+        print (name)
         f1 = r.filename1
         f2 = r.filename2
         s = find_regions(f1, f2, path, name, threads=threads)

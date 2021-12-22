@@ -504,6 +504,16 @@ def trim_reads(filename, outfile, adapter=None, quality=20,
         result = subprocess.check_output(cmd, shell=True, executable='/bin/bash')
     return
 
+def get_vcf_samples(filename):
+    """Get list of samples in a vcf/bcf"""
+
+    from io import StringIO
+    bcftoolscmd = get_cmd('bcftools')
+    cmd = '{bc} query -l {f}'.format(bc=bcftoolscmd,f=filename)
+    tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
+    c = pd.read_csv(StringIO(tmp),sep='\t',names=['name'])
+    return c.name
+
 def vcf_to_dataframe(vcf_file):
     """
     Convert a multi sample vcf to dataframe. Records each samples FORMAT fields.
@@ -547,7 +557,6 @@ def vcf_to_dataframe(vcf_file):
     res['pos'] = res.pos.astype(int)
     #res['end'] = res.end.astype(int)
     return res
-
 
 def get_snp_matrix(df):
     """SNP matrix from multi sample vcf dataframe"""
@@ -842,7 +851,11 @@ def get_spoligotype(filename, reads_limit=3000000, threshold=2, threads=4):
 
     ref = os.path.join(datadir, 'dr_spacers.fa')
     #convert reads to fasta
-    fastq_to_fasta(filename, 'temp.fa', reads_limit)
+    try:
+        fastq_to_fasta(filename, 'temp.fa', reads_limit)
+    except Exception as e:
+        print(e)
+        return
     #make blast db from reads
     make_blast_database('temp.fa')
     #blast spacers to db

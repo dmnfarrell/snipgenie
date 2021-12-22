@@ -11,7 +11,7 @@
     of the License, or (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    but WITHOUT ANY WARRANTY; without even the implied warroanty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
@@ -162,6 +162,7 @@ def get_samples(filenames, sep='-'):
         res.append(x)
 
     df = pd.DataFrame(res, columns=cols)
+    df = df.sort_values(['sample','filename'])
     df['pair'] = df.groupby('sample').cumcount()+1
     #df = df.sort_values(['name','sample','pair']).reset_index(drop=True)
     df = df.drop_duplicates('filename')
@@ -179,11 +180,18 @@ def get_pivoted_samples(df):
     p = p.reset_index()
     return p
 
+def check_bamfiles(samples, path):
+    """Check if bams in output folder match samples"""
+
+    bams = app.get_files_from_paths(path, '*.bam')
+    print (set(bams)-set(samples.bam_file))
+    return
+
 def check_samples_unique(samples):
     """Check that sample names are unique"""
 
-    x = samples['sample'].value_counts()
-    if len(x[x>2]) > 0:
+    x = samples[samples['sample'].duplicated()]
+    if len(x)>0:
         return False
 
 def write_samples(df, path):
@@ -197,8 +205,7 @@ def check_samples_aligned(samples, outdir):
     """Check how many samples already aligned"""
 
     found = glob.glob(os.path.join(outdir,'*.bam'))
-    x = samples.groupby('sample')
-    print ('%s/%s samples already aligned' %(len(found),len(x)))
+    print ('%s/%s samples already aligned' %(len(found),len(samples)))
     return
 
 def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform='illumina',
@@ -369,6 +376,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     """Call variants with bcftools"""
 
     st = time.time()
+    sample_file = os.path.join(outpath,'samples.txt')
     if filters == None:
         filters = default_filter
     rawbcf = os.path.join(outpath,'raw.bcf')
@@ -386,6 +394,13 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
                                         tempdir=tempdir, callback=callback)
     else:
         print ('%s already exists' %rawbcf)
+        #check existing file samples here
+        rawsamples = tools.get_vcf_samples(rawbcf)
+        samples = pd.read_csv(sample_file,names=['name'])
+        if len(samples) != len(rawsamples):
+            print ('WARNING: samples in raw.bcf appear to be different to current samples.')
+            print ('You may have added files since the previous run and will need to overwrite raw.bcf')
+
     #find snps only
     print ('calling variants..')
     vcfout = os.path.join(outpath,'calls.vcf')
@@ -397,8 +412,6 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
 
     #relabel samples in vcf header
     if relabel == True:
-        sample_file = os.path.join(outpath,'samples.txt')
-        print (sample_file)
         relabel_vcfheader(vcfout, sample_file)
 
     #filters
@@ -628,7 +641,7 @@ def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4, **kwargs)
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
     df = get_samples(bam_files, sep='_')
-    df = get_pivoted_samples(df)
+    print ('%s samples were loaded:' %len(bam_files))
     write_samples(df[['sample']], outdir)
     vcf_file = variant_calling(bam_files, ref, outdir, threads=threads,
                                    relabel=True, gff_file=gff_file,
@@ -792,6 +805,9 @@ class WorkFlow(object):
                         aligner=self.aligner, platform=self.platform,
                         unmapped=unmapped,
                         threads=self.threads, overwrite=self.overwrite)
+        #save sample table
+        samples.to_csv(os.path.join(self.outdir,'samples.csv'),index=False)
+
         print ()
         print ('calling variants')
         print ('----------------')
@@ -819,11 +835,6 @@ class WorkFlow(object):
         snp_dist = tools.snp_dist_matrix(aln)
         snp_dist.to_csv(os.path.join(self.outdir,'snpdist.csv'), sep=',')
 
-        #save sample table
-        samples.to_csv(os.path.join(self.outdir,'samples.csv'),index=False)
-        #summ = results_summary(samples)
-        #summ.to_csv(os.path.join(self.outdir,'summary.csv'),index=False)
-        #self.summary = summ
         print ('Done. Sample summary:')
         print ('---------------------')
         pd.set_option('display.max_rows', 500)

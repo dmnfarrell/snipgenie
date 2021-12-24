@@ -1114,6 +1114,7 @@ class App(QMainWindow):
             s = get_stats(r.bam_file)
             df.loc[i,'mapped'] = s['mapped']
             df.loc[i,'total'] = s['total']
+            df.loc[i,'perc_mapped'] = round(s['mapped']/s['total']*100,2)
         #self.fastq_table.setDataFrame(df)
         return
 
@@ -1297,7 +1298,7 @@ class App(QMainWindow):
         data = self.get_selected()
         if data is None or len(data) == 0:
             return
-        out = os.path.join(self.outputdir,'rd_analysis')
+        out = os.path.join(self.outputdir,'rd_aligned')
         res = rdiff.run_samples(data, out, threads=kwds['threads'])
 
         X = rdiff.get_matrix(res, cutoff=0.15)

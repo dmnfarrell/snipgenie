@@ -180,13 +180,6 @@ def get_pivoted_samples(df):
     p = p.reset_index()
     return p
 
-def check_bamfiles(samples, path):
-    """Check if bams in output folder match samples"""
-
-    bams = app.get_files_from_paths(path, '*.bam')
-    print (set(bams)-set(samples.bam_file))
-    return
-
 def check_samples_unique(samples):
     """Check that sample names are unique"""
 
@@ -206,6 +199,20 @@ def check_samples_aligned(samples, outdir):
 
     found = glob.glob(os.path.join(outdir,'*.bam'))
     print ('%s/%s samples already aligned' %(len(found),len(samples)))
+    return
+
+def clean_bam_files(samples, path, remove=False):
+    """Check if any bams in output not in samples and remove. Not used in workflow."""
+
+    bams = get_files_from_paths(path, '*.bam')
+    print ('%s bam files and %s samples found' %(len(bams),len(samples)))
+    found = set(bams)-set(samples.bam_file)
+    print ('bam files no longer present in samples:')
+    print (found)
+    if remove == True:
+        for f in found:
+            print (f)
+            os.remove(f)
     return
 
 def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform='illumina',
@@ -382,6 +389,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     rawbcf = os.path.join(outpath,'raw.bcf')
     bcftoolscmd = tools.get_cmd('bcftools')
     if not os.path.exists(rawbcf) or overwrite == True:
+        print ('running mpileup..')
         if platform.system() == 'Windows' or threads == 1:
             bam_files = ' '.join(bam_files)
             cmd = '{bc} mpileup -a {a} --max-depth 500 -O b --min-MQ 60 -o {o} -f {r} {b}'\
@@ -837,7 +845,7 @@ class WorkFlow(object):
 
         print ('Done. Sample summary:')
         print ('---------------------')
-        pd.set_option('display.max_rows', 500)
+        pd.set_option('display.max_rows', 150)
         print (samples.drop(columns=['filename1','filename2']))
         print ()
 

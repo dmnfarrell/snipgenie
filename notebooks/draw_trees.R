@@ -62,6 +62,9 @@ subtree <- drop.tip(mltree,row.names(sub))
 plot_tree(subtree, column='county')
 #dev.off()
 
+#combined-results
+
+
 #----------------
 #phytools tree
 cols<-setNames(colors[1:length(leglabels)],leglabels)

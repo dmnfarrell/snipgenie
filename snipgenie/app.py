@@ -846,7 +846,7 @@ class WorkFlow(object):
         print ('Done. Sample summary:')
         print ('---------------------')
         pd.set_option('display.max_rows', 150)
-        print (samples.drop(columns=['filename1','filename2']))
+        print (samples.drop(columns=list(samples.filter(regex='filename'))))
         print ()
 
         if self.buildtree == True:

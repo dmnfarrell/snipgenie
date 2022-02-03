@@ -493,6 +493,7 @@ class FilesTable(DataFrameTable):
         menu = self.menu
         detailsAction = menu.addAction("Sample Details")
         fastqqualityAction = menu.addAction("Quality Summary")
+        readlengthsAction = menu.addAction("Read Length Distribution")
         plotbamAction = menu.addAction("Show Read Alignments")
         mappingstatsAction = menu.addAction("Mapping Statistics")
         removeAction = menu.addAction("Remove Selected")
@@ -506,6 +507,8 @@ class FilesTable(DataFrameTable):
         elif action == fastqqualityAction:
             #print (row)
             self.app.quality_summary(row)
+        elif action == readlengthsAction:
+            self.app.read_distributon(row)
         elif action == mappingstatsAction:
             self.app.mapping_stats(row)
         elif action == plotbamAction:

@@ -165,15 +165,14 @@ def get_chrom(filename):
     rec = list(SeqIO.parse(filename, 'fasta'))[0]
     return rec.id
 
-def get_fastq_info(filename):
-    """Return fastq mean read length"""
+def get_fastq_read_lengths(filename):
+    """Return fastq read lengths"""
 
     df = fastq_to_dataframe(filename)
     name = os.path.basename(filename).split('.')[0]
-    rl = int(df.length.mean())
-    return rl
+    return df.length
 
-def get_fastq_length(filename):
+def get_fastq_size(filename):
     """Return fastq number of reads"""
 
     cmd = 'expr $(zcat "%s" | wc -l) / 4' %filename

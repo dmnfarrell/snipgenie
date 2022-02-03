@@ -598,7 +598,7 @@ class App(QMainWindow):
         if os.path.exists(bcf):
              os.remove(bcf)
         df = self.fastq_table.model.df
-        cols = ['bam_file','mapped','total']
+        cols = ['bam_file','mapped','reads']
         for col in cols:
             if col in df.columns:
                 df = df.drop(columns=col)
@@ -629,7 +629,8 @@ class App(QMainWindow):
         new = app.get_samples(filenames, sep=kwds['labelsep'])
         #pivoted
         new = app.get_pivoted_samples(new)
-        new['read_length'] = new.filename1.apply(tools.get_fastq_info)
+        rl = tools.get_fastq_read_lengths()
+        new['read_length'] = new.filename1.apply(int(rl.length.mean()))
 
         if len(df)>0:
             new = pd.concat([df,new],sort=False).reset_index(drop=True)
@@ -1085,14 +1086,33 @@ class App(QMainWindow):
             self.tabs.setCurrentIndex(i)
         return
 
+    def read_distributon(self, row):
+        """get read length distribution"""
+
+        df = self.fastq_table.model.df
+        row = self.fastq_table.getSelectedRows()[0]
+        data = df.iloc[row]
+        name=data['sample']
+        rl = tools.get_fastq_read_lengths(data.filename1)
+
+        w = widgets.PlotViewer(self)
+        fig,ax = plt.subplots(1,1, figsize=(7,5), dpi=65)
+        rl.hist(bins=20,ax=ax)
+        ax.set_title(name)
+        w.show_figure(fig)
+        label = 'readlengths:'+name
+        i = self.tabs.addTab(w, label )
+        self.tabs.setCurrentIndex(i)
+        return
+
     def add_read_lengths(self, progress_callback):
-        """get read lengths"""
+        """Get read lengths"""
 
         df = self.fastq_table.model.df
         rows = self.fastq_table.getSelectedRows()
         data = df.iloc[rows]
         for i,r in data.iterrows():
-            df.loc[i,'reads'] = tools.get_fastq_length(r.filename1)
+            df.loc[i,'reads'] = tools.get_fastq_size(r.filename1)
         return
 
     def add_mapping_stats(self, progress_callback):
@@ -1140,6 +1160,9 @@ class App(QMainWindow):
     def show_bam_viewer(self, row):
         """Show simple alignment view for a bam file"""
 
+        if self.ref_genome == None:
+            self.info.append('no reference genome set!')
+            return
         df = self.fastq_table.model.df
         row = self.fastq_table.getSelectedRows()[0]
         data = df.iloc[row]

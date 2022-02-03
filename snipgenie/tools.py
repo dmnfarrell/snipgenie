@@ -165,6 +165,11 @@ def get_chrom(filename):
     rec = list(SeqIO.parse(filename, 'fasta'))[0]
     return rec.id
 
+def get_fastq_info(filename):
+
+    rl = get_fastq_read_lengths(filename)
+    return int(rl.mean())
+
 def get_fastq_read_lengths(filename):
     """Return fastq read lengths"""
 

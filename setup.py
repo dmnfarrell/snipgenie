@@ -17,7 +17,7 @@ setup(
     package_data={'snipgenie': ['data/*.*','logo.png',
                   'description.txt']
                  },
-    install_requires=['numpy>=1.10',
+    install_requires=['numpy>=1.2',
                       'pandas>=0.24',
                       'matplotlib>=3.0',
                       'biopython>=1.5',

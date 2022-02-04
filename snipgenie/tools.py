@@ -572,7 +572,7 @@ def get_snp_matrix(df):
     return x
 
 def plot_fastq_qualities(filename, ax=None, limit=10000):
-    """Plot fastq qualities"""
+    """Plot fastq qualities for illumina reads."""
 
     if not os.path.exists(filename):
         return

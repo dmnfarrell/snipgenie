@@ -29,6 +29,7 @@ import pandas as pd
 import numpy as np
 import pylab as plt
 from Bio import SeqIO
+import matplotlib as mpl
 from . import tools, aligners, app, widgets, tables, plotting, trees
 
 home = os.path.expanduser("~")
@@ -72,6 +73,7 @@ class App(QMainWindow):
         if project != None:
             self.load_project(project)
         self.threadpool = QtCore.QThreadPool()
+        mpl.style.use('bmh')
         return
 
     def load_settings(self):
@@ -1064,6 +1066,7 @@ class App(QMainWindow):
         df = self.fastq_table.model.df
         row = self.fastq_table.getSelectedRows()[0]
         data = df.iloc[row]
+        rl = tools.get_fastq_read_lengths(data.filename1)
         if 'filename2' in df.columns:
             colnames = zip([data.name1, data.name2], [data.filename1, data.filename2])
         else:
@@ -1073,12 +1076,14 @@ class App(QMainWindow):
             if label in self.get_tab_names():
                 return
             w = widgets.PlotViewer(self)
-            fig,ax = plt.subplots(2,1, figsize=(7,5), dpi=65, facecolor=(1,1,1), edgecolor=(0,0,0))
+            fig,ax = plt.subplots(2,1, figsize=(7,5), dpi=65,
+                        facecolor=(1,1,1), edgecolor=(0,0,0))
             axs=ax.flat
             if not os.path.exists(fname):
                 self.show_info('This file is missing.')
                 return
-            tools.plot_fastq_qualities(fname, ax=axs[0])
+            if rl.mean()<800:
+                tools.plot_fastq_qualities(fname, ax=axs[0])
             tools.plot_fastq_gc_content(fname, ax=axs[1])
             plt.tight_layout()
             w.show_figure(fig)

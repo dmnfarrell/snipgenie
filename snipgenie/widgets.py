@@ -676,7 +676,6 @@ class PlotViewer(QDialog):
     def __init__(self, parent=None):
 
         super(PlotViewer, self).__init__(parent)
-        from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
         self.setGeometry(QtCore.QRect(200, 200, 600, 600))
         self.grid = QGridLayout()
         self.setLayout(self.grid)
@@ -687,12 +686,14 @@ class PlotViewer(QDialog):
     def show_figure(self, fig):
 
         from matplotlib.backends.backend_qt5agg import FigureCanvas
+        from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
         import matplotlib.pyplot as plt
         #ax.plot(range(10))
         canvas = FigureCanvas(fig)
         self.grid.addWidget(canvas)
-        self.fig = fig
-        #self.ax = ax
+        self.toolbar = NavigationToolbar(canvas, self)
+        self.grid.addWidget(self.toolbar)
+        self.fig = fig        
         return
 
 class BrowserViewer(QDialog):

@@ -173,7 +173,7 @@ def get_fastq_info(filename):
 def get_fastq_read_lengths(filename):
     """Return fastq read lengths"""
 
-    df = fastq_to_dataframe(filename)
+    df = fastq_to_dataframe(filename, size=20000)
     name = os.path.basename(filename).split('.')[0]
     return df.length
 
@@ -281,7 +281,7 @@ def blast_sequences(database, seqs, labels=None, **kwargs):
             name = seq.id
         recs.append(rec)
     SeqIO.write(recs, 'tempseq.fa', "fasta")
-    df = blast_file(database, 'tempseq.fa', **kwargs)
+    df = blast_fasta(database, 'tempseq.fa', **kwargs)
     return df
 
 def dataframe_to_fasta(df, seqkey='translation', idkey='locus_tag',
@@ -315,12 +315,14 @@ def fasta_to_dataframe(infile, header_sep=None, key='name', seqkey='sequence'):
     df[key] = df[key].str.replace('|','_')
     return df
 
-def fastq_to_dataframe(filename, size=1000):
+def fastq_to_dataframe(filename, size=5000):
     """Convert fastq to dataframe.
-        size: limit to the first reads of total size
+        size: limit to the first reads of total size, use None to get all reads
         Returns: dataframe with reads
     """
 
+    if size==None:
+        size=1e7
     ext = os.path.splitext(filename)[1]
     if ext=='.gz':
         fastq_parser = SeqIO.parse(gzopen(filename, "rt"), "fastq")

@@ -631,8 +631,8 @@ class App(QMainWindow):
         new = app.get_samples(filenames, sep=kwds['labelsep'])
         #pivoted
         new = app.get_pivoted_samples(new)
-        rl = tools.get_fastq_read_lengths()
-        new['read_length'] = new.filename1.apply(int(rl.length.mean()))
+        print ('getting fastq read lengths..')
+        new['read_length'] = new.filename1.apply(lambda x: tools.get_fastq_info(x))
 
         if len(df)>0:
             new = pd.concat([df,new],sort=False).reset_index(drop=True)

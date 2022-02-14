@@ -201,6 +201,21 @@ def check_samples_aligned(samples, outdir):
     print ('%s/%s samples already aligned' %(len(found),len(samples)))
     return
 
+def mapping_stats(samples):
+    """Get stats on mapping of samples"""
+
+    def get_stats(x):
+        d = tools.samtools_flagstat(x)
+        s = pd.Series(d)
+        return s
+    #bams = get_files_from_paths(path, '*.bam')
+    for i,r in samples.iterrows():
+        s = get_stats(r.bam_file)
+        samples.loc[i,'mapped'] = s['mapped']
+        samples.loc[i,'reads'] = s['total']
+        samples.loc[i,'perc_mapped'] = round(s['mapped']/s['total']*100,2)
+    return samples
+
 def clean_bam_files(samples, path, remove=False):
     """Check if any bams in output not in samples and remove. Not used in workflow."""
 
@@ -813,6 +828,10 @@ class WorkFlow(object):
                         aligner=self.aligner, platform=self.platform,
                         unmapped=unmapped,
                         threads=self.threads, overwrite=self.overwrite)
+
+        #mapping stats
+        if 'mapped' not in samples.columns:
+            samples = mapping_stats(samples)
         #save sample table
         samples.to_csv(os.path.join(self.outdir,'samples.csv'),index=False)
 

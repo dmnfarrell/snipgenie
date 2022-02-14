@@ -1139,7 +1139,7 @@ class App(QMainWindow):
             s = get_stats(r.bam_file)
             df.loc[i,'mapped'] = s['mapped']
             df.loc[i,'total'] = s['total']
-            df.loc[i,'perc_mapped'] = round(s['mapped']/s['total']*100,2)
+            df.loc[i,'perc_mapped'] = s['perc_mapped']
         #self.fastq_table.setDataFrame(df)
         return
 

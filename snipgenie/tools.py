@@ -750,6 +750,7 @@ def samtools_flagstat(filename):
     d = {}
     for c,v in zip(cols,x):
         d[c] = v
+    d['perc_mapped'] = round(d['mapped']/d['total']*100,2)
     return d
 
 def samtools_tview(bam_file, chrom, pos, width=200, ref='', display='T'):

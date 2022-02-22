@@ -71,11 +71,11 @@ def tree_from_snps(snpmat):
     tre.ladderize().draw(**mystyle,width=700)
     return tre
 
-def make_ref_snps(nucmat, clusts):
+def make_ref_snps(nucmat, clusts, column='ClusterNumber'):
     """Add cluster info to snps"""
 
     nucmat = nucmat.set_index('pos')
-    X=nucmat.T.merge(clusts,left_index=True,right_on='SequenceName').set_index(['ClusterNumber']).T
+    X=nucmat.T.merge(clusts,left_index=True,right_on='SequenceName').set_index([column]).T
     return X
 
 def get_clade_snps(refmat):
@@ -96,7 +96,6 @@ def get_clade_snps(refmat):
             #print (pos)
             a = r[c]
             b = r[~r.index.isin([c])]
-            #print (len(r),len(a),len(b))
             f1 = a.value_counts()
             f2 = b.value_counts()
             alt1 = f1.index[0]
@@ -105,8 +104,6 @@ def get_clade_snps(refmat):
             alt2 = f2.index[0]
             if alt1 in f2:
                 continue
-            #print (f1,alt2)
-            #print (f1,f2)
             res.append((c,pos,alt1))
 
     res = pd.DataFrame(res,columns=['clade','pos','allele'])

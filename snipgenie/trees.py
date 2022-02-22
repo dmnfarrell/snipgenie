@@ -214,10 +214,16 @@ def remove_nodes(tree, names):
         node = tree.search_nodes(name=n)[0]
         node.delete()
 
-def run_tree_cluster(f,dist):
+def run_treecluster(f, threshold, method='max_clade'):
+    """Run treecluster on a newick tree.
+       Clustering Method (options: avg_clade, length,
+            length_clade, max, max_clade, med_clade, root_dist,
+            single_linkage_clade) (default: max_clade)
+        see https://github.com/niemasd/TreeCluster
+    """
 
     import io
-    cmd = 'TreeCluster.py  -i {f} -t {d}'.format(f=f,d=dist)
+    cmd = 'TreeCluster.py  -i {f} -t {t} -m {m}'.format(f=f,t=threshold,m=method)
     print (cmd)
     cl=subprocess.check_output(cmd, shell=True)
     cl=pd.read_csv(io.BytesIO(cl),sep='\t')

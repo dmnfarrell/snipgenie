@@ -228,3 +228,17 @@ def run_treecluster(f, threshold, method='max_clade'):
     cl=subprocess.check_output(cmd, shell=True)
     cl=pd.read_csv(io.BytesIO(cl),sep='\t')
     return cl
+
+def get_clusters(tree):
+    """Get snp clusters from newick tree using TreeCluster.py"""
+
+    dists = [3,5,8,10,12,20,50]
+    c=[]
+    for d in dists:
+        clust = run_treecluster(tree, threshold=d, method='max_clade')
+        #print (clust.ClusterNumber.value_counts()[:10])
+        clust['d']='snp'+str(d)
+        c.append(clust)
+
+    clusts = pd.pivot_table(pd.concat(c),index='SequenceName',columns='d',values='ClusterNumber').reset_index()
+    return clusts

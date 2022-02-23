@@ -71,63 +71,61 @@ def tree_from_snps(snpmat):
     tre.ladderize().draw(**mystyle,width=700)
     return tre
 
-def make_ref_snps(nucmat, clusts, column='ClusterNumber'):
-    """Add cluster info to snps"""
+def snp_table_from_matrix(nucmat):
+    """Re-format core snp matrix into long form dataframe"""
 
-    nucmat = nucmat.set_index('pos')
-    X=nucmat.T.merge(clusts,left_index=True,right_on='SequenceName').set_index([column]).T
-    return X
+    nucmat = nucmat.set_index('pos').T.stack().reset_index()
+    nucmat.columns=['sample','pos','nuc']
+    nucmat['allele'] = nucmat.pos.astype(str)+nucmat.nuc
+    return nucmat
 
-def get_clade_snps(refmat):
-    """Get unique clade SNPs from a SNP matrix
-       returns: a dataframe with unique positions/allele for each clade
-       with this format
-              clade      pos allele
-           2   490878      G
-           2   804997      T
-           2   941068      A
-           2  1124266      G
+def get_snps(nucmat, sample):
+    """Get sample snps from a core snp matrix of samples.
+    This matrix is the output from snipgenie (core.txt)"""
+
+    df = get_snp_table(nucmat)
+    return list(df[df['sample']==sample].allele)
+
+def get_clade_snps(nucmat, clusts, col='snp12'):
+    """Get clade specific snps from the snp matrix.
+    Args:
+        nucmat: core snp matrix from snipgenie
+        clusts: dataframe of sequence clusters with varying snp cutoffs.
+            generated using trees.get_clusters(tree file)
+        col: snp level
     """
 
-    res=[]
-    clusters = refmat.columns.unique()
-    for c in clusters:
-        for pos,r in list(refmat.iterrows())[:700]:
-            #print (pos)
-            a = r[c]
-            b = r[~r.index.isin([c])]
-            f1 = a.value_counts()
-            f2 = b.value_counts()
-            alt1 = f1.index[0]
-            if len(f1)>1:
-                continue
-            alt2 = f2.index[0]
-            if alt1 in f2:
-                continue
-            res.append((c,pos,alt1))
-
-    res = pd.DataFrame(res,columns=['clade','pos','allele'])
-    print (res)
-    return res
-
-def lookup_sample(snptable, snps):
-    """Look up a sample using snps and known clades
-        snptable: reference lookup table
-        snps: a series with snps at each position for the
-        given sample, this can be derived from a single row
-        in the snp matrix produced from snipgenie
-    """
-
+    c = snp_table_from_matrix(nucmat)
+    snp12cl = clusts[~clusts.snp12.isin([-1,1])]
+    c = c.merge(snp12cl,left_on='sample',right_on='SequenceName')
+    g = c.groupby(['pos',col,'allele']).agg({'allele':np.size})
+    g = g.rename(columns={'allele':'size'}).reset_index()
+    #print (g)
     found=[]
-    for i,r in snptable.iterrows():
-        if not r.pos in snps.index:
-            continue
-        if snps[r.pos] == r.allele:
-            #print (r.pos,r.allele,r.clade)
-            found.append(r.clade)
-    if len(found) == 0:
+    for i,df in g.groupby('pos'):
+        vc = df.allele.value_counts()
+        #get only alleles presents in one cluster
+        vc = (vc[vc==1])
+        if len(vc)==1:
+            a = vc.index[0]
+            f = df[df.allele==a]
+            found.append(df[df.allele==a])
+    found=pd.concat(found)
+    #print (found[found.snp12==10])
+    found.groupby(col).size()
+    return found
+
+def lookup_sample(clade_snps, x):
+    """Lookup a samples snps to identify known clade"""
+
+    found = clade_snps[clade_snps.allele.isin(x)]
+    #print (found)
+    found = set(found.snp12)
+    if len(found) == 1:
+        return list(found)[0]
+    elif len(found)==0:
         return
-    return set(found)
+    return found
 
 def type_samples(nucmat):
     """

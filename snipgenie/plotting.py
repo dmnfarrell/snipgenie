@@ -235,3 +235,42 @@ def plot_features(rec, ax, rows=3, xstart=0, xend=30000):
         ax.figure.canvas.draw()
     #cid = ax.figure.canvas.mpl_connect('button_press_event', onclick)
     return
+
+def gen_colors(cmap,n,reverse=False):
+    '''Generates n distinct color from a given colormap.
+    Args:
+        cmap(str): The name of the colormap you want to use.
+            Refer https://matplotlib.org/stable/tutorials/colors/colormaps.html to choose
+            Suggestions:
+            For Metallicity in Astrophysics: Use coolwarm, bwr, seismic in reverse
+            For distinct objects: Use gnuplot, brg, jet,turbo.
+        n(int): Number of colors you want from the cmap you entered.
+        reverse(bool): False by default. Set it to True if you want the cmap result to be reversed.
+    Returns:
+        colorlist(list): A list with hex values of colors.
+
+    Taken from the mycolorpy package by binodbhttr
+    see also https://matplotlib.org/stable/tutorials/colors/colormaps.html
+    '''
+
+    import matplotlib.pyplot as plt
+    import matplotlib.colors as colors
+    c_map = plt.cm.get_cmap(str(cmap)) # select the desired cmap
+    arr=np.linspace(0,1,n) #create a list with numbers from 0 to 1 with n items
+    colorlist=list()
+    for c in arr:
+        rgba=c_map(c) #select the rgba value of the cmap at point c which is a number between 0 to 1
+        clr=colors.rgb2hex(rgba) #convert to hex
+        colorlist.append(str(clr)) # create a list of these colors
+
+    if reverse==True:
+        colorlist.reverse()
+    return colorlist
+
+def show_colors(colors):
+    """display a list of colors"""
+
+    plt.figure(figsize=(6,1))
+    plt.bar(range(len(colors)),height=1,color=colors,width=1)
+    plt.axis('off')
+    return

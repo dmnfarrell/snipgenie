@@ -232,7 +232,7 @@ def run_treecluster(f, threshold, method='max_clade'):
 def get_clusters(tree):
     """Get snp clusters from newick tree using TreeCluster.py"""
 
-    dists = [3,5,8,10,12,20,50]
+    dists = [3,5,7,10,12,20,50,100]
     c=[]
     for d in dists:
         clust = run_treecluster(tree, threshold=d, method='max_clade')

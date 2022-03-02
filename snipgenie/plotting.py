@@ -236,6 +236,18 @@ def plot_features(rec, ax, rows=3, xstart=0, xend=30000):
     #cid = ax.figure.canvas.mpl_connect('button_press_event', onclick)
     return
 
+def random_colors(n=10, seed=1):
+    """Generate random hex colors as list of length n."""
+
+    import random
+    random.seed(seed)
+    clrs=[]
+    for i in range(n):
+        r = lambda: random.randint(0,255)
+        c='#%02X%02X%02X' % (r(),r(),r())
+        clrs.append(c)
+    return clrs
+
 def gen_colors(cmap,n,reverse=False):
     '''Generates n distinct color from a given colormap.
     Args:

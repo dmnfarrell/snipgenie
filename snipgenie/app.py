@@ -72,8 +72,8 @@ if not os.path.exists(config_path):
     except:
         os.makedirs(config_path)
 
-defaults = {'threads':None, 'labelsep':'_','trim':False, 'unmapped':False,
-            'quality':25,
+defaults = {'threads':None, 'labelsep':'_', 'labelindex':0,
+            'trim':False, 'unmapped':False, 'quality':25,
             'aligner': 'bwa', 'platform': 'illumina', 'species': None,
             'filters': default_filter, 'custom_filters': False, 'mask': None,
             'reference': None, 'gb_file': None, 'overwrite':False,
@@ -144,27 +144,34 @@ def get_files_from_paths(paths, ext='*.f*q.gz', filter_list=None):
         files=found
     return files
 
-def get_samples(filenames, sep='-'):
+def get_samples(filenames, sep='-', index=0):
     """Get sample pairs from list of files, usually fastq. This
-     returns a dataframe of sample labels in original order of reading from
-     file system.
+     returns a dataframe of unique sample labels for the input and tries
+     to recognise the paired files.
+     Args:
+        sep: separator to split name on
+        index: placement of label in split list, default 0
      """
 
     res = []
     cols = ['name','sample','filename']
     for filename in filenames:
-        name = os.path.basename(filename).split('.')[0]
-        sample = name.split(sep)[0]
-        #if we can't get sample name try another delimeter?
-        if name == sample:
-            sample = name.split('_')[0]
+        name = os.path.basename(filename)#.split('.')[0]
+        name = name.removesuffix('.fastq.gz')
+        #make sure we remove pair numbers at end before getting sample
+        if name[-2:] == '_1' or name[-2:] == '_2':
+            label = name[:-2]
+        else:
+            label = name
+        #print (label)
+        sample = label.split(sep)[index]
+        #print (sample)
         x = [name, sample, os.path.abspath(filename)]
         res.append(x)
 
     df = pd.DataFrame(res, columns=cols)
     df = df.sort_values(['sample','filename'])
     df['pair'] = df.groupby('sample').cumcount()+1
-    #df = df.sort_values(['name','sample','pair']).reset_index(drop=True)
     df = df.drop_duplicates('filename')
     return df
 
@@ -175,6 +182,10 @@ def get_pivoted_samples(df):
 
     p = pd.pivot_table(df,index='sample',columns='pair',values=['filename','name'],
                         aggfunc='first')
+    if len(p.columns) > 4:
+        print ('error in filename parsing, check labelsep and labelindex options')
+        print (df[:10])
+        return
     c = list(zip(p.columns.get_level_values(0),p.columns.get_level_values(1)))
     p.columns = [i[0]+str(i[1]) for i in c]
     p = p.reset_index()
@@ -654,18 +665,26 @@ def get_aa_snp_matrix(df):
     x = x.fillna(0)
     return x
 
-def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4, **kwargs):
+def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4,
+                sep='_', labelindex=0,
+                **kwargs):
     """
     Run workflow with bam files from a previous sets of alignments.
-    We can arbitrarily combine results from multiple runs this way.
-    kwargs are passed to variant_calling method
+    We can arbitrarily combine results from multiple other runs this way.
+    kwargs are passed to variant_calling method.
+    Should write a samples.txt file in the outdir if vcf header is to be
+    relabelled.
     """
 
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
-    df = get_samples(bam_files, sep='_')
+
+    #get sample names if not provided
+    #if get_labels is True:
+        #df = get_samples(bam_files, sep=sep, index=labelindex)
+        #print (df)
+        #write_samples(df[['sample']], outdir)
     print ('%s samples were loaded:' %len(bam_files))
-    write_samples(df[['sample']], outdir)
     vcf_file = variant_calling(bam_files, ref, outdir, threads=threads,
                                    relabel=True, gff_file=gff_file,
                                    **kwargs)
@@ -759,8 +778,10 @@ class WorkFlow(object):
             self.threads = multiprocessing.cpu_count()
         else:
             self.threads = int(self.threads)
-        df = get_samples(self.filenames, sep=self.labelsep)
+        df = get_samples(self.filenames, sep=self.labelsep, index=self.labelindex)
         df = get_pivoted_samples(df)
+        if df is None:
+            return
         if len(df) == 0:
             print ('no samples provided. files should be fastq.gz type')
             return False
@@ -912,8 +933,10 @@ def main():
                         help="input folder(s)", metavar="FILE")
     #parser.add_argument("-l", "--labels", dest="labels", default=[],
     #                    help="sample labels file, optional", metavar="FILE")
-    parser.add_argument("-e", "--labelsep", dest="labelsep", default=',',
+    parser.add_argument("-e", "--labelsep", dest="labelsep", default='_',
                         help="symbol to split the sample labels on")
+    parser.add_argument("-x", "--labelindex", dest="labelindex", default=0,
+                        help="position to extract label in split filenames")
     parser.add_argument("-r", "--reference", dest="reference", default=None,
                         help="reference genome filename", metavar="FILE")
     parser.add_argument("-S", "--species", dest="species", default=None,
@@ -952,7 +975,7 @@ def main():
                         help="Get version")
     parser.add_argument("-d", "--dummy", dest="dummy",  action="store_true",
                         default=False, help="Check samples but don't run")
-    parser.add_argument("-x", "--test", dest="test",  action="store_true",
+    parser.add_argument("-X", "--test", dest="test",  action="store_true",
                         default=False, help="Test run")
     parser.add_argument("-v", "--version", dest="version", action="store_true",
                         help="Get version")

@@ -188,6 +188,7 @@ def get_pivoted_samples(df):
         return
     c = list(zip(p.columns.get_level_values(0),p.columns.get_level_values(1)))
     p.columns = [i[0]+str(i[1]) for i in c]
+    p = p.fillna('')
     p = p.reset_index()
     return p
 
@@ -694,6 +695,8 @@ def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4,
     SeqIO.write(snprecs, outfasta, 'fasta')
     smat.to_csv(os.path.join(outdir,'core.txt'), sep=' ')
     aln = AlignIO.read(outfasta, 'fasta')
+    #remove ref
+    aln = aln[1:]
     snp_dist = tools.snp_dist_matrix(aln)
     snp_dist.to_csv(os.path.join(outdir,'snpdist.csv'), sep=',')
     treefile = trees.run_RAXML(outfasta, outpath=outdir)
@@ -880,6 +883,7 @@ class WorkFlow(object):
         print ()
         #write out pairwise snp distances
         aln = AlignIO.read(outfasta, 'fasta')
+        aln = aln[1:]
         snp_dist = tools.snp_dist_matrix(aln)
         snp_dist.to_csv(os.path.join(self.outdir,'snpdist.csv'), sep=',')
 

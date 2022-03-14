@@ -55,16 +55,19 @@ def bwa_align(file1, file2, idx, out, threads=4, overwrite=False,
     """
 
     bwacmd = tools.get_cmd('bwa')
-    samtoolscmd = tools.get_cmd('samtools')    
+    samtoolscmd = tools.get_cmd('samtools')
     if unmapped == None:
         keepmapped = '-F 4'
     else:
         keepmapped = ''
-    if file2 == None:
-        file2=''
-    cmd = '{b} mem -M -t {t} {p} {i} "{f1}" "{f2}" | {s} view {k} -bt - | {s} sort -o {o}'.format(
+    
+    if file2 == None or file2 == '':
+        filestr = '"{f}"'.format(f=file1)
+    else:
+        filestr = '"{f1}" "{f2}"'.format(f1=file1,f2=file2)
+    cmd = '{b} mem -M -t {t} {p} {i} {f} | {s} view {k} -bt - | {s} sort -o {o}'.format(
                 b=bwacmd,i=idx,s=samtoolscmd,
-                f1=file1,f2=file2,o=out,t=threads,p=options,k=keepmapped)
+                f=filestr,o=out,t=threads,p=options,k=keepmapped)
     if not os.path.exists(out) or overwrite == True:
         print (cmd)
         tmp = subprocess.check_output(cmd, shell=True)

@@ -891,3 +891,25 @@ def get_sb_number(binary_str):
         return
     else:
         return x.iloc[0].SB
+
+def get_spoligotypes(samples, spo=None):
+    """Get spoligotypes for multiple M.bovis strains"""
+
+    if spo is not None:
+        done=list(spo['sample'])
+    else:
+        done=[]
+    samples = samples.drop_duplicates('sample')
+    res=[]
+    for i,r in samples.iterrows():
+        f=r.filename1
+        samp=r['sample']
+        if samp in done:
+            continue
+        b = get_spoligotype(f)
+        sb = get_sb_number(b)
+        print (r['sample'], sb, b)
+        res.append([r['sample'],sb,b])
+
+    res = pd.DataFrame(res,columns=['sample','SB','code'])
+    return res

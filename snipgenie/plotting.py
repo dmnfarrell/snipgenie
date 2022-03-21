@@ -286,3 +286,16 @@ def show_colors(colors):
     plt.bar(range(len(colors)),height=1,color=colors,width=1)
     plt.axis('off')
     return
+
+def get_color_mapping(df, col, cmap=None, seed=1):
+    """Get random color map for categorcical dataframe column"""
+
+    c = df[col].unique()
+    if cmap == None:
+        rcolors = plotting.random_colors(len(c),seed)
+    else:
+        cmap = mpl.cm.get_cmap(cmap)
+        rcolors = [cmap(i) for i in range(len(c))]
+    colormap = dict(zip(c, rcolors))
+    newcolors =  [colormap[i] if i in colormap else 'Black' for i in df[col]]
+    return newcolors, colormap

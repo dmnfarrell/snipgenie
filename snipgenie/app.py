@@ -164,8 +164,7 @@ def get_samples(filenames, sep='-', index=0):
         else:
             label = name
         #print (label)
-        sample = label.split(sep)[index]
-        #print (sample)
+        sample = label.split(sep)[index]        
         x = [name, sample, os.path.abspath(filename)]
         res.append(x)
 

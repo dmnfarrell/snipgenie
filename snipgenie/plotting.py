@@ -31,6 +31,8 @@ from Bio.Align import MultipleSeqAlignment
 from Bio import AlignIO, SeqIO
 from pyfaidx import Fasta
 import pylab as plt
+import matplotlib as mpl
+import matplotlib.colors as colors
 from . import tools
 
 def heatmap(df, cmap='gist_gray_r', w=15, h=5, ax=None):
@@ -265,8 +267,6 @@ def gen_colors(cmap,n,reverse=False):
     see also https://matplotlib.org/stable/tutorials/colors/colormaps.html
     '''
 
-    import matplotlib.pyplot as plt
-    import matplotlib.colors as colors
     c_map = plt.cm.get_cmap(str(cmap)) # select the desired cmap
     arr=np.linspace(0,1,n) #create a list with numbers from 0 to 1 with n items
     colorlist=list()
@@ -292,7 +292,7 @@ def get_color_mapping(df, col, cmap=None, seed=1):
 
     c = df[col].unique()
     if cmap == None:
-        rcolors = plotting.random_colors(len(c),seed)
+        rcolors = random_colors(len(c),seed)
     else:
         cmap = mpl.cm.get_cmap(cmap)
         rcolors = [cmap(i) for i in range(len(c))]

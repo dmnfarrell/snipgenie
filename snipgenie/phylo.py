@@ -68,7 +68,7 @@ class TreeViewer(QWidget):
                 "stroke-width": 2,
             },
             "tip_labels": True,
-            "tip_labels_align": True,
+            "tip_labels_align": False,
             "tip_labels_colors": 'black',
             "tip_labels_style": {
                 "font-size": "14px"

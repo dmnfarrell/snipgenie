@@ -148,22 +148,64 @@ def apply_rules(x):
     else:
         return 'Unknown'
 
-def get_coverage(bam_file, chr, start, end, ref):
-    """Get coverage of a region. Returns a dataframe"""
+def _get_coverage(bam_file, chr, start, end, ref):
+    """
+    Get coverage of a region. Returns a dataframe.
+    Usually called from the parallel version.
+    """
 
     cmd = 'samtools mpileup {b} --min-MQ 10 -f {r} -r {c}:{s}-{e}'.format(c=chr,s=start,e=end,b=bam_file,r=ref)
     #print(cmd)
     temp = subprocess.check_output(cmd, shell=True)
-    df=pd.read_csv(io.BytesIO(temp), sep='\t', names=['chr','pos','base','coverage','q','c'])
+    df = pd.read_csv(io.BytesIO(temp), sep='\t', names=['chr','pos','base','coverage','q','c'])
+    #add zeros in missing positions
+    df = (df.set_index('pos')
+         .reindex(range(df.pos.iloc[0],end), fill_value=0)
+         .reset_index())
     if len(df)==0:
         df['pos'] = range(start,end)
         df['coverage']=0
     return df
 
-def show_rd_coverage(samples, chr, start, end, ref_fasta, ref_gb, margin=None,
-                    labelcol=None,title=None, colors={}):
+def get_coverage(bam_file, chr, start, end, ref, n_cores=8):
+    """Get coverage from a bam file - parallelized.
+    Args:
+        bam_file: input bam file, should be indexed
+        chr: valid chromosome name
+        start/end: start and end positions for region
+        ref: reference genome used for alignment
     """
-    Plot read coverage in specific regions for multiple samples. useful for
+
+    from multiprocessing import  Pool
+
+    pool = Pool(n_cores)
+    x = np.linspace(start,end,n_cores,dtype=int)
+    blocks=[]
+    for i in range(len(x)):
+        if i < len(x)-1:
+            blocks.append((x[i],x[i+1]-1))
+    #print (blocks)
+    funclist = []
+    for start,end in blocks:
+        f = pool.apply_async(_get_coverage, [bam_file, chr, start, end, ref])
+        funclist.append(f)
+    result=[]
+    for f in funclist:
+        df = f.get(timeout=None)
+        result.append(df)
+    pool.close()
+    pool.join()
+    result = pd.concat(result)
+    #add zeros in missing positions
+    result = (result.set_index('pos')
+         .reindex(range(result.pos.iloc[0],end), fill_value=0)
+         .reset_index())
+    return result
+
+def show_coverage(samples, chr, start, end, ref_fasta, ref_gb, clip=None,
+                    margin=None, labelcol=None, title=None, colors={}):
+    """
+    Plot read coverage in specific regions for multiple samples. Useful for
     RD region comparison.
     """
 
@@ -188,11 +230,13 @@ def show_rd_coverage(samples, chr, start, end, ref_fasta, ref_gb, margin=None,
     for n,r in samples.iterrows():
         name=r['sample']
         ax=fig.add_subplot(gs[i,0])
-        df = get_coverage(r.bam_file,chr,start-margin,end+margin,ref_fasta)
+        df = _get_coverage(r.bam_file,chr,start-margin,end+margin,ref_fasta)
         df=df.set_index('pos')
         #print (df)
         #bins=range(0,max(df.coverage),int(max(df.coverage)/5))
         #df['binned']=np.searchsorted(bins, df.coverage.values)
+        if clip != None:
+            df['coverage'] = df.coverage.clip(0,clip)
         if name in colors:
             color=colors[name]
         else:
@@ -216,3 +260,21 @@ def show_rd_coverage(samples, chr, start, end, ref_fasta, ref_gb, margin=None,
         title='%s:%s-%s' %(chr,start,end)
     fig.suptitle(title,fontsize=25)
     return
+
+def detect_deletions(df, thresh=1):
+    """Detect regions of zero coverage that are due to deletions if aligned
+    against a reference genome like MTB.
+    df is a dataframe that is the output of get_coverage."""
+
+    a = df.coverage
+    #print (a)
+    p=df.pos.iloc[0]
+    m = np.concatenate(( [True], a>thresh, [True] ))
+    ss = np.flatnonzero(m[1:] != m[:-1]).reshape(-1,2)
+    start,stop = ss[(ss[:,1] - ss[:,0]).argmax()]
+    ss = pd.DataFrame(ss,columns=['start','end'])
+    ss = ss+p
+    ss['length'] = ss.end-ss.start
+    ss = ss[ss.length>1]
+    ss = ss.sort_values('length',ascending=False)
+    return ss

@@ -148,26 +148,29 @@ def apply_rules(x):
     else:
         return 'Unknown'
 
-def _get_coverage(bam_file, chr, start, end, ref):
+def _get_coverage(bam_file, chr, start, end, ref,  minq=10):
     """
     Get coverage of a region. Returns a dataframe.
     Usually called from the parallel version.
     """
 
-    cmd = 'samtools mpileup {b} --min-MQ 10 -f {r} -r {c}:{s}-{e}'.format(c=chr,s=start,e=end,b=bam_file,r=ref)
+    cmd = 'samtools mpileup {b} --min-MQ {m} -f {r} -r {c}:{s}-{e}'.format(c=chr,
+            s=start,e=end,b=bam_file,r=ref,m=minq)
     #print(cmd)
     temp = subprocess.check_output(cmd, shell=True)
     df = pd.read_csv(io.BytesIO(temp), sep='\t', names=['chr','pos','base','coverage','q','c'])
-    #add zeros in missing positions
-    df = (df.set_index('pos')
-         .reindex(range(df.pos.iloc[0],end), fill_value=0)
-         .reset_index())
+
     if len(df)==0:
         df['pos'] = range(start,end)
         df['coverage']=0
+    else:
+        #add zeros in missing positions
+        df = (df.set_index('pos')
+             .reindex(range(df.pos.iloc[0],end), fill_value=0)
+             .reset_index())
     return df
 
-def get_coverage(bam_file, chr, start, end, ref, n_cores=8):
+def get_coverage(bam_file, chr, start, end, ref, minq=10, n_cores=8):
     """Get coverage from a bam file - parallelized.
     Args:
         bam_file: input bam file, should be indexed
@@ -187,7 +190,7 @@ def get_coverage(bam_file, chr, start, end, ref, n_cores=8):
     #print (blocks)
     funclist = []
     for start,end in blocks:
-        f = pool.apply_async(_get_coverage, [bam_file, chr, start, end, ref])
+        f = pool.apply_async(_get_coverage, [bam_file, chr, start, end, ref, minq])
         funclist.append(f)
     result=[]
     for f in funclist:
@@ -202,8 +205,9 @@ def get_coverage(bam_file, chr, start, end, ref, n_cores=8):
          .reset_index())
     return result
 
-def show_coverage(samples, chr, start, end, ref_fasta, ref_gb, clip=None,
-                    margin=None, labelcol=None, title=None, colors={}):
+def show_coverage(samples, chr, start, end, ref_fasta, ref_gb, minq=10, clip=None,
+                    margin=None, labelcol=None, title=None, colors={},
+                    grid=False):
     """
     Plot read coverage in specific regions for multiple samples. Useful for
     RD region comparison.
@@ -218,19 +222,26 @@ def show_coverage(samples, chr, start, end, ref_fasta, ref_gb, clip=None,
     rec.features = [f for f in rec.features if f.type!='gene']
     rd = rec[start:end]
     graphic_record = BiopythonTranslator().translate_record(rd)
-
-    fig = plt.figure(figsize=(22,8))
-    gs = GridSpec(len(samples)+3, 1, figure=fig)
-    ax1=fig.add_subplot(gs[:2,0])
+    l = end-start
+    if len(samples)<30:
+        fig = plt.figure(figsize=(22,8))
+    else:
+        fig = plt.figure(figsize=(22,14))
+    if l<5000:
+        top=2
+    else:
+        top=3
+    gs = GridSpec(len(samples)+top+1, 1, figure=fig)
+    ax1=fig.add_subplot(gs[:top,0])
     graphic_record.plot(ax=ax1,with_ruler=False)
-    i=3
+    i=top+1
     if margin==None:
         margin=(end-start)*.25
 
     for n,r in samples.iterrows():
         name=r['sample']
         ax=fig.add_subplot(gs[i,0])
-        df = _get_coverage(r.bam_file,chr,start-margin,end+margin,ref_fasta)
+        df = _get_coverage(r.bam_file,chr,start-margin,end+margin,ref_fasta,minq)
         df=df.set_index('pos')
         #print (df)
         #bins=range(0,max(df.coverage),int(max(df.coverage)/5))
@@ -242,7 +253,7 @@ def show_coverage(samples, chr, start, end, ref_fasta, ref_gb, clip=None,
         else:
             color='gray'
         df['coverage']=df.coverage.replace(0,np.nan)
-        df.plot(y='coverage',ax=ax,kind='area',color=color,legend=False)
+        df.plot(y='coverage',ax=ax,kind='area',color=color,legend=False,grid=grid)
         #print (df)
         if labelcol != None:
             label = r[labelcol]
@@ -261,7 +272,7 @@ def show_coverage(samples, chr, start, end, ref_fasta, ref_gb, clip=None,
     fig.suptitle(title,fontsize=25)
     return
 
-def detect_deletions(df, thresh=1):
+def detect_deletions(df, min_coverage=1):
     """Detect regions of zero coverage that are due to deletions if aligned
     against a reference genome like MTB.
     df is a dataframe that is the output of get_coverage."""
@@ -269,7 +280,7 @@ def detect_deletions(df, thresh=1):
     a = df.coverage
     #print (a)
     p=df.pos.iloc[0]
-    m = np.concatenate(( [True], a>thresh, [True] ))
+    m = np.concatenate(( [True], a>min_coverage, [True] ))
     ss = np.flatnonzero(m[1:] != m[:-1]).reshape(-1,2)
     start,stop = ss[(ss[:,1] - ss[:,0]).argmax()]
     ss = pd.DataFrame(ss,columns=['start','end'])
@@ -278,3 +289,83 @@ def detect_deletions(df, thresh=1):
     ss = ss[ss.length>1]
     ss = ss.sort_values('length',ascending=False)
     return ss
+
+def group_deletions(df, dist=10):
+    """Group common deletions that overlap. Allows common deletions that differ by
+      <=dist positions to be identified correctly."""
+
+    found=[]
+    res=[]
+    for i,r in df.iterrows():
+        pos = r.start
+        l = r.length
+        if pos in found:
+            continue
+        grp  = df[(abs(df.start-pos)<=dist) & (abs(df.length-l)<=dist*2)].copy()
+        grp['group'] = pos
+        found.extend(grp.start)
+        #print (found)
+        res.append(grp)
+    return pd.concat(res)
+
+def get_genes_region(s, e, annot):
+    """Get genes in region from annotation. Vectorized function"""
+
+    x = annot[((annot.start>=s) & (annot.end<=e)) | ((s>=annot.start) & (e<=annot.end))]
+    if len(x)>0:
+        s = list(x.gene.dropna().unique())
+        if len(s)>6:
+            return s[0]+'-'+s[-1]
+        else:
+            return ','.join(s)
+
+def filter_regions(df, mask_file):
+    """Filter repeats and PE/PPE and some other regions"""
+
+    mask = pd.read_csv(mask_file,sep='\s+')
+    mask['length'] = mask.end-mask.start
+    print(len(df))
+    #filter positions with mask file
+    for i,r in mask.iterrows():
+        df = df[~ ( ((df.start>=r.start) & (df.end<=r.end)) |
+        ((r.start>=df.start) & (r.end<=df.end)) & (df.length<2000) ) ]
+    print(len(df))
+    return df
+
+def get_deletions(samples, ref_fasta, gb_file=None, mask_file=None,
+                  label='sample', n_cores=4):
+    """
+    Get deletions for multiple aligned samples.
+    Args:
+        samples: dataframe of samples e.g. from snipgenie
+        ref_fasta: fasta file of genome aligned to
+        gb_file: genbank with annotation
+        mask_file: mask bed for excluding regions
+    """
+
+    from pyfaidx import Fasta
+    rg = Fasta(ref_fasta)
+    #start/end of genome
+    s=1;e=len(rg)
+    #get first chrom name
+    chrom = list(rg.keys())[0]
+    regions = []
+    for i,r in samples.iterrows():
+        print (r.bam_file)
+        #minq 0 allows multimappers to reduce false positives
+        df = get_coverage(r.bam_file,chrom,s,e,ref_fasta,minq=0,n_cores=n_cores)
+        ss = detect_deletions(df, min_coverage=0)
+        if label != None:
+            ss['name'] = r[label]
+
+        regions.append(ss)
+    regions = pd.concat(regions)
+    #group deletions into start regions
+    regions = group_deletions(regions, 200)
+    if gb_file != None:
+        annot = tools.genbank_to_dataframe(gb_file)
+        annot['gene'] = annot.gene.fillna(annot.locus_tag)
+        regions['genes'] = regions.apply(lambda x: get_genes_region(x.start, x.end, annot),1)
+    if mask_file != None:
+        regions = filter_regions(regions, mask_file)
+    return regions

@@ -164,7 +164,7 @@ def get_samples(filenames, sep='-', index=0):
         else:
             label = name
         #print (label)
-        sample = label.split(sep)[index]        
+        sample = label.split(sep)[index]
         x = [name, sample, os.path.abspath(filename)]
         res.append(x)
 
@@ -240,6 +240,42 @@ def clean_bam_files(samples, path, remove=False):
             print (f)
             os.remove(f)
     return
+
+def fetch_contam_file():
+    """Get contam sequences"""
+
+    url = "https://github.com/dmnfarrell/snipgenie/raw/master/extra/"
+    os.makedirs(bin_path, exist_ok=True)
+
+    tempdir = tempfile.gettempdir()
+    filename = os.path.join(tempdir,'contam.fa.gz')
+    destfile = os.path.join(sequence_path,'contam.fa')
+    if os.path.exists(destfile):
+        return
+    print ('fetching contaminant sequences..')
+    link = os.path.join(url,n)
+    print (filename,link)
+    urllib.request.urlretrieve(link, filename)
+    tools.gunzip(filename, destfile)
+    return
+
+def blast_contaminants(filename, limit=2000):
+    """Blast reads to contaminants database"""
+
+    #fetch_contam_file()
+    path = os.path.join(sequence_path,'contam.fa')
+    tools.make_blast_database(path)
+    seqs = tools.fastq_to_rec(filename, limit)
+    bl = tools.blast_sequences(path,seqs)
+    bl = bl[(bl.qcovs>80) & (bl.pident>95)]
+    bl.qcovs.hist()
+    c = bl.stitle.value_counts()
+    c = pd.DataFrame(c)#.reset_index()
+    c.columns = ['hits']
+    #c['name'] = c.name.apply(lambda x: x.split('__')[0])
+    c=c[c.hits>2]
+    #print (c)
+    return c
 
 def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform='illumina',
                 unmapped=None, **kwargs):

@@ -84,6 +84,16 @@ def set_attributes(obj, data):
             print (e)
     return
 
+def gunzip(infile, outfile):
+    """Gunzip a file"""
+    
+    import gzip
+    import shutil
+    with gzip.open(infile, 'rb') as f_in:
+        with open(outfile, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+    return
+
 def checkDict(d):
     """Check a dict recursively for non serializable types"""
 
@@ -314,6 +324,25 @@ def fasta_to_dataframe(infile, header_sep=None, key='name', seqkey='sequence'):
         df[key] = df[key].apply(lambda x: x.split(header_sep)[0],1)
     df[key] = df[key].str.replace('|','_')
     return df
+
+def fastq_to_rec(filename, size=500):
+    """Get reads from a fastq file
+    Returns: seqrecords
+    """
+
+    ext = os.path.splitext(filename)[1]
+    if ext=='.gz':
+        fastq_parser = SeqIO.parse(gzopen(filename, "rt"), "fastq")
+    else:
+        fastq_parser = SeqIO.parse(open(filename, "r"), "fastq")
+    res=[]
+    i=0
+    for fastq_rec in fastq_parser:
+        i+=1
+        if i>size:
+            break
+        res.append(fastq_rec)
+    return res
 
 def fastq_to_dataframe(filename, size=5000):
     """Convert fastq to dataframe.
@@ -625,9 +654,17 @@ def normpdf(x, mean, sd):
     num = math.exp(-(float(x)-float(mean))**2/(2*var))
     return num/denom
 
+def get_gc(filename, limit=1e4):
+
+    from Bio.SeqUtils import GC
+    df = fastq_to_dataframe(filename, size=limit)
+    gc = df.seq.apply(lambda x: GC(x))
+    return gc
+
 def plot_fastq_gc_content(filename, ax=None, limit=50000):
     """Plot fastq gc conent"""
 
+    import pylab as plt
     from Bio.SeqUtils import GC
     if ax==None:
         f,ax=plt.subplots(figsize=(12,5))

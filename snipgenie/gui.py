@@ -351,7 +351,10 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.add_read_lengths, self.processing_completed))
         self.tools_menu.addAction('Get Mapping Stats',
             lambda: self.run_threaded_process(self.add_mapping_stats, self.processing_completed))
+        self.tools_menu.addAction('Get GC mean',
+            lambda: self.run_threaded_process(self.add_gc_mean, self.processing_completed))
         self.tools_menu.addAction('Fastq Qualities Report', self.fastq_quality_report)
+
         self.tools_menu.addAction('Show Annotation', self.show_ref_annotation)
         self.tools_menu.addAction('Plot SNP Matrix', self.plot_snp_matrix)
         #self.tools_menu.addAction('Map View', self.show_map)
@@ -1120,6 +1123,16 @@ class App(QMainWindow):
             df.loc[i,'reads'] = tools.get_fastq_size(r.filename1)
         return
 
+    def add_gc_mean(self, progress_callback):
+        """Get mean GC to indicate contamination"""
+
+        df = self.fastq_table.model.df
+        rows = self.fastq_table.getSelectedRows()
+        data = df.iloc[rows]
+        for i,r in data.iterrows():
+            df.loc[i,'meanGC'] = tools.get_gc(r.filename1, limit=5e4).mean()
+        return
+
     def add_mapping_stats(self, progress_callback):
         """get mapping stats for all files and add to table"""
 
@@ -1178,6 +1191,24 @@ class App(QMainWindow):
         w = widgets.SimpleBamViewer(self)
         w.load_data(data.bam_file, self.ref_genome, self.ref_gb)
         w.redraw(xstart=1)
+        i = self.tabs.addTab(w, name )
+        self.tabs.setCurrentIndex(i)
+        return
+
+    def check_contamination(self):
+
+        df = self.fastq_table.model.df
+        row = self.fastq_table.getSelectedRows()[0]
+        data = df.iloc[row]
+        name = 'contam:'+data['sample']
+        c = app.blast_contaminants(data.filename1)
+
+        w = widgets.PlotViewer(self)
+        fig,ax = plt.subplots(1,1, figsize=(7,5), dpi=65)
+        c.hits.plot(kind='pie',ax=ax)
+        ax.set_title(name)
+        w.show_figure(fig)
+
         i = self.tabs.addTab(w, name )
         self.tabs.setCurrentIndex(i)
         return

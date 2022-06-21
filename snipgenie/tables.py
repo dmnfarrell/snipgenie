@@ -496,6 +496,7 @@ class FilesTable(DataFrameTable):
         readlengthsAction = menu.addAction("Read Length Distribution")
         plotbamAction = menu.addAction("Show Read Alignments")
         mappingstatsAction = menu.addAction("Mapping Statistics")
+        contamaction = menu.addAction('Check Contamination')
         removeAction = menu.addAction("Remove Selected")
         exportAction = menu.addAction("Export Table")
         action = menu.exec_(self.mapToGlobal(event.pos()))
@@ -509,6 +510,8 @@ class FilesTable(DataFrameTable):
             self.app.quality_summary(row)
         elif action == readlengthsAction:
             self.app.read_distributon(row)
+        elif action == contamaction:
+            self.app.check_contamination()
         elif action == mappingstatsAction:
             self.app.mapping_stats(row)
         elif action == plotbamAction:

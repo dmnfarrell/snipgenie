@@ -50,7 +50,7 @@ class DataFrameTable(QTableView):
     """
     QTableView with pandas DataFrame as model.
     """
-    def __init__(self, parent=None, dataframe=None, fontsize=12, *args):
+    def __init__(self, parent=None, dataframe=None, fontsize=10, *args):
 
         QTableView.__init__(self)
         self.clicked.connect(self.showSelection)
@@ -497,6 +497,7 @@ class FilesTable(DataFrameTable):
         plotbamAction = menu.addAction("Show Read Alignments")
         mappingstatsAction = menu.addAction("Mapping Statistics")
         contamaction = menu.addAction('Check Contamination')
+        fastareadsaction = menu.addAction('Sample Sequences')
         removeAction = menu.addAction("Remove Selected")
         exportAction = menu.addAction("Export Table")
         action = menu.exec_(self.mapToGlobal(event.pos()))
@@ -512,6 +513,8 @@ class FilesTable(DataFrameTable):
             self.app.read_distributon(row)
         elif action == contamaction:
             self.app.check_contamination()
+        elif action == fastareadsaction:
+            self.app.get_fasta_reads()
         elif action == mappingstatsAction:
             self.app.mapping_stats(row)
         elif action == plotbamAction:

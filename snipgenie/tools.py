@@ -86,7 +86,7 @@ def set_attributes(obj, data):
 
 def gunzip(infile, outfile):
     """Gunzip a file"""
-    
+
     import gzip
     import shutil
     with gzip.open(infile, 'rb') as f_in:
@@ -251,6 +251,20 @@ def local_blast(database, query, output=None, maxseqs=50, evalue=0.001,
         print (cline)
     stdout, stderr = cline()
     return output
+
+def remote_blast(db, query, maxseqs=50, evalue=0.001, **kwargs):
+    """Remote blastp.
+    Args:
+        query: fasta file with sequence to blast
+        db: database to use - nr, refseq_protein, pdb, swissprot
+    """
+    from Bio.Blast.Applications import NcbiblastpCommandline
+    output = os.path.splitext(query)[0]+'_blast.txt'
+    outfmt = '"6 qseqid sseqid qseq sseq pident qcovs length mismatch gapopen qstart qend sstart send evalue bitscore stitle"'
+    cline = NcbiblastpCommandline(query=query, db=db, max_target_seqs=maxseqs, outfmt=outfmt,
+                                  evalue=evalue, out=output, remote=True, **kwargs)
+    stdout, stderr = cline()
+    return
 
 def blast_fasta(database, filename, **kwargs):
     """
@@ -673,11 +687,12 @@ def plot_fastq_gc_content(filename, ax=None, limit=50000):
     gc.hist(ax=ax,bins=150,color='black',grid=False,histtype='step',lw=2)
     ax.set_xlim((0,100))
     x=np.arange(1,100,.1)
-    f = [normpdf(i, gc.mean(), gc.std()) for i in x]
+    meangc = round(gc.mean(),2)
+    f = [normpdf(i, meangc, gc.std()) for i in x]
     ax2=ax.twinx()
     ax2.plot(x,f)
     ax2.set_ylim(0,max(f))
-    ax.set_title('GC content',size=15)
+    ax.set_title('GC content. Mean=%s' %meangc,size=15)
     return
 
 def fastq_quality_report(filename, figsize=(7,5), **kwargs):

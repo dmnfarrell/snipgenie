@@ -351,7 +351,7 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.add_read_lengths, self.processing_completed))
         self.tools_menu.addAction('Get Mapping Stats',
             lambda: self.run_threaded_process(self.add_mapping_stats, self.processing_completed))
-        self.tools_menu.addAction('Get GC mean',
+        self.tools_menu.addAction('Mean GC content',
             lambda: self.run_threaded_process(self.add_gc_mean, self.processing_completed))
         self.tools_menu.addAction('Fastq Qualities Report', self.fastq_quality_report)
 
@@ -360,6 +360,7 @@ class App(QMainWindow):
         #self.tools_menu.addAction('Map View', self.show_map)
         self.tools_menu.addAction('Tree Viewer', self.tree_viewer)
         self.tools_menu.addSeparator()
+        self.tools_menu.addAction('Online BLAST', self.show_blast_url)
         self.tools_menu.addAction('Check Heterozygosity', self.check_heterozygosity)
         self.tools_menu.addAction('RD Analysis (MTBC)',
             lambda: self.run_threaded_process(self.rd_analysis, self.rd_analysis_completed))
@@ -1075,11 +1076,11 @@ class App(QMainWindow):
         else:
             colnames = [[data.name1, data.filename1]]
         for name,fname in colnames:
-            label = 'qual:'+name
+            label = 'quality:'+name
             if label in self.get_tab_names():
                 return
             w = widgets.PlotViewer(self)
-            fig,ax = plt.subplots(2,1, figsize=(7,5), dpi=65,
+            fig,ax = plt.subplots(3,1, figsize=(7,5), dpi=100,
                         facecolor=(1,1,1), edgecolor=(0,0,0))
             axs=ax.flat
             if not os.path.exists(fname):
@@ -1088,10 +1089,22 @@ class App(QMainWindow):
             if rl.mean()<800:
                 tools.plot_fastq_qualities(fname, ax=axs[0])
             tools.plot_fastq_gc_content(fname, ax=axs[1])
+
+            c = app.blast_contaminants(fname)
+            #c.perc_hits.plot(kind='pie',ax=axs[2])
+            ax=axs[2]
+            c.perc_hits.plot(kind='bar',ax=ax)
+            labels = ax.get_xticklabels()
+            labels = [label.get_text().replace('_', '\n') for label in labels ]
+            ax.set_xticklabels(labels, rotation=0)
+            ax.set_ylabel('% total')
+            ax.set_title('contaminant check')
+
+            fig.suptitle('Qualities: %s' %name, fontsize=18)
             plt.tight_layout()
             w.show_figure(fig)
-            i = self.tabs.addTab(w, label )
-            self.tabs.setCurrentIndex(i)
+            i = self.right_tabs.addTab(w, label)
+            self.right_tabs.setCurrentIndex(i)
         return
 
     def read_distributon(self, row):
@@ -1196,21 +1209,45 @@ class App(QMainWindow):
         return
 
     def check_contamination(self):
+        """Blast to common contaminant sequences"""
 
         df = self.fastq_table.model.df
         row = self.fastq_table.getSelectedRows()[0]
         data = df.iloc[row]
-        name = 'contam:'+data['sample']
+        name = data['sample']
         c = app.blast_contaminants(data.filename1)
 
         w = widgets.PlotViewer(self)
-        fig,ax = plt.subplots(1,1, figsize=(7,5), dpi=65)
-        c.hits.plot(kind='pie',ax=ax)
-        ax.set_title(name)
+        fig,ax = plt.subplots(1,1, figsize=(7,5), dpi=120)
+        c.perc_hits.plot(kind='barh',ax=ax)
+        ax.set_xlabel('% total')
+        ax.set_title('sequence contaminants - %s' %name)
+        plt.tight_layout()
         w.show_figure(fig)
 
-        i = self.tabs.addTab(w, name )
+        i = self.tabs.addTab(w, 'contam:'+name)
         self.tabs.setCurrentIndex(i)
+        return
+
+    def get_fasta_reads(self):
+        """Get a sample of reads for blasting"""
+
+        df = self.fastq_table.model.df
+        row = self.fastq_table.getSelectedRows()[0]
+        data = df.iloc[row]
+        seqs = tools.fastq_to_rec(data.filename1, size=50)
+        fastafmt = '\n'.join([seq.format("fasta") for seq in seqs])
+        name = 'seqs:'+data['sample']
+        w = widgets.Editor(self, readOnly=True, fontsize=11)
+        w.append(fastafmt)
+        i = self.right_tabs.addTab(w, name)
+        self.right_tabs.setCurrentIndex(i)
+        return
+
+    def show_blast_url(self):
+
+        link = 'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_SPEC=GeoBlast&PAGE_TYPE=BlastSearch'
+        self.show_browser_tab(link, 'NCBI Blast')
         return
 
     def fastq_quality_report(self):
@@ -1254,6 +1291,7 @@ class App(QMainWindow):
         return
 
     def show_browser_tab(self, link, name):
+        """Show web page in a tab"""
 
         from PySide2.QtWebEngineWidgets import QWebEngineView
         browser = QWebEngineView()
@@ -1269,20 +1307,23 @@ class App(QMainWindow):
         rows = self.fastq_table.getSelectedRows()
         data = df.iloc[rows]
         samples = list(data['sample'].unique())
-        print (samples)
+        #print (samples)
         vcffile = self.results['vcf_file']
         vdf = tools.vcf_to_dataframe(vcffile)
         def het(x):
             if sum(x.AD) == 0:
                 return
             return min(x.AD)/sum(x.AD)
-        l=int(np.sqrt(len(samples)))
-        fig,ax=plt.subplots(l,l+1,figsize=(10,6))
-        axs=ax.flat
+        l = int(np.sqrt(len(samples)))
+        fig,ax = plt.subplots(l,l,figsize=(10,6))
+        if l==1:
+            axs=[ax]
+        else:
+            axs=ax.flat
         i=0
         sites = []
         for s in samples:
-            x = vdf[vdf['sample']==s]
+            x = vdf[vdf['sample']==s].copy()
             x['het'] = x.apply(het,1)
             x.plot('start','het',kind='scatter',alpha=0.6,ax=axs[i])
             axs[i].set_title(s)
@@ -1294,7 +1335,7 @@ class App(QMainWindow):
         w = widgets.PlotViewer(self)
         w.show_figure(fig)
         i = self.tabs.addTab(w, 'hetero')
-        fig.savefig(os.path.join(self.outputdir, 'hetero.png'))
+        #fig.savefig(os.path.join(self.outputdir, 'hetero.png'))
         return
 
     def snp_typing(self, progress_callback):

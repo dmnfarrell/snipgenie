@@ -57,10 +57,11 @@ def bwa_align(file1, file2, idx, out, threads=4, overwrite=False,
     bwacmd = tools.get_cmd('bwa')
     samtoolscmd = tools.get_cmd('samtools')
     if unmapped == None:
+        #by default we keep mapped reads only
         keepmapped = '-F 4'
     else:
         keepmapped = ''
-    
+
     if file2 == None or file2 == '':
         filestr = '"{f}"'.format(f=file1)
     else:
@@ -76,10 +77,9 @@ def bwa_align(file1, file2, idx, out, threads=4, overwrite=False,
         if unmapped != None:
             f1 = os.path.join(unmapped,os.path.basename(file1))
             f2 = os.path.join(unmapped,os.path.basename(file2))
-            uf =  os.path.join(unmapped,os.path.basename(out))+'.fasta'
-            cmd = '{s} view -b -f 4 {o} | {s} fasta -0 /dev/null {o} > {f}'.format(
-                    s=samtoolscmd,o=out,u=unmapped,f=uf)
-            #print (cmd)
+            cmd = '{s} view -b -f12 {o} | {s} fastq -1 {f1} -2 {f2}'.format(
+                    s=samtoolscmd,o=out,u=unmapped,f1=f1,f2=f2)
+            print (cmd)
             tmp = subprocess.check_output(cmd, shell=True)
     return
 
@@ -106,7 +106,7 @@ def build_bowtie_index(fastafile, path=None):
     print ('built bowtie index for %s' %fastafile)
     return name
 
-def bowtie_align(file1, file2, idx, out, remaining=None, threads=2,
+def bowtie_align(file1, file2, idx, out, unmapped=None, threads=2,
                 overwrite=False, verbose=True, options='-v 1 --best'):
     """Map reads using bowtie"""
 
@@ -133,7 +133,7 @@ def bowtie_align(file1, file2, idx, out, remaining=None, threads=2,
             print (result.decode())
     except subprocess.CalledProcessError as e:
         print (str(e.output))
-    return remaining
+    return
 
 def build_subread_index(fastafile):
     """Build an index for subread"""

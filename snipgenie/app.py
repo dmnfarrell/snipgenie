@@ -244,7 +244,7 @@ def clean_bam_files(samples, path, remove=False):
 def fetch_contam_file():
     """Get contam sequences"""
 
-    url = "https://github.com/dmnfarrell/snipgenie/raw/master/extra/"
+    url = "https://github.com/dmnfarrell/snipgenie/raw/master/extra/contam.fa.gz"
     os.makedirs(bin_path, exist_ok=True)
 
     tempdir = tempfile.gettempdir()
@@ -253,27 +253,29 @@ def fetch_contam_file():
     if os.path.exists(destfile):
         return
     print ('fetching contaminant sequences..')
-    link = os.path.join(url,n)
-    print (filename,link)
-    urllib.request.urlretrieve(link, filename)
+    #link = os.path.join(url,n)
+    print (filename)
+    urllib.request.urlretrieve(url, filename)
     tools.gunzip(filename, destfile)
     return
 
 def blast_contaminants(filename, limit=2000):
-    """Blast reads to contaminants database"""
+    """Blast reads to contaminants database
+    Returns: percentages of reads assigned to each species.
+    """
 
-    #fetch_contam_file()
+    fetch_contam_file()
     path = os.path.join(sequence_path,'contam.fa')
     tools.make_blast_database(path)
     seqs = tools.fastq_to_rec(filename, limit)
-    bl = tools.blast_sequences(path,seqs)
-    bl = bl[(bl.qcovs>80) & (bl.pident>95)]
-    bl.qcovs.hist()
+    bl = tools.blast_sequences(path,seqs,maxseqs=1)
+    bl['stitle'] = bl.stitle.apply(lambda x: x.split('__')[0])
+    bl = bl[(bl.qcovs>90) & (bl.pident>98)]
     c = bl.stitle.value_counts()
-    c = pd.DataFrame(c)#.reset_index()
+    c = pd.DataFrame(c)
     c.columns = ['hits']
-    #c['name'] = c.name.apply(lambda x: x.split('__')[0])
-    c=c[c.hits>2]
+    c['perc_hits'] = c.hits/limit*100
+    c=c[c.hits>5]
     #print (c)
     return c
 

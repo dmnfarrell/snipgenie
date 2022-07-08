@@ -160,6 +160,16 @@ def snp_dist_matrix(aln):
     m = pd.DataFrame(m,index=names,columns=names)
     return m
 
+def get_unique_snps(names, df):
+    """Get snps unique to one or more samples from a snp matrix"""
+
+    if type(names) is str:
+        names = [names]
+    insamp = df[names]
+    other = df.loc[:, ~df.columns.isin(names)]
+    u = other[other.sum(1)==0]
+    return insamp.loc[u.index]
+
 def get_fasta_length(filename):
     """Get length of reference sequence"""
 

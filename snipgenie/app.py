@@ -77,7 +77,7 @@ defaults = {'threads':None, 'labelsep':'_', 'labelindex':0,
             'aligner': 'bwa', 'platform': 'illumina', 'species': None,
             'filters': default_filter, 'custom_filters': False, 'mask': None,
             'reference': None, 'gb_file': None, 'overwrite':False,
-            'omit_samples': [],
+            'omit_samples': [], 'get_stats':True,
             'buildtree':False, 'bootstraps':100}
 
 def check_platform():
@@ -891,7 +891,8 @@ class WorkFlow(object):
                         threads=self.threads, overwrite=self.overwrite)
 
         #mapping stats
-        if 'mapped' not in samples.columns:
+        if 'mapped' not in samples.columns and self.get_stats == True:
+            print ('getting mapping stats..')
             samples = mapping_stats(samples)
         #save sample table
         samples.to_csv(os.path.join(self.outdir,'samples.csv'),index=False)
@@ -912,7 +913,7 @@ class WorkFlow(object):
         print ()
         print ('making SNP matrix')
         print ('-----------------')
-        snprecs, smat = tools.fasta_alignment_from_vcf(self.vcf_file, omit=self.omit_samples)
+        snprecs, smat = tools.fasta_alignment_from_vcf(self.vcf_file)#, omit=self.omit_samples)
         outfasta = os.path.join(self.outdir, 'core.fa')
         SeqIO.write(snprecs, outfasta, 'fasta')
         #write out sites matrix as txt file

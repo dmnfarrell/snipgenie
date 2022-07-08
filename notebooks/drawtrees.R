@@ -56,7 +56,7 @@ ggplottree <- function(tree, meta, col1, col2=NULL, col3=NULL, layout="rectangul
               #geom_text2(aes(subset=!isTip, label=node)) +
               geom_tippoint(mapping=aes( shape=NULL, color=.data[[col1]]),size=3) 
     if (tiplabel==TRUE){  
-          p1 <- p1 + geom_tiplab(size=3, color="gray") 
+          p1 <- p1 + geom_tiplab(size=4, color="black", offset=1)
     }
     if (is.null(col2)){        
         p2<-p1

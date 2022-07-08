@@ -131,13 +131,13 @@ def update_mlst_db(new):
     return
 
 def type_sample(fastafile, outfile, threads=4, overwrite=False):
-    """Type a single sample using wgMLST.
+    """Type a single sample using wgMLST method. Requires pathogenie for
+    annotation steps.
     Args:
         fastafile: fasta file to type from assembly or other
-
-        path: output folder for annotations
+        outfile: output file for annotations
     Returns:
-        dataframe of MLST profile
+        dataframe containing the MLST profile
     """
 
     import pathogenie
@@ -180,7 +180,7 @@ def tree_from_distmatrix(D):
     #print(tree.ascii_art())
     return tree
 
-def run_samples(vcf_file, outdir, omit=[], **kwargs):
+def run_samples(vcf_file, outdir, names=None, omit=[], **kwargs):
     """Run samples in a vcf file.
     Args:
         vcf_file: multi sample variant file from previous calling
@@ -190,11 +190,15 @@ def run_samples(vcf_file, outdir, omit=[], **kwargs):
     """
 
     profs = {}
-    samplenames = get_samples_vcf(vcf_file)
-    for s in samplenames:
+    if names == None:
+        names = get_samples_vcf(vcf_file)
+    if not os.path.exists(outdir):
+        os.makedirs(outdir, exist_ok=True)
+    for s in names:
         print (s)
         if s in omit:
             continue
+        #get consensus sequences
         get_consensus(vcf_file, s)
         outfile = os.path.join(outdir, '%s.fa' %s)
         profile = type_sample('consensus.fa', outfile, **kwargs)

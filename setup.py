@@ -21,7 +21,7 @@ setup(
                       'pandas>=0.24',
                       'matplotlib>=3.0',
                       'biopython>=1.5',
-                      'pyvcf>=0.6.0',
+                      'pyvcf3',
                       'pyfaidx',
                       'bcbio_gff',
                       #'pyside2>=5.1',

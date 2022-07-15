@@ -30,8 +30,10 @@ try:
     from PySide2.QtWidgets import *
     from PySide2.QtGui import *
     from PySide2.QtCore import QObject, Signal, Slot
+    from PySide2.QtWebEngineWidgets import QWebEngineView
 except:
     from PyQt5 import QtCore
     from PyQt5.QtWidgets import *
     from PyQt5.QtGui import *
-    from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+    from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot
+    from PyQt5.QtWebEngineWidgets import QWebEngineView

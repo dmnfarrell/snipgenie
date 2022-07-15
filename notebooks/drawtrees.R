@@ -46,15 +46,13 @@ gettreedata <- function(tree, meta){
 }
 
 ggplottree <- function(tree, meta, col1, col2=NULL, col3=NULL, layout="rectangular", cmap='Set1', tiplabel=FALSE, title='') {
-    
-    colors <- c('#442082', '#3CFDE6', '#F1C26B', '#30F90E', '#C7DD01', '#E48875',
-                '#34A20F', '#0B0D04', '#C36ED8', '#0E71E0', '#FD77B0', '#7670EB')
+
     y <- gettreedata(tree, meta)    
     p <- ggtree(y, layout=layout)
     p1 <- p + scale_color_brewer(palette=cmap) + 
               #scale_fill_manual(values=colors) +
               #geom_text2(aes(subset=!isTip, label=node)) +
-              geom_tippoint(mapping=aes( shape=NULL, color=.data[[col1]]),size=3) 
+              geom_tippoint(mapping=aes( shape=NULL, color=.data[[col1]]),size=2) 
     if (tiplabel==TRUE){  
           p1 <- p1 + geom_tiplab(size=4, color="black", offset=1)
     }

@@ -379,7 +379,7 @@ class App(QMainWindow):
         self.settings_menu.addAction('Add Sample Meta Data', self.merge_meta_data)
         self.settings_menu.addAction('Clean Up Files', self.clean_up)
 
-        self.presets_menu = QMenu('&Load Preset', self)
+        self.presets_menu = QMenu('&Preset Genomes', self)
         self.menuBar().addMenu(self.presets_menu)
         self.load_presets_menu()
 
@@ -1551,7 +1551,7 @@ class Worker(QtCore.QRunnable):
         self.signals = WorkerSignals()
         self.kwargs['progress_callback'] = self.signals.progress
 
-    @QtCore.Slot()
+    @Slot()
     def run(self):
         try:
             result = self.fn(
@@ -1577,10 +1577,10 @@ class WorkerSignals(QtCore.QObject):
     result
         `object` data returned from processing, anything
     """
-    finished = QtCore.Signal()
-    error = QtCore.Signal(tuple)
-    result = QtCore.Signal(object)
-    progress = QtCore.Signal(str)
+    finished = Signal()
+    error = Signal(tuple)
+    result = Signal(object)
+    progress = Signal(str)
 
 class StdoutRedirect(QObject):
     printOccur = Signal(str, str, name="print")

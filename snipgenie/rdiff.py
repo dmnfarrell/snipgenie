@@ -272,9 +272,9 @@ def show_coverage(samples, chr, start, end, ref_fasta, ref_gb, minq=10, clip=Non
     fig.suptitle(title,fontsize=25)
     return
 
-def detect_deletions(df, min_coverage=1):
+def detect_deletions(df, min_coverage=0):
     """Detect regions of zero coverage that are due to deletions if aligned
-    against a reference genome like MTB.
+    against a reference genome. Closer references will produce less noise.
     df is a dataframe that is the output of get_coverage."""
 
     a = df.coverage
@@ -322,7 +322,8 @@ def get_genes_region(s, e, annot):
 def filter_regions(df, mask_file):
     """Filter repeats and PE/PPE and some other regions"""
 
-    mask = pd.read_csv(mask_file,sep='\s+')
+    mask = pd.read_csv(mask_file,sep='\s+',names=['chr','start','end'])
+    #print (mask)
     mask['length'] = mask.end-mask.start
     print(len(df))
     #filter positions with mask file
@@ -333,7 +334,7 @@ def filter_regions(df, mask_file):
     return df
 
 def get_deletions(samples, ref_fasta, gb_file=None, mask_file=None,
-                  label='sample', n_cores=4):
+                  label='sample', dist=100, min_coverage=0, n_cores=4):
     """
     Get deletions for multiple aligned samples.
     Args:
@@ -341,6 +342,9 @@ def get_deletions(samples, ref_fasta, gb_file=None, mask_file=None,
         ref_fasta: fasta file of genome aligned to
         gb_file: genbank with annotation
         mask_file: mask bed for excluding regions
+        dist: threshold distance to group by close start locations -
+        may avoid the same deletion being detected multiple times
+        min_coverage: minimum coverage to consider a deletion point
     """
 
     from pyfaidx import Fasta
@@ -354,14 +358,14 @@ def get_deletions(samples, ref_fasta, gb_file=None, mask_file=None,
         print (r.bam_file)
         #minq 0 allows multimappers to reduce false positives
         df = get_coverage(r.bam_file,chrom,s,e,ref_fasta,minq=0,n_cores=n_cores)
-        ss = detect_deletions(df, min_coverage=0)
+        ss = detect_deletions(df, min_coverage)
         if label != None:
             ss['name'] = r[label]
 
         regions.append(ss)
     regions = pd.concat(regions)
     #group deletions into start regions
-    regions = group_deletions(regions, 200)
+    regions = group_deletions(regions, dist)
     if gb_file != None:
         annot = tools.genbank_to_dataframe(gb_file)
         annot['gene'] = annot.gene.fillna(annot.locus_tag)

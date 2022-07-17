@@ -152,7 +152,7 @@ class TreeViewer(QWidget):
         self.main = QWidget()
         vbox = QVBoxLayout(self.main)
         layout.addWidget(self.main)
-        from PySide2.QtWebEngineWidgets import QWebEngineView
+
         self.browser = QWebEngineView()
         vbox = QVBoxLayout()
         self.setLayout(vbox)

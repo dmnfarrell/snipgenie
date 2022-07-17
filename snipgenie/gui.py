@@ -52,7 +52,7 @@ class App(QMainWindow):
         screen_resolution = QGuiApplication.primaryScreen().availableGeometry()
         width, height = screen_resolution.width()*0.7, screen_resolution.height()*.7
         if screen_resolution.width()>1280:
-            self.setGeometry(QtCore.QRect(200, 200, width, height))
+            self.setGeometry(QtCore.QRect(200, 200, int(width), int(height)))
         else:
             self.showMaximized()
         self.setMinimumSize(400,300)
@@ -263,7 +263,7 @@ class App(QMainWindow):
         self._stdout.printOccur.connect(lambda x : self.info.insert(x))
         return
 
-    @QtCore.Slot(int)
+    @Slot(int)
     def close_tab(self, index):
         """Close current tab"""
 
@@ -272,7 +272,7 @@ class App(QMainWindow):
         self.tabs.removeTab(index)
         return
 
-    @QtCore.Slot(int)
+    @Slot(int)
     def close_right_tab(self, index):
         """Close right tab"""
 
@@ -1293,9 +1293,9 @@ class App(QMainWindow):
     def show_browser_tab(self, link, name):
         """Show web page in a tab"""
 
-        from PySide2.QtWebEngineWidgets import QWebEngineView
+        #from PySide2.QtWebEngineWidgets import QWebEngineView
         browser = QWebEngineView()
-        browser.setUrl(link)
+        browser.setUrl(QUrl(link))
         idx = self.right_tabs.addTab(browser, name)
         self.right_tabs.setCurrentIndex(idx)
         return
@@ -1503,9 +1503,8 @@ class App(QMainWindow):
         #import webbrowser
         link='https://github.com/dmnfarrell/snipgenie'
         #webbrowser.open(link,autoraise=1)
-        from PySide2.QtWebEngineWidgets import QWebEngineView
         browser = QWebEngineView()
-        browser.setUrl(link)
+        browser.setUrl(QUrl(link))
         idx = self.right_tabs.addTab(browser, 'help')
         self.right_tabs.setCurrentIndex(idx)
         return

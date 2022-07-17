@@ -109,6 +109,7 @@ def fetch_binaries():
     os.makedirs(bin_path, exist_ok=True)
     names = ['bcftools.exe','bwa.exe','samtools.exe','tabix.exe',
              'subread-align.exe','subread-buildindex.exe','fasttree.exe',
+             'makeblastdb.exe',
              'msys-2.0.dll','msys-bz2-1.dll','msys-lzma-5.dll','msys-ncursesw6.dll','msys-z.dll']
     for n in names:
         filename = os.path.join(bin_path,n)
@@ -424,9 +425,18 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None, tempd
         outfiles.append(out)
 
     regstr = ' '.join(regions)
+    print (regstr)
     filesstr = ' '.join(outfiles)
-    cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b --min-MQ 60 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
-            .format(r=ref, reg=regstr, b=bam_files, o=filesstr, a=annotatestr)
+    bcftoolscmd = tools.get_cmd('bcftools')
+
+    if platform.system() == 'Windows':
+        rushcmd = tools.get_cmd('rush')
+        cmd = '{rc} {bc} mpileup -r {{1}} -a {a} -O b --min-MQ 60 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
+                .format(c=rushcmd, bc=bcftoolscmd, r=ref,
+                    reg=regstr, b=bam_files, o=filesstr, a=annotatestr)
+    else:
+        cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b --min-MQ 60 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
+                .format(r=ref, reg=regstr, b=bam_files, o=filesstr, a=annotatestr)
     print (cmd)
     #if callback != None:
     #    callback(cmd)
@@ -664,7 +674,7 @@ def overwrite_vcf(vcf_file, sites, outdir=None):
     vcf_writer.close()
     #copy or overwrite input vcf
     bcftoolscmd = tools.get_cmd('bcftools')
-    cmd = 'bcftools view {o} -O z -o {gz}'.format(o=out,gz=vcf_file)
+    cmd = '{b} view {o} -O z -o {gz}'.format(b=bcftoolscmd,o=out,gz=vcf_file)
     print (cmd)
     tmp = subprocess.check_output(cmd,shell=True)
     return

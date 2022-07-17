@@ -126,9 +126,12 @@ def run_RAXML(infile, name='variants', threads=8, bootstraps=100, outpath='.'):
     files = glob.glob(os.path.join(outpath,'RAxML_*'))
     for f in files:
         os.remove(f)
-
-    cmd = 'raxmlHPC-PTHREADS -f a -N {nb} -T {t} -m {m} -V -p {s1} -x {s2} -n {n} -w {w} -s {i}'\
-            .format(t=threads,nb=bootstraps,n=name,i=infile,s1=s1,s2=s2,m=model,w=outpath)
+    if platform.system() == 'Windows':
+        cmd = tools.get_cmd('RAxML')
+    else:
+        cmd = 'raxmlHPC-PTHREADS'
+    cmd = '{c} -f a -N {nb} -T {t} -m {m} -V -p {s1} -x {s2} -n {n} -w {w} -s {i}'\
+            .format(c=cmd,t=threads,nb=bootstraps,n=name,i=infile,s1=s1,s2=s2,m=model,w=outpath)
     print (cmd)
     try:
         tmp = subprocess.check_output(cmd, shell=True)

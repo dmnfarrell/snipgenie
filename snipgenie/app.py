@@ -72,7 +72,7 @@ if not os.path.exists(config_path):
     except:
         os.makedirs(config_path)
 
-defaults = {'threads':None, 'labelsep':'_', 'labelindex':0,
+defaults = {'threads':4, 'labelsep':'_', 'labelindex':0,
             'trim':False, 'unmapped':False, 'quality':25,
             'aligner': 'bwa', 'platform': 'illumina', 'species': None,
             'filters': default_filter, 'custom_filters': False, 'mask': None,
@@ -109,7 +109,7 @@ def fetch_binaries():
     os.makedirs(bin_path, exist_ok=True)
     names = ['bcftools.exe','bwa.exe','samtools.exe','tabix.exe',
              'subread-align.exe','subread-buildindex.exe','fasttree.exe',
-             'makeblastdb.exe',
+             'makeblastdb.exe','minimap2.exe',
              'msys-2.0.dll','msys-bz2-1.dll','msys-lzma-5.dll','msys-ncursesw6.dll','msys-z.dll']
     for n in names:
         filename = os.path.join(bin_path,n)
@@ -400,40 +400,45 @@ def mpileup_multiprocess(bam_files, ref, outpath, threads=4, callback=None):
         os.remove(f)
     return rawbcf
 
-def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None, tempdir='/tmp'):
-    """Run mpileup in over multiple regions with GNU parallel, then concat vcf files.
-    Assumes alignment to a bacterial reference with a single chromosome."""
+def mpileup_parallel(bam_files, ref, outpath, threads=4, callback=None, tempdir=None):
+    """Run mpileup in over multiple regions with GNU parallel on linux or rush on Windows
+      Separate bcf files are then joined together.
+      Assumes alignment to a bacterial reference with a single chromosome.
+    """
 
+    if tempdir == None:
+        tempdir = tempfile.tempdir
     bam_files = ' '.join(bam_files)
     rawbcf = os.path.join(outpath,'raw.bcf')
     chr = tools.get_chrom(ref)
     length = tools.get_fasta_length(ref)
     x = np.linspace(1,length,threads+1,dtype=int)
     print (x)
+
     #split genome into blocks
     blocks=[]
     for i in range(len(x)):
         if i < len(x)-1:
             blocks.append((x[i],x[i+1]-1))
 
+    #get temp outfile names
     outfiles = []
     regions = []
     for start,end in blocks:
         region = '"{c}":{s}-{e}'.format(c=chr,s=start,e=end)
         regions.append(region)
-        out = '{o}/{s}.bcf'.format(o=tempdir,s=start)
+        out = os.path.join(tempdir,'{s}-{e}.bcf'.format(s=start,e=end))
         outfiles.append(out)
 
     regstr = ' '.join(regions)
-    print (regstr)
+    #print (regstr)
     filesstr = ' '.join(outfiles)
     bcftoolscmd = tools.get_cmd('bcftools')
 
     if platform.system() == 'Windows':
         rushcmd = tools.get_cmd('rush')
-        cmd = '{rc} {bc} mpileup -r {{1}} -a {a} -O b --min-MQ 60 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
-                .format(c=rushcmd, bc=bcftoolscmd, r=ref,
-                    reg=regstr, b=bam_files, o=filesstr, a=annotatestr)
+        cmd = 'echo {reg} | {rc} -D " " "{bc} mpileup -r {{}} -f {r} -a {a} --min-MQ 60 {b} -o {p}/{{@[^:]*$}}.bcf"'\
+                .format(rc=rushcmd,bc=bcftoolscmd,reg=regstr,r=ref,b=bam_files,a=annotatestr,p=tempdir)
     else:
         cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b --min-MQ 60 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
                 .format(r=ref, reg=regstr, b=bam_files, o=filesstr, a=annotatestr)
@@ -441,8 +446,8 @@ def mpileup_gnuparallel(bam_files, ref, outpath, threads=4, callback=None, tempd
     #if callback != None:
     #    callback(cmd)
     subprocess.check_output(cmd, shell=True)
-    #concat files
-    cmd = 'bcftools concat {i} -O b -o {o}'.format(i=' '.join(outfiles),o=rawbcf)
+    #concat the separate files
+    cmd = '{bc} concat {i} -O b -o {o}'.format(bc=bcftoolscmd,i=' '.join(outfiles),o=rawbcf)
     print (cmd)
     subprocess.check_output(cmd, shell=True)
     #remove temp files
@@ -464,15 +469,15 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     bcftoolscmd = tools.get_cmd('bcftools')
     if not os.path.exists(rawbcf) or overwrite == True:
         print ('running mpileup..')
-        if platform.system() == 'Windows' or threads == 1:
+        if threads == 1: #platform.system() == 'Windows'
             bam_files = ' '.join(bam_files)
             cmd = '{bc} mpileup -a {a} --max-depth 500 -O b --min-MQ 60 -o {o} -f {r} {b}'\
                 .format(bc=bcftoolscmd,r=ref, b=bam_files, o=rawbcf, a=annotatestr)
             print (cmd)
             subprocess.check_output(cmd, shell=True)
-        #if linux use mpileup in parallel to speed up
+        #or use mpileup in parallel to speed up
         else:
-            rawbcf = mpileup_gnuparallel(bam_files, ref, outpath, threads=threads,
+            rawbcf = mpileup_parallel(bam_files, ref, outpath, threads=threads,
                                         tempdir=tempdir, callback=callback)
     else:
         print ('%s already exists' %rawbcf)
@@ -995,7 +1000,7 @@ def main():
                         help="set the species reference genome, overrides -r")
     parser.add_argument("-g", "--genbank_file", dest="gb_file", default=None,
                         help="annotation file, optional", metavar="FILE")
-    parser.add_argument("-t", "--threads", dest="threads", default=None,
+    parser.add_argument("-t", "--threads", dest="threads", default=4,
                         help="cpu threads to use")
     parser.add_argument("-w", "--overwrite", dest="overwrite", action="store_true", default=False,
                         help="overwrite intermediate files")

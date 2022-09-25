@@ -231,14 +231,14 @@ def mapping_stats(samples):
 def clean_bam_files(samples, path, remove=False):
     """Check if any bams in output not in samples and remove. Not used in workflow."""
 
-    bams = get_files_from_paths(path, '*.bam')
+    bams = get_files_from_paths(os.path.abspath(path), '*.bam')
     print ('%s bam files and %s samples found' %(len(bams),len(samples)))
     found = set(bams)-set(samples.bam_file)
     print ('bam files no longer present in samples:')
     print (found)
     if remove == True:
         for f in found:
-            print (f)
+            print ('removed %s' %f)
             os.remove(f)
     return
 
@@ -302,15 +302,16 @@ def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform
     samtoolscmd = tools.get_cmd('samtools')
     for i,r in df.iterrows():
         name = r['sample']
-        file1 = r.filename1
-        if 'filename2' in df.columns:
-            file2 = r.filename2
+        if 'trimmed1' in df.columns:
+            print('using trimmed files..')
+            file1 = r.trimmed1
+            file2 = r.trimmed2
         else:
-            file2 = None
-        if 'trimmed' in df.columns:
-            files = list(df.trimmed)
-            if callback != None:
-                print('using trimmed')
+            file1 = r.filename1
+            if 'filename2' in df.columns:
+                file2 = r.filename2
+            else:
+                file2 = None
 
         out = os.path.join(outdir,name+'.bam')
         if aligner == 'bwa':
@@ -693,11 +694,14 @@ def trim_files(df, outpath, overwrite=False, threads=4, quality=30):
     if not os.path.exists(outpath):
         os.makedirs(outpath, exist_ok=True)
     for i,row in df.iterrows():
-        outfile = os.path.join(outpath, os.path.basename(row.filename1))
-        if not os.path.exists(outfile) or overwrite == True:
-            tools.trim_reads(row.filename1, outfile, threads=threads, quality=quality, method=method)
-            print (outfile)
-        df.loc[i,'trimmed'] = outfile
+        out1 = os.path.join(outpath, os.path.basename(row.filename1))
+        out2 = os.path.join(outpath, os.path.basename(row.filename2))
+        if not os.path.exists(out1) or overwrite == True:
+            out1,out2 = tools.trim_reads(row.filename1, row.filename2,
+                    outpath, threads=threads, quality=quality, method=method)
+
+        df.loc[i,'trimmed1'] = out1
+        df.loc[i,'trimmed2'] = out2
     return df
 
 def read_csq_file(filename):
@@ -793,6 +797,18 @@ class Logger(object):
             self.file.close()
             self.file = None
 
+class Logger(object):
+    def __init__(self, logfile='log.dat'):
+        self.terminal = sys.stdout
+        self.log = open(logfile, "a")
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+
+    def flush(self):
+        return
+
 class WorkFlow(object):
     """Class for implementing a prediction workflow from a set of options"""
     def __init__(self, **kwargs):
@@ -801,7 +817,12 @@ class WorkFlow(object):
         for i in defaults:
             if i not in self.__dict__:
                 self.__dict__[i] = defaults[i]
+        #start logger
+        self.logfile = os.path.join(self.outdir, 'run.log')
+        sys.stdout = Logger(self.logfile)
         print ('The following options were supplied')
+        dt_string = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        print("time: ", dt_string)
         print ('-------')
         for i in self.__dict__:
             print (i, ':', self.__dict__[i])
@@ -1039,8 +1060,7 @@ def main():
 
     args = vars(parser.parse_args())
     check_platform()
-    print (datetime.datetime.now())
-    #Log = Logger(os.path.join(args['outdir'], 'run.log'))
+
     if args['test'] == True:
         test_run()
     elif args['version'] == True:

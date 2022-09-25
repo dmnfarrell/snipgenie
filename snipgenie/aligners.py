@@ -107,7 +107,7 @@ def build_bowtie_index(fastafile, path=None):
     return name
 
 def bowtie_align(file1, file2, idx, out, unmapped=None, threads=2,
-                overwrite=False, verbose=True, options='-v 1 --best'):
+                overwrite=False, verbose=True, options=''):
     """Map reads using bowtie"""
 
     bowtiecmd = tools.get_cmd('bowtie')
@@ -121,18 +121,19 @@ def bowtie_align(file1, file2, idx, out, unmapped=None, threads=2,
         filestr = '-1 "{f1}" -2 "{f2}"'.format(f1=file1,f2=file2)
     else:
         filestr = file1
-    cmd = '{c} -q -p {t} -S {p} {r} {f} | {s} view -F 0x04 -bt - | {s} sort -o {o}'\
-            .format(c=bowtiecmd,t=threads,f=filestr,p=options,r=idx,o=out,s=samtoolscmd)
+    cmd = '{bc} -q -p {t} -S {p} -x {r} {f} | {s} view -F 0x04 -bt - | {s} sort -o {o}'\
+            .format(bc=bowtiecmd,t=threads,f=filestr,p=options,r=idx,o=out,s=samtoolscmd)
 
-    if verbose == True:
-        print (cmd)
-    try:
-        result = subprocess.check_output(cmd, shell=True, executable='/bin/bash',
-                                         stderr= subprocess.STDOUT)
+    if not os.path.exists(out) or overwrite == True:
         if verbose == True:
-            print (result.decode())
-    except subprocess.CalledProcessError as e:
-        print (str(e.output))
+            print (cmd)
+        try:
+            result = subprocess.check_output(cmd, shell=True, executable='/bin/bash',
+                                             stderr= subprocess.STDOUT)
+            if verbose == True:
+                print (result.decode())
+        except subprocess.CalledProcessError as e:
+            print (str(e.output))
     return
 
 def build_subread_index(fastafile):

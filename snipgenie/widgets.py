@@ -25,6 +25,7 @@ import numpy as np
 import pandas as pd
 import string
 from .qt import *
+from . import tables
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -423,7 +424,6 @@ class MergeDialog(BasicDialog):
         l.addWidget(QLabel('Right suffix'))
         l.addWidget(w)
 
-        from . import tables
         self.result = tables.DataFrameTable(self)
         hbox.addWidget(self.result)
         bf = self.createButtons(self)
@@ -612,12 +612,12 @@ class PlainTextEditor(QPlainTextEdit):
             self.zoom(-1)
 
 class TextViewer(QDialog):
-    """Sequence records features viewer using dna_features_viewer"""
-    def __init__(self, parent=None, text='', title='Text'):
+    """Plain text viewer"""
+    def __init__(self, parent=None, text='', width=200, height=400, title='Text'):
 
         super(TextViewer, self).__init__(parent)
         self.setWindowTitle(title)
-        self.setGeometry(QtCore.QRect(200, 200, 1000, 400))
+        self.setGeometry(QtCore.QRect(200, 200, width, height))
         self.setMinimumHeight(150)
         self.add_widgets()
         self.ed.appendPlainText(text)
@@ -693,7 +693,7 @@ class PlotViewer(QDialog):
         self.grid.addWidget(canvas)
         self.toolbar = NavigationToolbar(canvas, self)
         self.grid.addWidget(self.toolbar)
-        self.fig = fig        
+        self.fig = fig
         return
 
 class BrowserViewer(QDialog):
@@ -1107,4 +1107,40 @@ class GraphicalBamViewer(QDialog):
         self.canvas.draw()
         self.view_range = xend-xstart
         self.loclbl.setText(str(xstart)+'-'+str(xend))
+        return
+
+class SNPViewer(QDialog):
+    """View SNPs for set of samples"""
+    def __init__(self, parent=None, filename=None):
+
+        super(SNPViewer, self).__init__(parent)
+        self.setWindowTitle('SNP View')
+        self.setGeometry(QtCore.QRect(200, 200, 1000, 300))
+        self.setMinimumHeight(150)
+        self.fontsize = 8
+        self.add_widgets()
+        return
+
+    def add_widgets(self):
+        """Add widgets"""
+
+        l = QVBoxLayout(self)
+        self.setLayout(l)
+        val=0
+        self.snp_table = tables.SNPTable(self, app=self, dataframe=pd.DataFrame())
+        l.addWidget(self.snp_table)
+
+        return
+
+    def load_snps(self, df):
+        """load a dataframe of snps"""
+
+        self.snp_table.setDataFrame(df)
+        self.df = df
+        return
+
+    def show_unique_positions(self, rows):
+
+        df = self.df.iloc[rows]
+
         return

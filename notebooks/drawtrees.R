@@ -5,8 +5,9 @@ library(dplyr)
 library('ggplot2')
 library('ggtree')
 library(tidytree)
-#library(ggnewscale)
-#library('ggtreeExtra')
+library(ggnewscale)
+#library(ggstar)
+
 
 plot_tree <- function(tree,samples,type='phylogram',title='',column='SB',cmap="Set1") {
   labels <- samples[tree$tip.label,][[column]]
@@ -45,41 +46,57 @@ gettreedata <- function(tree, meta){
     return(y)
 }
 
-ggplottree <- function(tree, meta, col1, col2=NULL, col3=NULL, layout="rectangular", cmap='Set1', tiplabel=FALSE, title='') {
+get_color_mapping <- function(data, col, cmap){
+    labels <- (data[[col]])  
+    names <- levels(as.factor(labels)) 
+    n <- length(names)
+    if (n<10){      
+        colors <- suppressWarnings(c(brewer.pal(n, cmap)))[1:n]
+    }
+    else {
+        colors <- colorRampPalette(brewer.pal(8, cmap))(n)
+    }
+    names(colors) = names
+    return (colors)
+}
 
-    y <- gettreedata(tree, meta)    
-    p <- ggtree(y, layout=layout)
-    p1 <- p + scale_color_brewer(palette=cmap) + 
-              #scale_fill_manual(values=colors) +
-              #geom_text2(aes(subset=!isTip, label=node)) +
-              geom_tippoint(mapping=aes( shape=NULL, color=.data[[col1]]),size=2) 
-    if (tiplabel==TRUE){  
-          p1 <- p1 + geom_tiplab(size=4, color="black", offset=1)
-    }
-    if (is.null(col2)){        
-        p2<-p1
-    }
-    else {
-        df<-meta[tree$tip.label,][col2]
-        p2 <- gheatmap(p1, df, offset=70, width=.05,
-                  colnames_angle=0, colnames_offset_y = .05) 
- }
-         #geom_cladelab(node=10, label="test label") +
-         #geom_hilight(mapping=aes(subset = node %in% c(1, 2,4,6), fill = snp50)) + 
+ggplottree <- function(tree, meta, cols=NULL, cmaps=NULL, layout="rectangular",
+                       offset=10, tiplabel=FALSE, tipsize=3) {
     
-    if (is.null(col3)){        
-        p2<-p2
+    y <- gettreedata(tree, meta)
+    p <- ggtree(y, layout=layout)   
+    if (is.null(cols)){
+        return (p)
     }
-    else {
-        df<-meta[tree$tip.label,][col3]
-        p2 <- gheatmap(p2, df, offset=140, width=.05,
-                  colnames_angle=0, colnames_offset_y = .05) 
-    }  
+    
+    col <- cols[1]
+    cmap <- cmaps[1] 
+    df<-meta[tree$tip.label,][col]
+    colors <- get_color_mapping(df, col, cmap)
+        
+    #tip formatting    
+    p1 <- p + new_scale_fill() +    
+          geom_tippoint(mapping=aes(fill=.data[[col]]),size=tipsize,shape=21,stroke=0) +
+          scale_fill_manual(values=colors, na.value="white")
+        
+    p2 <- p1
+    if (length(cols)>1){
+        for (i in 2:length(cols)){
+            col <- cols[i]
+            cmap <- cmaps[i]
+            df <- meta[tree$tip.label,][col]            
+            colors <- get_color_mapping(df, col, cmap)       
+            p2 <- p2 + new_scale_fill()
+            p2 <- gheatmap(p2, df, offset=i*offset, width=.08,
+                      colnames_angle=0, colnames_offset_y = .05)  +
+                  scale_fill_manual(values=colors, name=col)
+          
+        }
+    }
     
     p2 <- p2 + theme_tree2(legend.text = element_text(size=20), legend.key.size = unit(1, 'cm'), 
-                        legend.position="left", plot.title = element_text(size=30)) +
-            guides(color = guide_legend(override.aes = list(size=10))) +
-            ggtitle(title) 
+                        legend.position="left", plot.title = element_text(size=40))     
+            guides(color = guide_legend(override.aes = list(size=10))) 
     
     return(p2)
 }

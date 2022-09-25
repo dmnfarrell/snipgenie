@@ -557,22 +557,36 @@ def trim_reads_default(filename,  outfile, right_quality=35):
         SeqIO.write(record[:i],out,'fastq')
     return
 
-def trim_reads(filename, outfile, adapter=None, quality=20,
+def trim_reads(filename1, filename2, outpath, quality=20,
                 method='cutadapt', threads=4):
     """Trim adapters using cutadapt"""
 
-    #if adapter is not None and not type(adapter) is str:
-    #    print ('not valid adapter')
-    #    return
-    if method == 'default':
-        trim_reads_default(filename,  outfile, right_quality=quality)
-    elif method == 'cutadapt':
-        if adapter != None:
-            cmd = 'cutadapt -O 5 -q {q} -a {a} -j {t} {i} -o {o}'.format(a=adapter,i=filename,o=outfile,t=threads,q=quality)
-        else:
-            cmd = 'cutadapt -O 5 -q {q} {i} -j {t} -o {o}'.format(i=filename,o=outfile,t=threads,q=quality)
+    outfile1 = os.path.join(outpath, os.path.basename(filename1))
+    outfile2 = os.path.join(outpath, os.path.basename(filename2))
+    if method == 'cutadapt':
+        cmd = 'cutadapt -m 80 -O 5 -q {q} -j {t} -o {o} -p {p}  {f1} {f2} '\
+                .format(f1=filename1,f2=filename2,o=outfile1,p=outfile2,t=threads,q=quality)
         print (cmd)
         result = subprocess.check_output(cmd, shell=True, executable='/bin/bash')
+    return outfile1, outfile2
+
+def get_subsample_reads(filename, outpath, reads=10000):
+    """
+    Sub-sample a fastq file with first n reads.
+    Args:
+        filename: input fastq.gz file
+        outpath: output directory to save new file
+        reads: how many reads to sample from start
+    """
+
+    lines = reads*4
+    #print (lines % 4)
+    name = os.path.basename(filename)
+    #print (name)
+    out = os.path.join(outpath, name)
+    cmd = 'zcat {f} | head -n {r} | gzip > {o}'.format(f=filename,r=lines,o=out)
+    print (cmd)
+    subprocess.check_output(cmd, shell=True)
     return
 
 def get_vcf_samples(filename):
@@ -797,7 +811,9 @@ def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False, omit=
     if uninformative == False:
         print ('%s uninformative sites' %len(unf))
     if len(sites)==0:
-        print ('no sites found may mean one sample is too different')
+        print ('no sites found may mean:\n'
+         '- one sample is too different\n'
+         '- few reads aligned due to poor coverage')
     recs = []
     for sample in result:
         seq = ''.join(result[sample])
@@ -818,7 +834,7 @@ def samtools_flagstat(filename):
     tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
     x = tmp.split('\n')
     x = [int(i.split('+')[0]) for i in x[:-1]]
-    #print (x)
+    print (x)
     cols = ['total','secondary','supplementary','duplicates','mapped',
             'paired','read1','read2','properly paired','with itself','singletons']
     d = {}
@@ -838,6 +854,18 @@ def samtools_tview(bam_file, chrom, pos, width=200, ref='', display='T'):
     tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
     return tmp
 
+def samtools_coverage(bam_file):
+    """Get coverage/depth stats from bam file"""
+
+    samtoolscmd = get_cmd('samtools')
+    cmd = '{sc} coverage {b}'.format(b=bam_file,sc=samtoolscmd)
+    tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
+    from io import StringIO
+    c = pd.read_csv(StringIO(tmp),sep='\t',header=0).round(2)
+    c = c.iloc[0]
+
+    return c
+
 def samtools_depth(bam_file, chrom=None, start=None, end=None):
     """Get depth from bam file"""
 
@@ -846,7 +874,8 @@ def samtools_depth(bam_file, chrom=None, start=None, end=None):
         cmd = '{sc} depth -r {c}:{s}-{e} {b}'.format(b=bam_file,c=chrom,s=start,e=end,sc=samtoolscmd)
     else:
         cmd = '{sc} depth {b}'.format(b=bam_file,sc=samtoolscmd)
-    tmp=subprocess.check_output(cmd, shell=True, universal_newlines=True)
+
+    tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
     from io import StringIO
     c = pd.read_csv(StringIO(tmp),sep='\t',names=['chr','pos','depth'])
     return c

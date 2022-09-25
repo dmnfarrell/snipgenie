@@ -64,6 +64,7 @@ class App(QMainWindow):
         self.setup_gui()
         self.load_settings()
         self.show_recent_files()
+        self.start_logging()
 
         self.new_project()
         self.running = False
@@ -74,6 +75,20 @@ class App(QMainWindow):
             self.load_project(project)
         self.threadpool = QtCore.QThreadPool()
         mpl.style.use('bmh')
+        return
+
+    def start_logging(self):
+        """Error logging"""
+
+        import logging
+        if platform.system() == 'Windows':
+            path = QtCore.QStandardPaths.writableLocation(QtCore.QStandardPaths.ConfigLocation)
+            if not os.path.exists(path):
+                os.makedirs(path)
+        else:
+            path = os.path.dirname(self.settings.fileName())
+        self.logfile = os.path.join(path, 'error.log')
+        logging.basicConfig(filename=self.logfile,format='%(asctime)s %(message)s')
         return
 
     def load_settings(self):
@@ -351,12 +366,15 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.add_read_lengths, self.processing_completed))
         self.tools_menu.addAction('Get Mapping Stats',
             lambda: self.run_threaded_process(self.add_mapping_stats, self.processing_completed))
+        self.tools_menu.addAction('Get Depth/Coverage',
+            lambda: self.run_threaded_process(self.add_mean_depth, self.processing_completed))
         self.tools_menu.addAction('Mean GC content',
             lambda: self.run_threaded_process(self.add_gc_mean, self.processing_completed))
         self.tools_menu.addAction('Fastq Qualities Report', self.fastq_quality_report)
 
         self.tools_menu.addAction('Show Annotation', self.show_ref_annotation)
         self.tools_menu.addAction('Plot SNP Matrix', self.plot_snp_matrix)
+        self.tools_menu.addAction('SNP Viewer', self.snp_viewer)
         #self.tools_menu.addAction('Map View', self.show_map)
         self.tools_menu.addAction('Tree Viewer', self.tree_viewer)
         self.tools_menu.addSeparator()
@@ -385,8 +403,9 @@ class App(QMainWindow):
 
         self.help_menu = QMenu('&Help', self)
         self.menuBar().addMenu(self.help_menu)
-        self.help_menu.addAction('&Help', self.online_documentation)
-        self.help_menu.addAction('&About', self.about)
+        self.help_menu.addAction('View Error Log', self.show_error_log)
+        self.help_menu.addAction('Help', self.online_documentation)
+        self.help_menu.addAction('About', self.about)
 
     def load_presets_menu(self,ask=True):
         """Add preset genomes to menu"""
@@ -479,6 +498,11 @@ class App(QMainWindow):
     def new_project(self, ask=False):
         """Clear all loaded inputs and results"""
 
+        #print(self.running)
+        if self.running == True:
+            QMessageBox.information(self, "Process is Running",
+                            'Wait until process is finished.')
+            return
         reply=None
         if ask == True:
             reply = QMessageBox.question(self, 'Confirm',
@@ -508,7 +532,7 @@ class App(QMainWindow):
     def load_project(self, filename=None):
         """Load project"""
 
-        self.new_project()
+        self.new_project()#ask=True)
         data = pickle.load(open(filename,'rb'))
         keys = ['sheets','outputdir','results','ref_genome','ref_gb','mask_file']
         for k in keys:
@@ -944,6 +968,20 @@ class App(QMainWindow):
         self.show_snpdist()
         return
 
+    def snp_viewer(self):
+        """Show SNP table"""
+
+        if not hasattr(self, 'snpviewer'):
+            self.snpviewer = widgets.SNPViewer(self)
+        file = os.path.join(self.outputdir, 'core.txt')
+        mat = pd.read_csv(file, sep=' ',index_col=0).sort_index()
+        mat = mat.T
+        self.snpviewer.load_snps(mat)
+        if not 'SNP table' in self.get_tabs():
+            idx = self.tabs.addTab(self.snpviewer, 'SNP table')
+            self.tabs.setCurrentIndex(idx)
+        return
+
     def make_phylo_tree(self, progress_callback=None, method='raxml'):
         """Make phylogenetic tree"""
 
@@ -1143,7 +1181,7 @@ class App(QMainWindow):
         rows = self.fastq_table.getSelectedRows()
         data = df.iloc[rows]
         for i,r in data.iterrows():
-            df.loc[i,'meanGC'] = tools.get_gc(r.filename1, limit=5e4).mean()
+            df.loc[i,'meanGC'] = tools.get_gc(r.filename1, limit=5e4).mean().round(2)
         return
 
     def add_mapping_stats(self, progress_callback):
@@ -1164,7 +1202,7 @@ class App(QMainWindow):
                 continue
             s = get_stats(r.bam_file)
             df.loc[i,'mapped'] = s['mapped']
-            df.loc[i,'total'] = s['total']
+            df.loc[i,'reads_mapped'] = s['total']
             df.loc[i,'perc_mapped'] = s['perc_mapped']
         #self.fastq_table.setDataFrame(df)
         return
@@ -1186,6 +1224,24 @@ class App(QMainWindow):
         self.info.append(data.bam_file)
         self.info.append(df.to_string())
         self.info.append('-----------------')
+        return
+
+    def add_mean_depth(self, progress_callback):
+        """find mean depth for bam file"""
+
+        df = self.fastq_table.model.df
+        if 'bam_file' not in df.columns:
+            print ('No bam file info. Have reads been aligned?')
+            return
+        rows = self.fastq_table.getSelectedRows()
+        data = df.iloc[rows]
+        cols = ['coverage','meandepth','meanbaseq','meanmapq']
+        for i,r in data.iterrows():
+            if pd.isnull(r.bam_file):
+                continue
+            #df.loc[i,'depth'] = tools.get_mean_depth(r.bam_file)
+            c = tools.samtools_coverage(r.bam_file)
+            df.loc[i,cols] = c[cols]
         return
 
     def show_bam_viewer(self, row):
@@ -1273,6 +1329,20 @@ class App(QMainWindow):
     def plot_snp_matrix(self):
 
         mat = pd.read_csv(self.results['snp_dist'],index_col=0)
+
+        #fig,ax = plt.subplots(1,1,figsize=(8,8))
+        #plotting.heatmap(mat, cmap='coolwarm', ax=ax)
+        import seaborn as sns
+        cm = sns.clustermap(mat, cmap='coolwarm', annot=True, fmt='.0f')
+        fig = cm.fig
+        plt.tight_layout()
+        w = widgets.PlotViewer(self)
+        w.show_figure(fig)
+        idx = self.right_tabs.addTab(w, 'SNP dist')
+        self.right_tabs.setCurrentIndex(idx)
+        return
+
+    '''def plot_snp_matrix(self):
         bv = widgets.BrowserViewer()
         import toyplot
         min=mat.min().min()
@@ -1288,7 +1358,7 @@ class App(QMainWindow):
 
         idx = self.right_tabs.addTab(bv, 'snp dist')
         self.right_tabs.setCurrentIndex(idx)
-        return
+        return'''
 
     def show_browser_tab(self, link, name):
         """Show web page in a tab"""
@@ -1497,6 +1567,15 @@ class App(QMainWindow):
             return True
         return False
 
+    def show_error_log(self):
+        """Show log file contents"""
+
+        f = open(self.logfile,'r')
+        s = ''.join(f.readlines())
+        dlg = widgets.TextViewer(self, s, title='Log', width=800, height=400)
+        dlg.exec_()
+        return
+
     def online_documentation(self,event=None):
         """Open the online documentation"""
 
@@ -1652,6 +1731,7 @@ def main():
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QApplication(sys.argv)
     aw = App(**args)
+    print (aw)
     aw.show()
     app.exec_()
 

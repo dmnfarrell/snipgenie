@@ -331,7 +331,7 @@ class DataFrameTable(QTableView):
 
     def deleteColumn(self, column=None):
 
-        reply = QMessageBox.question(self, 'Delete Rows?',
+        reply = QMessageBox.question(self, 'Delete Columns?',
                              'Are you sure?', QMessageBox.Yes, QMessageBox.No)
         if reply == QMessageBox.No:
             return False
@@ -432,10 +432,10 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         elif role == QtCore.Qt.BackgroundRole:
             return QColor(self.bg)
 
-    def headerData(self, col, orientation, role):
+    def headerData(self, col, orientation, role=QtCore.Qt.DisplayRole):
 
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
-            return self.df.columns[col]
+            return str(self.df.columns[col])
         if orientation == QtCore.Qt.Vertical and role == QtCore.Qt.DisplayRole:
             return self.df.index[col]
         return None
@@ -576,5 +576,92 @@ class ResultsTable(DataFrameTable):
             self.app.show_fasta_sequences(row)
         elif action == showAlignmentAction:
             self.app.show_gene_alignment(row)
+
+        return
+
+class MyHeaderView(QHeaderView):
+
+    def __init__(self, parent=None):
+        super().__init__(Qt.Horizontal, parent)
+        self._font = QFont("Arial", 12)
+        self._metrics = QFontMetrics(self._font)
+        self._descent = self._metrics.descent()
+        self._margin = 10
+
+    def paintSection(self, painter, rect, index):
+        data = self._get_data(index)
+        painter.rotate(-90)
+        painter.setFont(self._font)
+        painter.drawText(- rect.height() + self._margin,
+                         rect.left() + (rect.width() + self._descent) / 2, data)
+
+    def sizeHint(self):
+        return QtCore.QSize(0, self._get_text_width() + 2 * self._margin)
+
+    def _get_text_width(self):
+        return max([self._metrics.width(self._get_data(i))
+                    for i in range(0, self.model().columnCount())])
+
+    def _get_data(self, index):
+        return self.model().headerData(index, self.orientation())
+
+class SNPTableModel(DataFrameModel):
+
+    def __init__(self, dataframe=None, *args):
+
+        DataFrameModel.__init__(self, dataframe)
+        self.colors = {'A':'lightblue', 'T':'#ff704d', 'C':'#5cd65c', 'G':'yellow'}
+        self.df = dataframe
+
+    def data(self, index, role):
+        """see https://www.pythonguis.com/tutorials/qtableview-modelviews-numpy-pandas/"""
+
+        colors = self.colors
+        i = index.row()
+        j = index.column()
+        rowname = self.df.index[i]
+        value = self.df.iloc[i, j]
+        if role == QtCore.Qt.DisplayRole:
+            return value
+        elif role == QtCore.Qt.BackgroundRole:
+            if (isinstance(value, str)):
+                if rowname == 'ref':
+                    return QColor('gray')
+                else:
+                    return QColor(colors[value])
+
+    def flags(self, index):
+            return Qt.ItemIsSelectable|Qt.ItemIsEnabled
+
+class SNPTable(DataFrameTable):
+    """
+    QTableView with pandas DataFrame as model.
+    """
+    def __init__(self, parent=None, app=None, dataframe=None, *args):
+        DataFrameTable.__init__(self, parent, dataframe)
+        tm = SNPTableModel(dataframe)
+        self.setModel(tm)
+        self.app = app
+        headerview = MyHeaderView()
+        self.setHorizontalHeader(headerview)
+        hh = self.horizontalHeader()
+        hh.setDefaultSectionSize(18)
+        return
+
+    def setDataFrame(self, df):
+        """Override to use right model"""
+
+        tm = SNPTableModel(df)
+        self.setModel(tm)
+        self.model = tm
+        return
+
+    def addActions(self, event, row):
+        menu = self.menu
+        uniquepositionsAction = menu.addAction("View unique positions")
+
+        action = menu.exec_(self.mapToGlobal(event.pos()))
+        if action == uniquepositionsAction:
+            self.app.show_unique_positions(row)
 
         return

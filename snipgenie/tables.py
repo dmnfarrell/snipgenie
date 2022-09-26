@@ -25,6 +25,7 @@ import pandas as pd
 import numpy as np
 from .qt import *
 from pandas.api.types import is_datetime64_any_dtype as is_datetime
+import pylab as plt
 
 class ColumnHeader(QHeaderView):
     def __init__(self):
@@ -32,25 +33,42 @@ class ColumnHeader(QHeaderView):
         return
 
 class DataFrameWidget(QWidget):
-    """Widget containing a tableview and toolbars"""
-    def __init__(self, parent=None, dataframe=None, toolbar=False, *args):
+    """Widget containing a tableview and statusbar"""
+    def __init__(self, parent=None, table=None, toolbar=False):
 
         super(DataFrameWidget, self).__init__()
         l = self.layout = QGridLayout()
         l.setSpacing(2)
         self.setLayout(self.layout)
-        self.table = DataFrameTable(self, dataframe)
+        #self.table = DataFrameTable(self, dataframe)
+        self.table = table
         l.addWidget(self.table, 1, 1)
         if toolbar==True:
             self.createToolbar()
-        self.pf = None
+        self.statusbar = QStatusBar()
+        self.setStatusBar(self.statusbar)
+        self.updateStatusBar()
+        return
+
+    def createToolbar(self):
+        return
+
+    def updateStatusBar(self):
+        """Update the table details in the status bar"""
+
+        if not hasattr(self, 'size_label'):
+            return
+        df = self.table.model.df
+        meminfo = self.table.getMemory()
+        s = '{r} rows x {c} columns | {m}'.format(r=len(df), c=len(df.columns),m=meminfo)
+        self.size_label.setText(s)
         return
 
 class DataFrameTable(QTableView):
     """
     QTableView with pandas DataFrame as model.
     """
-    def __init__(self, parent=None, dataframe=None, fontsize=10, *args):
+    def __init__(self, parent=None, dataframe=None, plotter=None, fontsize=10, *args):
 
         QTableView.__init__(self)
         self.clicked.connect(self.showSelection)
@@ -67,7 +85,9 @@ class DataFrameTable(QTableView):
         hh.setSectionsMovable(True)
         hh.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         hh.customContextMenuRequested.connect(self.columnHeaderMenu)
-        hh.sectionClicked.connect(self.columnClicked)
+        hh.setSelectionBehavior(QTableView.SelectColumns)
+        #hh.sectionClicked.connect(self.columnClicked)
+
         self.setDragEnabled(True)
         self.viewport().setAcceptDrops(True)
         self.setDropIndicatorShown(True)
@@ -82,6 +102,7 @@ class DataFrameTable(QTableView):
         self.model = tm
         self.setWordWrap(False)
         self.setCornerButtonEnabled(True)
+        self.plotview = plotter
         return
 
     def createToolbar(self):
@@ -243,7 +264,8 @@ class DataFrameTable(QTableView):
         deleteColumnAction = menu.addAction("Delete Column")
         renameColumnAction = menu.addAction("Rename Column")
         addColumnAction = menu.addAction("Add Column")
-        #sortAction = menu.addAction("Sort By")
+        plotAction = menu.addAction("Histogram")
+
         action = menu.exec_(self.mapToGlobal(pos))
         if action == sortAction:
             self.sort(idx)
@@ -255,6 +277,8 @@ class DataFrameTable(QTableView):
             self.renameColumn(column)
         elif action == addColumnAction:
             self.addColumn()
+        elif action == plotAction:
+            self.plotHist(column)
         return
 
     def keyPressEvent(self, event):
@@ -372,6 +396,15 @@ class DataFrameTable(QTableView):
             self.model.sort(idx, ascending)
         return
 
+    def plotHist(self, column):
+
+        df = self.model.df
+        d = df[column]
+        #fig,ax = plt.subplots(1,1, figsize=(7,5), dpi=120)
+        d.hist(bins=12, ax=self.plotview.ax)
+        self.plotview.redraw()
+        return
+
 class DataFrameModel(QtCore.QAbstractTableModel):
     def __init__(self, dataframe=None, *args):
         super(DataFrameModel, self).__init__()
@@ -477,16 +510,62 @@ class DefaultTable(DataFrameTable):
         self.app = app
         self.setWordWrap(False)
 
-class FilesTable(DataFrameTable):
+class SampleTableModel(DataFrameModel):
+    """Samples table model class"""
+    def __init__(self, dataframe=None, *args):
+
+        DataFrameModel.__init__(self, dataframe)
+        self.df = dataframe
+
+    def data(self, index, role):
+        """Custom display for sample table"""
+
+        i = index.row()
+        j = index.column()
+        rowname = self.df.index[i]
+        value = self.df.iloc[i, j]
+        colname = self.df.columns[j]
+        #if role == QtCore.Qt.DisplayRole:
+        #    return value
+        color = QColor(self.bg)
+        if role == QtCore.Qt.BackgroundRole:
+            #color warnings
+            if colname == 'meandepth':
+                if value < 20:
+                    color = QColor('#ff704d')
+            elif colname == 'coverage':
+                if value < 98:
+                    color = QColor('#ff704d')
+            else:
+                color = QColor(self.bg)
+            return color
+        else:
+            return super(SampleTableModel, self).data(index, role)
+
+    def flags(self, index):
+            return Qt.ItemIsSelectable|Qt.ItemIsEnabled
+
+class SampleTable(DataFrameTable):
     """
-    QTableView for files view.
+    QTableView for files/samples view.
     """
-    def __init__(self, parent=None, app=None, dataframe=None, *args):
-        #super(DataFrameTable, self).__init__()
+    def __init__(self, parent=None, app=None, dataframe=None, plotter=None, *args):
         DataFrameTable.__init__(self)
         self.app = app
         self.setWordWrap(False)
         header = self.horizontalHeader()
+        tm = SampleTableModel(dataframe)
+        self.setModel(tm)
+        self.plotview = plotter
+        return
+
+    def setDataFrame(self, df):
+        """Override to use right model"""
+
+        tm = SampleTableModel(df)
+        self.setModel(tm)
+        self.model = tm
+        return
 
     def addActions(self, event, row):
 
@@ -576,7 +655,6 @@ class ResultsTable(DataFrameTable):
             self.app.show_fasta_sequences(row)
         elif action == showAlignmentAction:
             self.app.show_gene_alignment(row)
-
         return
 
 class MyHeaderView(QHeaderView):

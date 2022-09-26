@@ -333,13 +333,10 @@ def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform
             print (cmd)
         #index = df.index
         df.loc[i,'bam_file'] = os.path.abspath(out)
-        #find mean depth
-        #depth = tools.get_bam_depth(out)
-        #samples.loc[index,'depth'] = depth
-        #get mapping info and add to samples samples table
-        #stat = tools.samtools_flagstats(out)
-        #perc = stat['mapped']/stat['total']*100
-        #samples.loc[index,'perc_mapped'] = perc
+        #find mean depth/coverage
+        cols = ['coverage','meandepth']
+        c = tools.samtools_coverage(out)
+        df.loc[i,cols] = c[cols]
 
     return df
 
@@ -925,6 +922,10 @@ class WorkFlow(object):
                         aligner=self.aligner, platform=self.platform,
                         unmapped=unmapped,
                         threads=self.threads, overwrite=self.overwrite)
+
+        lowdepth = samples[samples.meandepth<10]
+        if len(lowdepth)>0:
+            print ('%s samples have low average depth' %len(lowdepth))
 
         #mapping stats
         if 'mapped' not in samples.columns and self.get_stats == True:

@@ -671,6 +671,22 @@ class FileViewer(QDialog):
         recnames = list(recs.keys())
         return
 
+class TableViewer(QDialog):
+    """View row of data in table"""
+    def __init__(self, parent=None, dataframe=None, **kwargs):
+        super(TableViewer, self).__init__(parent)
+        self.setGeometry(QtCore.QRect(200, 200, 600, 600))
+        self.grid = QGridLayout()
+        self.setLayout(self.grid)
+        self.table = tables.DataFrameTable(self, dataframe, **kwargs)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.grid.addWidget(self.table)
+        return
+
+    def setDataFrame(self, dataframe):
+        self.table.model.df = dataframe
+        return
+
 class PlotViewer(QDialog):
     """matplotlib plots widget"""
     def __init__(self, parent=None):
@@ -679,22 +695,33 @@ class PlotViewer(QDialog):
         self.setGeometry(QtCore.QRect(200, 200, 600, 600))
         self.grid = QGridLayout()
         self.setLayout(self.grid)
-        #self.show()
-        #self.show_figure()
+        self.show_figure()
         return
 
-    def show_figure(self, fig):
+    def show_figure(self):
+        """Show canvas and figure"""
 
         from matplotlib.backends.backend_qt5agg import FigureCanvas
         from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
         import matplotlib.pyplot as plt
         #ax.plot(range(10))
+        fig, ax = plt.subplots(1,1, figsize=(7,5), dpi=120)
         canvas = FigureCanvas(fig)
         self.grid.addWidget(canvas)
         self.toolbar = NavigationToolbar(canvas, self)
         self.grid.addWidget(self.toolbar)
         self.fig = fig
+        self.ax = ax
+        self.canvas = canvas
         return
+
+    def set_figure(self, fig):
+        self.fig = fig
+        return
+
+    def redraw(self):
+        self.canvas.axes.clear()
+        self.canvas.draw()
 
 class BrowserViewer(QDialog):
     """matplotlib plots widget"""

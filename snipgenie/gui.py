@@ -57,6 +57,7 @@ class App(QMainWindow):
             self.showMaximized()
         self.setMinimumSize(400,300)
 
+        self.running = False
         self.recent_files = ['']
         self.main.setFocus()
         self.setCentralWidget(self.main)
@@ -67,7 +68,6 @@ class App(QMainWindow):
         self.start_logging()
 
         self.new_project()
-        self.running = False
 
         if platform.system() == 'Windows':
             app.fetch_binaries()
@@ -225,10 +225,14 @@ class App(QMainWindow):
         l.addStretch()
         left.setFixedWidth(250)
 
+        #general plot window
+        self.plotview = widgets.PlotViewer(self)
+
         center = QWidget()
         self.m.addWidget(center)
         l = QVBoxLayout(center)
-        self.fastq_table = tables.FilesTable(center, app=self, dataframe=pd.DataFrame())
+        self.fastq_table = tables.SampleTable(center, app=self,
+                            dataframe=pd.DataFrame(), plotter=self.plotview)
         l.addWidget(self.fastq_table)
 
         self.tabs = QTabWidget(center)
@@ -249,6 +253,9 @@ class App(QMainWindow):
         self.info = widgets.Editor(right, readOnly=True, fontsize=11)
         self.right_tabs.addTab(self.info, 'log')
         self.info.append("Welcome\n")
+
+        self.right_tabs.addTab(self.plotview, 'plots')
+
         self.m.setSizes([50,200,150])
         self.m.setStretchFactor(1,0)
 
@@ -498,7 +505,6 @@ class App(QMainWindow):
     def new_project(self, ask=False):
         """Clear all loaded inputs and results"""
 
-        #print(self.running)
         if self.running == True:
             QMessageBox.information(self, "Process is Running",
                             'Wait until process is finished.')
@@ -532,7 +538,7 @@ class App(QMainWindow):
     def load_project(self, filename=None):
         """Load project"""
 
-        self.new_project()#ask=True)
+        self.new_project()
         data = pickle.load(open(filename,'rb'))
         keys = ['sheets','outputdir','results','ref_genome','ref_gb','mask_file']
         for k in keys:
@@ -1069,6 +1075,7 @@ class App(QMainWindow):
 
         if self.running == True:
             return
+        self.running = True
         worker = Worker(fn=process)
         self.threadpool.start(worker)
         worker.signals.finished.connect(on_complete)
@@ -1098,8 +1105,11 @@ class App(QMainWindow):
         row = self.fastq_table.getSelectedRows()[0]
         data = df.iloc[row]
         pd.set_option('display.max_colwidth', None)
-        print (data)
-        print ()
+        #print (data)
+        #print ()
+        w = widgets.TableViewer(self, pd.DataFrame(data))
+        i = self.right_tabs.addTab(w, data['sample'])
+        self.right_tabs.setCurrentIndex(i)
         return
 
     def quality_summary(self, row):
@@ -1731,7 +1741,6 @@ def main():
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QApplication(sys.argv)
     aw = App(**args)
-    print (aw)
     aw.show()
     app.exec_()
 

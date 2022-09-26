@@ -834,11 +834,13 @@ def samtools_flagstat(filename):
     tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
     x = tmp.split('\n')
     x = [int(i.split('+')[0]) for i in x[:-1]]
-    print (x)
-    cols = ['total','secondary','supplementary','duplicates','mapped',
+    #print (x)
+    cols = ['total','primary','secondary','supplementary','duplicates','primary duplicates',
+            'mapped','primary mapped',
             'paired','read1','read2','properly paired','with itself','singletons']
     d = {}
     for c,v in zip(cols,x):
+        #print (c,v)
         d[c] = v
     d['perc_mapped'] = round(d['mapped']/d['total']*100,2)
     return d
@@ -863,7 +865,6 @@ def samtools_coverage(bam_file):
     from io import StringIO
     c = pd.read_csv(StringIO(tmp),sep='\t',header=0).round(2)
     c = c.iloc[0]
-
     return c
 
 def samtools_depth(bam_file, chrom=None, start=None, end=None):

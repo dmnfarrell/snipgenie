@@ -695,32 +695,47 @@ class PlotViewer(QDialog):
         self.setGeometry(QtCore.QRect(200, 200, 600, 600))
         self.grid = QGridLayout()
         self.setLayout(self.grid)
-        self.show_figure()
+        self.create_figure()
         return
 
-    def show_figure(self):
-        """Show canvas and figure"""
+    def create_figure(self, fig=None):
+        """Create canvas and figure"""
 
         from matplotlib.backends.backend_qt5agg import FigureCanvas
         from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
         import matplotlib.pyplot as plt
         #ax.plot(range(10))
-        fig, ax = plt.subplots(1,1, figsize=(7,5), dpi=120)
+        if fig == None:
+            fig, ax = plt.subplots(1,1, figsize=(7,5), dpi=120)
+            self.ax = ax
+        if hasattr(self, 'canvas'):
+            self.layout().removeWidget(self.canvas)
         canvas = FigureCanvas(fig)
         self.grid.addWidget(canvas)
         self.toolbar = NavigationToolbar(canvas, self)
         self.grid.addWidget(self.toolbar)
         self.fig = fig
-        self.ax = ax
         self.canvas = canvas
         return
 
     def set_figure(self, fig):
-        self.fig = fig
+        """Set the figure"""
+
+        self.clear()
+        self.create_figure(fig)
+        #self.ax = fig.ax
+        self.canvas.draw()
+        return
+
+    def clear(self):
+        """Clear plot"""
+
+        self.fig.clear()
+        self.ax = self.fig.add_subplot(111)
+        self.canvas.draw()
         return
 
     def redraw(self):
-        self.canvas.axes.clear()
         self.canvas.draw()
 
 class BrowserViewer(QDialog):

@@ -763,12 +763,13 @@ def concat_seqrecords(recs):
         concated += r.seq
     return SeqRecord(concated, id=recs[0].id)
 
-def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False, omit=None):
+def core_alignment_from_vcf(vcf_file, callback=None, uninformative=False, missing=False, omit=None):
     """
     Get core SNP site calls as sequences from a multi sample vcf file.
     Args:
         vcf_file: multi-sample vcf (e.g. produced by app.variant_calling)
         uninformative: whether to include uninformative sites
+        missing: whether to include sites with one or more missing samples (ie. no coverage)
         omit: list of samples to exclude if required
     """
 
@@ -781,8 +782,8 @@ def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False, omit=
     result = defaultdict(default)
     sites = []
     result['ref'] = []
-    missing = []
-    unf = []
+    missing_sites = []
+    uninf_sites = []
     for record in vcf_reader:
         S = {sample.sample: sample.gt_bases for sample in record.samples}
         if omit != None:
@@ -790,26 +791,29 @@ def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False, omit=
                 del S[o]
         #if any missing samples at the site we don't add
         if None in S.values():
-            #for i in S:
-            #    if S[i]==None:
-            #        print (i)
-            missing.append(record.POS)
-            continue
+            missing_sites.append(record.POS)
+            if missing == False:
+                continue
+        #ignore uninformative sites
         if uninformative == False:
             u = set(S.values())
             if len(u) == 1:
-                unf.append(record.POS)
+                uninf_sites.append(record.POS)
                 continue
         result['ref'].append(record.REF)
+        #get bases over all samples
         for name in S:
-            result[name].append(S[name])
+            val = S[name]
+            if val == None:
+                val = 'N'
+            result[name].append(val)
         sites.append(record.POS)
 
     sites = list(set(sites))
-    print ('used %s sites for core snps' %len(sites))
-    print ('%s sites with at least one missing sample' %len(missing))
+    print ('found %s sites for core snps' %len(sites))
+    print ('%s sites with at least one missing sample' %len(missing_sites))
     if uninformative == False:
-        print ('%s uninformative sites' %len(unf))
+        print ('%s uninformative sites' %len(uninf_sites))
     if len(sites)==0:
         print ('no sites found may mean:\n'
          '- one sample is too different\n'
@@ -824,6 +828,7 @@ def fasta_alignment_from_vcf(vcf_file, callback=None, uninformative=False, omit=
     smat = pd.DataFrame(result)
     smat.index = sites
     smat.index.rename('pos', inplace=True)
+    smat = smat.sort_index()
     return recs, smat
 
 def samtools_flagstat(filename):

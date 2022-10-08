@@ -32,11 +32,29 @@ from Bio import SeqIO
 import matplotlib as mpl
 from . import tools, aligners, app, widgets, tables, plotting, trees
 
-home = os.path.expanduser("~")
+homepath = os.path.expanduser("~")
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
 logoimg = os.path.join(module_path, 'logo.png')
 stylepath = os.path.join(module_path, 'styles')
 iconpath = os.path.join(module_path, 'icons')
+pluginiconpath = os.path.join(module_path, 'plugins', 'icons')
+settingspath = os.path.join(homepath, '.config','snipgenie')
+
+dockstyle = '''
+    QDockWidget {
+        max-width:240px;
+    }
+    QDockWidget::title {
+        background-color: #ccd8f0;
+    }
+    QScrollBar:vertical {
+         width: 15px;
+         margin: 1px 0 1px 0;
+     }
+    QScrollBar::handle:vertical {
+         min-height: 20px;
+     }
+'''
 
 class App(QMainWindow):
     """GUI Application using PySide2 widgets"""
@@ -59,8 +77,11 @@ class App(QMainWindow):
 
         self.running = False
         self.recent_files = ['']
+        self.openplugins = {}
+
         self.main.setFocus()
         self.setCentralWidget(self.main)
+        self.add_dock_widgets()
         self.create_tool_bar()
         self.setup_gui()
         self.load_settings()
@@ -75,6 +96,8 @@ class App(QMainWindow):
             self.load_project(project)
         self.threadpool = QtCore.QThreadPool()
         mpl.style.use('bmh')
+        self.discoverPlugins()
+        self.redirect_stdout()
         return
 
     def start_logging(self):
@@ -89,6 +112,13 @@ class App(QMainWindow):
             path = os.path.dirname(self.settings.fileName())
         self.logfile = os.path.join(path, 'error.log')
         logging.basicConfig(filename=self.logfile,format='%(asctime)s %(message)s')
+        return
+
+    def redirect_stdout(self):
+        """redirect stdout"""
+        self._stdout = StdoutRedirect()
+        self._stdout.start()
+        self._stdout.printOccur.connect(lambda x : self.info.insert(x))
         return
 
     def load_settings(self):
@@ -137,6 +167,71 @@ class App(QMainWindow):
         self.style = style
         return
 
+    def add_dock_widgets(self):
+        """Add plot dialogs to dock"""
+
+        style = '''
+            QWidget {
+                font-size: 12px;
+                max-width: 220px;
+            }
+            QLabel {
+                min-width: 60px;
+                width:80px;
+            }
+            QPlainTextEdit {
+                max-height: 100px;
+                min-width: 100px;
+            }
+            QScrollBar:vertical {
+                 width: 15px;
+             }
+            QComboBox {
+                combobox-popup: 0;
+                max-height: 30px;
+                max-width: 100px;
+            }
+            QListView::item:selected {
+                min-width: 300px;}
+        '''
+
+        '''opts = plotting.defaultOptions()
+        self.plotwidgets = {}
+        docks = {}
+        for name in opts:
+            dock = QDockWidget(name)
+            dock.setStyleSheet(dockstyle)
+            area = QScrollArea()
+            area.setWidgetResizable(True)
+            dock.setWidget(area)
+            dialog, widgets = opts[name].showDialog(area, wrap=2, section_wrap=1,
+                                style=style)
+            area.setWidget(dialog)
+            self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock)
+            self.plotwidgets[name] = widgets
+            docks[name] = dock
+
+        self.tabifyDockWidget(docks['labels'], docks['axes'])
+        docks['labels'].raise_()
+        self.docks = docks
+
+        #add dock menu items
+        for name in ['general','format','labels','axes']:
+            action = self.docks[name].toggleViewAction()
+            self.dock_menu.addAction(action)
+            action.setCheckable(True)
+        '''
+        return
+
+    def update_plugins(self):
+        """Update table for a plugin if it needs it"""
+
+        for o in self.openplugins:
+            w = self.getCurrentTable()
+            self.openplugins[o].table = w
+            self.openplugins[o]._update()
+        return
+
     def update_ref_genome(self):
         """Update the ref genome labels"""
 
@@ -173,6 +268,9 @@ class App(QMainWindow):
                  'Call Variants': {
                     'action': lambda: self.run_threaded_process(self.variant_calling, self.processing_completed),
                     'file':'call-variants'},
+                 'SNP Viewer': {
+                    'action':  self.snp_viewer,
+                    'file':'snp-viewer'},
                  'Make Phylogeny': {
                     'action': lambda: self.run_threaded_process(self.make_phylo_tree, self.phylogeny_completed),
                     'file':'phylogeny'},
@@ -231,9 +329,14 @@ class App(QMainWindow):
         center = QWidget()
         self.m.addWidget(center)
         l = QVBoxLayout(center)
-        self.fastq_table = tables.SampleTable(center, app=self,
-                            dataframe=pd.DataFrame(), plotter=self.plotview)
-        l.addWidget(self.fastq_table)
+        self.table_widget = tables.DataFrameWidget(parent=center, toolbar=True,
+                            app=self, plotter=self.plotview)
+        self.fastq_table = self.table_widget.table
+        l.addWidget(self.table_widget)
+
+        #self.fastq_table = tables.SampleTable(center, app=self,
+        #                    dataframe=pd.DataFrame(), lotter=self.plotview)
+        #l.addWidget(self.fastq_table)
 
         self.tabs = QTabWidget(center)
         self.tabs.setTabsClosable(True)
@@ -279,10 +382,6 @@ class App(QMainWindow):
         self.progressbar.setAlignment(Qt.AlignRight)
         self.setStatusBar(self.statusBar)
 
-        #redirect stdout
-        self._stdout = StdoutRedirect()
-        self._stdout.start()
-        self._stdout.printOccur.connect(lambda x : self.info.insert(x))
         return
 
     @Slot(int)
@@ -333,6 +432,13 @@ class App(QMainWindow):
                 QtCore.Qt.CTRL + QtCore.Qt.Key_Q)
         self.menuBar().addMenu(self.file_menu)
 
+        self.edit_menu = QMenu('Edit', self)
+        self.menuBar().addMenu(self.edit_menu)
+        #self.edit_menu.addAction(icon, 'Find/Replace', self.findReplace,
+        #        QtCore.Qt.CTRL + QtCore.Qt.Key_F)
+        icon = QIcon(os.path.join(iconpath,'preferences-system.png'))
+        self.edit_menu.addAction(icon, 'Preferences', self.preferences)
+
         self.view_menu = QMenu('&View', self)
         self.menuBar().addMenu(self.view_menu)
         icon = QIcon(os.path.join(iconpath,'zoom-in.png'))
@@ -375,6 +481,8 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.add_mapping_stats, self.processing_completed))
         self.tools_menu.addAction('Get Depth/Coverage',
             lambda: self.run_threaded_process(self.add_mean_depth, self.processing_completed))
+        self.tools_menu.addAction('Missing Sites',
+            lambda: self.run_threaded_process(self.missing_sites, self.processing_completed))
         self.tools_menu.addAction('Mean GC content',
             lambda: self.run_threaded_process(self.add_gc_mean, self.processing_completed))
         self.tools_menu.addAction('Fastq Qualities Report', self.fastq_quality_report)
@@ -407,6 +515,9 @@ class App(QMainWindow):
         self.presets_menu = QMenu('&Preset Genomes', self)
         self.menuBar().addMenu(self.presets_menu)
         self.load_presets_menu()
+
+        self.plugin_menu = QMenu('Plugins', self)
+        self.menuBar().addMenu(self.plugin_menu)
 
         self.help_menu = QMenu('&Help', self)
         self.menuBar().addMenu(self.help_menu)
@@ -522,6 +633,7 @@ class App(QMainWindow):
         self.results = {}
         self.proj_file = None
         self.fastq_table.setDataFrame(pd.DataFrame({'name':[]}))
+        self.fastq_table.refresh()
         self.tabs.clear()
         if hasattr(self, 'treeviewer'):
             self.treeviewer.clear()
@@ -550,6 +662,9 @@ class App(QMainWindow):
         ft = self.fastq_table
         ft.setDataFrame(data['inputs'])
         ft.resizeColumns()
+        ft.refresh()
+
+        self.check_files()
         self.update_ref_genome()
         self.update_mask()
         self.proj_file = filename
@@ -583,6 +698,16 @@ class App(QMainWindow):
         if not os.path.exists(filename):
             print ('no such file')
         self.load_project(filename)
+        return
+
+    def check_files(self):
+        """Check input files exist"""
+
+        ft = self.fastq_table
+        df = ft.model.df
+        for i,r in df.iterrows():
+            if not os.path.exists(r.filename1):
+                print ('%s missing file' %i)
         return
 
     def load_test(self):
@@ -794,7 +919,7 @@ class App(QMainWindow):
                 df = pd.read_csv(results_file)
                 self.fastq_table.model.df = df
                 self.fastq_table.refresh()
-                self.results['vcf_file'] = os.path.join(self.outputdir, 'filtered.vcf.gz')
+                self.results['vcf_file'] = os.path.join(self.outputdir, 'snps.vcf.gz')
         self.outdirLabel.setText(self.outputdir)
         return
 
@@ -955,7 +1080,7 @@ class App(QMainWindow):
         kwds = self.opts.kwds
         vcf_file = self.results['vcf_file']
         print('Making SNP alignment')
-        result, smat = tools.fasta_alignment_from_vcf(vcf_file,
+        result, smat = tools.core_alignment_from_vcf(vcf_file,
                                                 callback=progress_callback.emit)
         #print (result)
         outfasta = os.path.join(self.outputdir, 'core.fa')
@@ -972,6 +1097,24 @@ class App(QMainWindow):
 
         self.processing_completed()
         self.show_snpdist()
+        return
+
+    def missing_sites(self, progress_callback=None):
+        """Find missing sites in each sample - useful for quality control"""
+
+        vcf_file = os.path.join(self.outputdir, 'snps.vcf.gz')
+        snprecs, smat = tools.core_alignment_from_vcf(vcf_file, missing=True)
+        #outfasta = os.path.join(self.outdir, 'core.fa')
+        #SeqIO.write(snprecs, outfasta, 'fasta')
+        #write out sites matrix as txt file
+        smat.to_csv(os.path.join(self.outputdir,'core_missing.txt'), sep=' ')
+        missing = smat[smat=='N'].count().sort_values()
+
+        #merge with samples table
+        df = self.fastq_table.model.df
+        df = df.merge(missing.rename('missing_sites'),right_index=True,left_on='sample')
+        self.fastq_table.model.df = df
+        self.fastq_table.refresh()
         return
 
     def snp_viewer(self):
@@ -1150,7 +1293,7 @@ class App(QMainWindow):
 
             fig.suptitle('Qualities: %s' %name, fontsize=18)
             plt.tight_layout()
-            w.show_figure(fig)
+            w.set_figure(fig)
             i = self.right_tabs.addTab(w, label)
             self.right_tabs.setCurrentIndex(i)
         return
@@ -1289,7 +1432,7 @@ class App(QMainWindow):
         ax.set_xlabel('% total')
         ax.set_title('sequence contaminants - %s' %name)
         plt.tight_layout()
-        w.show_figure(fig)
+        w.set_figure(fig)
 
         i = self.tabs.addTab(w, 'contam:'+name)
         self.tabs.setCurrentIndex(i)
@@ -1338,8 +1481,8 @@ class App(QMainWindow):
 
     def plot_snp_matrix(self):
 
-        mat = pd.read_csv(self.results['snp_dist'],index_col=0)
-
+        snp_dist = os.path.join(self.outputdir, 'snpdist.csv')
+        mat = pd.read_csv(snp_dist,index_col=0)
         #fig,ax = plt.subplots(1,1,figsize=(8,8))
         #plotting.heatmap(mat, cmap='coolwarm', ax=ax)
         import seaborn as sns
@@ -1347,35 +1490,19 @@ class App(QMainWindow):
         fig = cm.fig
         plt.tight_layout()
         w = widgets.PlotViewer(self)
-        w.show_figure(fig)
+        w.set_figure(fig)
         idx = self.right_tabs.addTab(w, 'SNP dist')
         self.right_tabs.setCurrentIndex(idx)
         return
-
-    '''def plot_snp_matrix(self):
-        bv = widgets.BrowserViewer()
-        import toyplot
-        min=mat.min().min()
-        max=mat.max().max()
-        colormap = toyplot.color.brewer.map("BlueGreen", domain_min=min, domain_max=max)
-        locator = toyplot.locator.Explicit(range(len(mat)),list(mat.index))
-        canvas,axes = toyplot.matrix((mat.values,colormap), llocator=locator, tlocator=locator,
-                        label="SNP distance matrix", colorshow=True)
-        toyplot.html.render(canvas, "temp.html")
-        with open('temp.html', 'r') as f:
-            html = f.read()
-            bv.browser.setHtml(html)
-
-        idx = self.right_tabs.addTab(bv, 'snp dist')
-        self.right_tabs.setCurrentIndex(idx)
-        return'''
 
     def show_browser_tab(self, link, name):
         """Show web page in a tab"""
 
         #from PySide2.QtWebEngineWidgets import QWebEngineView
         browser = QWebEngineView()
-        browser.setUrl(QUrl(link))
+        url = QUrl.fromUserInput(link)
+        print (url)
+        browser.setUrl(url)
         idx = self.right_tabs.addTab(browser, name)
         self.right_tabs.setCurrentIndex(idx)
         return
@@ -1586,16 +1713,96 @@ class App(QMainWindow):
         dlg.exec_()
         return
 
+    def discoverPlugins(self):
+        """Discover available plugins"""
+
+        from . import plugin
+        default = os.path.join(module_path, 'plugins')
+        other = os.path.join(settingspath, 'plugins')
+        paths = [default,other]
+        failed = plugin.init_plugin_system(paths)
+        self.updatePluginMenu()
+        return
+
+    def loadPlugin(self, plugin):
+        """Instantiate the plugin and call it's main method"""
+
+        index = self.tabs.currentIndex()
+        name = self.tabs.tabText(index)
+        tablew = self.sheets[name]
+        if not hasattr(self, 'openplugins'):
+            self.openplugins = {}
+        openplugins = self.openplugins
+
+        if plugin.name in openplugins:
+            p = openplugins[plugin.name]
+            self.docks[plugin.name].show()
+        else:
+            try:
+                p = plugin(parent=self, table=tablew)
+                #track which plugin is running
+                openplugins[plugin.name] = p
+            except Exception as e:
+                QMessageBox.information(self, "Plugin error", str(e))
+                return
+
+            #plugin should be added as a dock widget
+            self.showPlugin(p)
+        return
+
+    def showPlugin(self, plugin):
+        """Add plugin as dock widget"""
+
+        dockstyle = '''
+            QDockWidget::title {
+                background-color: #d7edce;
+            }
+        '''
+        dock = QDockWidget(plugin.name)
+        dock.setStyleSheet(dockstyle)
+        area = QScrollArea()
+        area.setWidgetResizable(True)
+        dock.setWidget(area)
+        area.setWidget(plugin.main)
+        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
+        self.docks[plugin.name] = dock
+        return
+
+    def updatePluginMenu(self):
+        """Update plugins"""
+
+        from . import plugin
+        plgmenu = self.plugin_menu
+        for plg in plugin.get_plugins_classes('gui'):
+
+            def func(p, **kwargs):
+                def new():
+                   self.loadPlugin(p)
+                return new
+            if hasattr(plg,'iconfile'):
+                icon = QIcon(os.path.join(pluginiconpath,plg.iconfile))
+                plgmenu.addAction(icon, plg.menuentry, func(plg))
+            else:
+                plgmenu.addAction(plg.menuentry, func(plg))
+        return
+
+    def preferences(self):
+        """Preferences dialog"""
+
+        from . import dialogs
+        opts = {}
+        for k in core.defaults.keys():
+            opts[k] = getattr(core,k)
+        opts['THEME'] = self.theme
+        dlg = dialogs.PreferencesDialog(self, opts)
+        dlg.exec_()
+        return
+
     def online_documentation(self,event=None):
         """Open the online documentation"""
 
-        #import webbrowser
         link='https://github.com/dmnfarrell/snipgenie'
-        #webbrowser.open(link,autoraise=1)
-        browser = QWebEngineView()
-        browser.setUrl(QUrl(link))
-        idx = self.right_tabs.addTab(browser, 'help')
-        self.right_tabs.setCurrentIndex(idx)
+        self.show_browser_tab(link, 'help')
         return
 
     def about(self):

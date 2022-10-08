@@ -455,7 +455,7 @@ def mpileup_parallel(bam_files, ref, outpath, threads=4, callback=None, tempdir=
 
 def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
                     callback=None, overwrite=False, filters=None, gff_file=None,
-                    mask=None, tempdir='/tmp',
+                    mask=None, tempdir=None,
                     custom_filters=False, **kwargs):
     """Call variants with bcftools"""
 
@@ -602,37 +602,6 @@ def mask_filter(vcf_file, mask_file, overwrite=False, outdir=None):
         overwrite_vcf(vcf_file, new, outdir)
     return
 
-def old_site_proximity_filter(vcf_file, dist=10, outdir=None):
-    """Remove any pairs of sites within dist of each other"""
-
-    import vcf
-    vcf_reader = vcf.Reader(open(vcf_file, 'rb'))
-    sites = [record.POS for record in vcf_reader]
-    #print (sites)
-    found = []
-    for i in range(len(sites)-1):
-        if sites[i+1] - sites[i] <= dist:
-            #print (sites[i], sites[i+1],'close')
-            found.extend([sites[i], sites[i+1]])
-    #print (found)
-    new = sorted(list(set(sites) - set(found)))
-    print ('proximity filter removed %s/%s sites' %(len(set(found)),len(sites)))
-    if outdir == None:
-        outdir = tempfile.gettempdir()
-    out = os.path.join(outdir,'temp.vcf')
-    vcf_reader = vcf.Reader(open(vcf_file, 'rb'))
-    vcf_writer = vcf.Writer(open(out, 'w'), vcf_reader)
-    for record in vcf_reader:
-        if record.POS in new:
-            #print (record)
-            vcf_writer.write_record(record)
-    vcf_writer.close()
-    #overwrite input vcf
-    bcftoolscmd = tools.get_cmd('bcftools')
-    cmd = 'bcftools view {o} -O z -o {gz}'.format(o=out,gz=vcf_file)
-    tmp = subprocess.check_output(cmd,shell=True)
-    return
-
 def site_proximity_filter(vcf_file, dist=10, overwrite=False, outdir=None):
     """Remove any pairs of sites within dist of each other.
     Args:
@@ -743,7 +712,7 @@ def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4,
                                    relabel=True, gff_file=gff_file,
                                    **kwargs)
 
-    snprecs, smat = tools.fasta_alignment_from_vcf(vcf_file)
+    snprecs, smat = tools.core_alignment_from_vcf(vcf_file)
     outfasta = os.path.join(outdir, 'core.fa')
     SeqIO.write(snprecs, outfasta, 'fasta')
     smat.to_csv(os.path.join(outdir,'core.txt'), sep=' ')
@@ -950,7 +919,7 @@ class WorkFlow(object):
         print ()
         print ('making SNP matrix')
         print ('-----------------')
-        snprecs, smat = tools.fasta_alignment_from_vcf(self.vcf_file, omit=self.omit_samples)
+        snprecs, smat = tools.core_alignment_from_vcf(self.vcf_file, omit=self.omit_samples)
         outfasta = os.path.join(self.outdir, 'core.fa')
         SeqIO.write(snprecs, outfasta, 'fasta')
         #write out sites matrix as txt file

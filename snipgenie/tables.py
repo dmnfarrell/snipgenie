@@ -26,6 +26,28 @@ import numpy as np
 from .qt import *
 from pandas.api.types import is_datetime64_any_dtype as is_datetime
 import pylab as plt
+from . import widgets
+
+if 'Windows' in platform.platform():
+    defaultfont = 'Arial'
+else:
+    defaultfont = 'Monospace'
+defaults = {
+            'FONT' :defaultfont,
+            'FONTSIZE' : 12,
+            'ALIGNMENT' : 'w',
+            'COLUMNWIDTH' : 80,
+            'TIMEFORMAT' :'%m/%d/%Y',
+            'SHOWPLOTTER' : True,
+            'ICONSIZE' : 26,
+            'DPI' : 100,
+            'BGCOLOR' : '#F4F4F3',
+            'THEME': 'Fusion'
+}
+#populate current class variable
+for k in defaults:
+    vars()[k] = defaults[k]
+
 
 class ColumnHeader(QHeaderView):
     def __init__(self):
@@ -34,23 +56,41 @@ class ColumnHeader(QHeaderView):
 
 class DataFrameWidget(QWidget):
     """Widget containing a tableview and statusbar"""
-    def __init__(self, parent=None, table=None, toolbar=False):
+    def __init__(self, parent=None, statusbar=True, toolbar=False, **kwargs):
 
         super(DataFrameWidget, self).__init__()
         l = self.layout = QGridLayout()
         l.setSpacing(2)
         self.setLayout(self.layout)
-        #self.table = DataFrameTable(self, dataframe)
-        self.table = table
+
+        self.table = SampleTable(self, dataframe=pd.DataFrame(), **kwargs)
         l.addWidget(self.table, 1, 1)
-        if toolbar==True:
+        if toolbar == True:
             self.createToolbar()
-        self.statusbar = QStatusBar()
-        self.setStatusBar(self.statusbar)
-        self.updateStatusBar()
+        if statusbar == True:
+            self.statusBar()
+
+        self.table.model.dataChanged.connect(self.stateChanged)
         return
 
-    def createToolbar(self):
+    #@Slot('QModelIndex','QModelIndex','int')
+    def stateChanged(self, idx, idx2):
+        """Run whenever table model is changed"""
+
+        if hasattr(self, 'pf') and self.pf is not None:
+            self.pf.updateData()
+
+    def statusBar(self):
+        """Status bar at bottom"""
+
+        w = self.statusbar = QWidget(self)
+        l = QHBoxLayout(w)
+        w.setMaximumHeight(30)
+        self.size_label = QLabel("")
+        l.addWidget(self.size_label, 1)
+        w.setStyleSheet('color: #1a216c; font-size:12px')
+        self.layout.addWidget(w, 2, 1)
+        self.updateStatusBar()
         return
 
     def updateStatusBar(self):
@@ -59,34 +99,136 @@ class DataFrameWidget(QWidget):
         if not hasattr(self, 'size_label'):
             return
         df = self.table.model.df
-        meminfo = self.table.getMemory()
-        s = '{r} rows x {c} columns | {m}'.format(r=len(df), c=len(df.columns),m=meminfo)
+        #meminfo = self.table.getMemory()
+        s = '{r} samples x {c} columns'.format(r=len(df), c=len(df.columns))
         self.size_label.setText(s)
         return
+
+    def createToolbar(self):
+
+        self.setLayout(self.layout)
+        items = {
+                 'copy': {'action':self.copy,'file':'copy','shortcut':'Ctrl+C'},
+                 'plot': {'action':self.plot,'file':'plot'},
+                 'scatter': {'action':self.plot,'file':'scatter'},
+                 #'filter':{'action':self.filter,'file':'table-filter'}
+                 }
+
+        self.toolbar = toolbar = QToolBar("Toolbar")
+        toolbar.setIconSize(QtCore.QSize(ICONSIZE, ICONSIZE))
+        toolbar.setOrientation(QtCore.Qt.Vertical)
+        widgets.addToolBarItems(toolbar, self, items)
+        self.layout.addWidget(toolbar,1,2)
+        return
+
+    def refresh(self):
+
+        self.table.refresh()
+        return
+
+    def copy(self):
+        """Copy to clipboard"""
+
+        #check size of dataframe
+        m = self.table.model.df.memory_usage(deep=True).sum()
+        if m>1e8:
+            answer = QMessageBox.question(self, 'Copy?',
+                             'This data may be too large to copy. Are you sure?', QMessageBox.Yes, QMessageBox.No)
+            if not answer:
+                return
+        df = self.table.getSelectedDataFrame()
+        df.to_clipboard()
+        return
+
+    def plot(self):
+        """Plot from selection"""
+
+        if self.pf == None:
+            self.createPlotViewer()
+        self.pf.setVisible(True)
+        df = self.getSelectedDataFrame()
+        self.pf.replot(df)
+        return
+
+    def scatter(self):
+
+        return
+
+    def filter(self):
+        """Show filter dialog"""
+
+        return
+
+class HeaderView(QHeaderView):
+    """"
+    Column header class.
+    """
+    def __init__(self, parent):
+        super(HeaderView, self).__init__(QtCore.Qt.Horizontal, parent)
+        '''self.setStyleSheet(
+            "QHeaderView::section{background-color: #ffffff; "
+            "font-weight: bold; "
+            "border-bottom: 1px solid gray;}")'''
+
+        self.setDefaultAlignment(QtCore.Qt.AlignLeft|QtCore.Qt.Alignment(QtCore.Qt.TextWordWrap))
+        sizePol = QSizePolicy()
+        sizePol.setVerticalPolicy(QSizePolicy.Maximum)
+        sizePol.setHorizontalPolicy(QSizePolicy.Maximum)
+        self.setSizePolicy(sizePol)
+        self.MAX_HEIGHT = 240
+        self.setMinimumHeight(26)
+        self.setMaximumHeight(self.MAX_HEIGHT )
+        self.setSectionsClickable(True)
+        self.setSelectionBehavior(QTableView.SelectColumns)
+        self.setStretchLastSection(False)
+        return
+
+    def sectionSizeFromContents(self, logicalIndex):
+        """Get section size from contents"""
+
+        text = self.model().headerData(logicalIndex, self.orientation(), QtCore.Qt.DisplayRole)
+        alignment = self.defaultAlignment()
+        metrics = QFontMetrics(self.fontMetrics())
+        width = metrics.boundingRect(QtCore.QRect(), alignment, text).width()
+
+        heights = []
+        for i in range(self.count()):
+            text = self.model().headerData(i, self.orientation(),QtCore.Qt.DisplayRole)
+            size = self.sectionSize(i)
+            rect = QtCore.QRect(0, 0, size, self.MAX_HEIGHT)
+            heights.append(metrics.boundingRect(rect, alignment, text).height())
+        height = sorted(heights)[-1] + 5
+        return QtCore.QSize(width, height)
 
 class DataFrameTable(QTableView):
     """
     QTableView with pandas DataFrame as model.
     """
-    def __init__(self, parent=None, dataframe=None, plotter=None, fontsize=10, *args):
+    def __init__(self, parent=None, dataframe=None, plotter=None, fontsize=10):
 
         QTableView.__init__(self)
+        self.parent = parent
         self.clicked.connect(self.showSelection)
         #self.doubleClicked.connect(self.handleDoubleClick)
         self.setSelectionBehavior(QTableView.SelectRows)
         #self.setSelectionBehavior(QTableView.SelectColumns)
         #self.horizontalHeader = ColumnHeader()
-        header = self.horizontalHeader()
+
         vh = self.verticalHeader()
         vh.setVisible(True)
         vh.setDefaultSectionSize(28)
+        vh.setMinimumWidth(20)
+        vh.setMaximumWidth(500)
+
         hh = self.horizontalHeader()
         hh.setVisible(True)
         hh.setSectionsMovable(True)
         hh.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         hh.customContextMenuRequested.connect(self.columnHeaderMenu)
         hh.setSelectionBehavior(QTableView.SelectColumns)
+        hh.setSelectionMode(QAbstractItemView.ExtendedSelection)
         #hh.sectionClicked.connect(self.columnClicked)
+        hh.setSectionsClickable(True)
 
         self.setDragEnabled(True)
         self.viewport().setAcceptDrops(True)
@@ -105,10 +247,15 @@ class DataFrameTable(QTableView):
         self.plotview = plotter
         return
 
-    def createToolbar(self):
+    def updateFont(self):
+        """Update the font"""
 
-        self.toolbar = ToolBar(self)
-        self.layout.addWidget(self.toolbar, 1, 2)
+        font = QFont(self.font)
+        font.setPointSize(int(self.fontsize))
+        self.setFont(font)
+        self.horizontalHeader().setFont(font)
+        self.verticalHeader().setFont(font)
+        return
 
     def setDataFrame(self, df):
 
@@ -119,18 +266,6 @@ class DataFrameTable(QTableView):
 
     def getDataFrame(self):
         return self.model.df
-
-    def load(self, filename=None):
-        return
-
-    def save(self):
-        return
-
-    def copy(self):
-        return
-
-    def paste(self):
-        return
 
     def zoomIn(self, fontsize=None):
 
@@ -223,7 +358,6 @@ class DataFrameTable(QTableView):
 
         hheader = self.horizontalHeader()
         df = self.model.df
-        self.model.df = df.sort_values(df.columns[col])
         return
 
     def storeCurrent(self):
@@ -324,10 +458,19 @@ class DataFrameTable(QTableView):
         return
 
     def refresh(self):
+        """Refresh table if dataframe is changed"""
 
+        #self.updateFont()
         self.model.beginResetModel()
-        self.model.dataChanged.emit(0,0)
+        index = self.model.index
+        try:
+            self.model.dataChanged.emit(0,0)
+        except:
+            self.model.dataChanged.emit(index(0,0),index(0,0))
         self.model.endResetModel()
+        if hasattr(self.parent,'statusbar'):
+            self.parent.updateStatusBar()
+        return
 
     def importFile(self):
         dialogs.ImportDialog(self)
@@ -401,9 +544,24 @@ class DataFrameTable(QTableView):
         df = self.model.df
         d = df[column]
         #fig,ax = plt.subplots(1,1, figsize=(7,5), dpi=120)
-        d.hist(bins=12, ax=self.plotview.ax)
+        self.plotview.clear()
+        ax = self.plotview.ax
+        d.hist(bins=12, ax=ax)
+        ax.set_title(column)
         self.plotview.redraw()
         return
+
+    def getMemory(self):
+        """Get memory info as string"""
+
+        m = self.model.df.memory_usage(deep=True).sum()
+        if m>1e5:
+            m = round(m/1048576,2)
+            units='MB'
+        else:
+            units='Bytes'
+        s = "%s %s" %(m,units)
+        return s
 
 class DataFrameModel(QtCore.QAbstractTableModel):
     def __init__(self, dataframe=None, *args):
@@ -465,12 +623,22 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         elif role == QtCore.Qt.BackgroundRole:
             return QColor(self.bg)
 
-    def headerData(self, col, orientation, role=QtCore.Qt.DisplayRole):
+    def headerData(self, col, orientation, role):
+        """What's displayed in the headers"""
 
-        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
-            return str(self.df.columns[col])
-        if orientation == QtCore.Qt.Vertical and role == QtCore.Qt.DisplayRole:
-            return self.df.index[col]
+        if role == QtCore.Qt.DisplayRole:
+            if orientation == QtCore.Qt.Horizontal:
+                return str(self.df.columns[col])
+            if orientation == QtCore.Qt.Vertical:
+                value = self.df.index[col]
+                if type( self.df.index) == pd.DatetimeIndex:
+                    if not value is pd.NaT:
+                        try:
+                            return value.strftime(TIMEFORMAT)
+                        except:
+                            return ''
+                else:
+                    return str(value)
         return None
 
     def sort(self, idx, ascending=True):
@@ -549,11 +717,11 @@ class SampleTable(DataFrameTable):
     """
     QTableView for files/samples view.
     """
-    def __init__(self, parent=None, app=None, dataframe=None, plotter=None, *args):
+    def __init__(self, parent=None, app=None, dataframe=None, plotter=None):
         DataFrameTable.__init__(self)
+        self.parent = parent
         self.app = app
         self.setWordWrap(False)
-        header = self.horizontalHeader()
         tm = SampleTableModel(dataframe)
         self.setModel(tm)
         self.plotview = plotter
@@ -562,6 +730,8 @@ class SampleTable(DataFrameTable):
     def setDataFrame(self, df):
         """Override to use right model"""
 
+        if 'sample' in df.columns:
+            df = df.set_index('sample', drop=False)
         tm = SampleTableModel(df)
         self.setModel(tm)
         self.model = tm
@@ -613,9 +783,6 @@ class SampleTable(DataFrameTable):
         else:
             QTableView.edit(self, index, trigger, event)
         return True
-
-    def refresh(self):
-        DataFrameTable.refresh(self)
 
     def resizeColumns(self):
 

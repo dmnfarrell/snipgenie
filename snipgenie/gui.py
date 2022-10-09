@@ -56,6 +56,31 @@ dockstyle = '''
      }
 '''
 
+widgetstyle = '''
+    QWidget {
+        font-size: 12px;
+        max-width: 220px;
+    }
+    QLabel {
+        min-width: 60px;
+        width:80px;
+    }
+    QPlainTextEdit {
+        max-height: 100px;
+        min-width: 100px;
+    }
+    QScrollBar:vertical {
+         width: 15px;
+     }
+    QComboBox {
+        combobox-popup: 0;
+        max-height: 30px;
+        max-width: 100px;
+    }
+    QListView::item:selected {
+        min-width: 300px;}
+'''
+
 class App(QMainWindow):
     """GUI Application using PySide2 widgets"""
     def __init__(self, filenames=[], project=None):
@@ -81,7 +106,7 @@ class App(QMainWindow):
 
         self.main.setFocus()
         self.setCentralWidget(self.main)
-        self.add_dock_widgets()
+
         self.create_tool_bar()
         self.setup_gui()
         self.load_settings()
@@ -167,62 +192,6 @@ class App(QMainWindow):
         self.style = style
         return
 
-    def add_dock_widgets(self):
-        """Add plot dialogs to dock"""
-
-        style = '''
-            QWidget {
-                font-size: 12px;
-                max-width: 220px;
-            }
-            QLabel {
-                min-width: 60px;
-                width:80px;
-            }
-            QPlainTextEdit {
-                max-height: 100px;
-                min-width: 100px;
-            }
-            QScrollBar:vertical {
-                 width: 15px;
-             }
-            QComboBox {
-                combobox-popup: 0;
-                max-height: 30px;
-                max-width: 100px;
-            }
-            QListView::item:selected {
-                min-width: 300px;}
-        '''
-
-        '''opts = plotting.defaultOptions()
-        self.plotwidgets = {}
-        docks = {}
-        for name in opts:
-            dock = QDockWidget(name)
-            dock.setStyleSheet(dockstyle)
-            area = QScrollArea()
-            area.setWidgetResizable(True)
-            dock.setWidget(area)
-            dialog, widgets = opts[name].showDialog(area, wrap=2, section_wrap=1,
-                                style=style)
-            area.setWidget(dialog)
-            self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock)
-            self.plotwidgets[name] = widgets
-            docks[name] = dock
-
-        self.tabifyDockWidget(docks['labels'], docks['axes'])
-        docks['labels'].raise_()
-        self.docks = docks
-
-        #add dock menu items
-        for name in ['general','format','labels','axes']:
-            action = self.docks[name].toggleViewAction()
-            self.dock_menu.addAction(action)
-            action.setCheckable(True)
-        '''
-        return
-
     def update_plugins(self):
         """Update table for a plugin if it needs it"""
 
@@ -291,14 +260,28 @@ class App(QMainWindow):
             toolbar.addAction(btn)
         return
 
+    def add_dock(self, widget, name):
+        """Add a dock widget"""
+
+        dock = QDockWidget(name)
+        dock.setStyleSheet(dockstyle)
+        area = QScrollArea()
+        area.setWidgetResizable(True)
+        dock.setWidget(area)
+        area.setWidget(widget)
+        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
+        self.docks['options'] = dock
+        return
+
     def setup_gui(self):
         """Add all GUI elements"""
 
+        self.docks = {}
         self.m = QSplitter(self.main)
-        #left menu
-        left = QWidget()
-        self.m.addWidget(left)
-        l = QVBoxLayout(left)
+
+        dialog = QWidget()
+        #self.m.addWidget(left)
+        l = QVBoxLayout(dialog)
         lbl = QLabel("Reference Genome:")
         l.addWidget(lbl)
         self.reflabel = QLabel()
@@ -315,13 +298,17 @@ class App(QMainWindow):
         self.masklabel.setStyleSheet('color: blue')
         l.addWidget(self.masklabel)
 
+        self.add_dock(dialog, 'genome')
         #create option widgets
         self.opts = AppOptions(parent=self.m)
-        dialog = self.opts.showDialog(left, wrap=1, section_wrap=1)
-        l.addWidget(dialog)
+        dialog = self.opts.showDialog(self, wrap=1, section_wrap=1, style=widgetstyle)
+        self.add_dock(dialog, 'options')
 
-        l.addStretch()
-        left.setFixedWidth(250)
+        #add dock menu items
+        for name in ['options']:
+            action = self.docks[name].toggleViewAction()
+            self.dock_menu.addAction(action)
+            action.setCheckable(True)
 
         #general plot window
         self.plotview = widgets.PlotViewer(self)
@@ -516,6 +503,9 @@ class App(QMainWindow):
         self.menuBar().addMenu(self.presets_menu)
         self.load_presets_menu()
 
+        self.dock_menu = QMenu('Docks', self)
+        self.menuBar().addMenu(self.dock_menu)
+        
         self.plugin_menu = QMenu('Plugins', self)
         self.menuBar().addMenu(self.plugin_menu)
 
@@ -1774,7 +1764,7 @@ class App(QMainWindow):
         from . import plugin
         plgmenu = self.plugin_menu
         for plg in plugin.get_plugins_classes('gui'):
-
+            print (plg)
             def func(p, **kwargs):
                 def new():
                    self.loadPlugin(p)

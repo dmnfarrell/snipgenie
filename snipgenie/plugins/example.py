@@ -64,7 +64,7 @@ class ExamplePlugin(Plugin):
         tb.resize(300,300)
         layout.addWidget(tb)
         text = 'This is a sample plugin.\n'\
-        'see https://github.com/dmnfarrell/tablexplore/tree/master/plugins '\
+        'see https://github.com/dmnfarrell/snipgenie/tree/master/plugins '\
         'for code examples.'
         tb.insertPlainText(text)
         #add a table widget

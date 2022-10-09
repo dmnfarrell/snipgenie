@@ -109,7 +109,7 @@ class DataFrameWidget(QWidget):
         self.setLayout(self.layout)
         items = {
                  'copy': {'action':self.copy,'file':'copy','shortcut':'Ctrl+C'},
-                 'plot': {'action':self.plot,'file':'plot'},
+                 'plot': {'action':self.plot,'file':'hist'},
                  'scatter': {'action':self.plot,'file':'scatter'},
                  #'filter':{'action':self.filter,'file':'table-filter'}
                  }
@@ -623,7 +623,7 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         elif role == QtCore.Qt.BackgroundRole:
             return QColor(self.bg)
 
-    def headerData(self, col, orientation, role):
+    def headerData(self, col, orientation, role=QtCore.Qt.DisplayRole):
         """What's displayed in the headers"""
 
         if role == QtCore.Qt.DisplayRole:
@@ -732,6 +732,7 @@ class SampleTable(DataFrameTable):
 
         if 'sample' in df.columns:
             df = df.set_index('sample', drop=False)
+            df.index.name = 'index'
         tm = SampleTableModel(df)
         self.setModel(tm)
         self.model = tm
@@ -902,11 +903,15 @@ class SNPTable(DataFrameTable):
         return
 
     def addActions(self, event, row):
+
         menu = self.menu
         uniquepositionsAction = menu.addAction("View unique positions")
-
+        transposeAction = menu.addAction("Transpose")
         action = menu.exec_(self.mapToGlobal(event.pos()))
-        if action == uniquepositionsAction:
+        if action == transposeAction:
+            self.model.df = self.model.df.T
+            self.refresh()
+        elif action == uniquepositionsAction:
             self.app.show_unique_positions(row)
 
         return

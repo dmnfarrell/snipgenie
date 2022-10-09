@@ -38,26 +38,28 @@ module_path = os.path.dirname(os.path.abspath(__file__))
 iconpath = os.path.join(module_path, 'icons')
 
 def dialogFromOptions(parent, opts, sections=None,
-                      sticky='news', wrap=2, section_wrap=2):
+                      sticky='news', wrap=2, section_wrap=2,
+                      style=None):
     """Get Qt widgets dialog from a dictionary of options"""
 
     sizepolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
     sizepolicy.setHorizontalStretch(1)
     sizepolicy.setVerticalStretch(0)
 
-    style = '''
-    QLabel {
-        font-size: 12px;
-    }
-    QWidget {
-        max-width: 130px;
-        min-width: 30px;
-        font-size: 14px;
-    }
-    QPlainTextEdit {
-        max-height: 80px;
-    }
-    '''
+    if style == None:
+        style = '''
+        QLabel {
+            font-size: 12px;
+        }
+        QWidget {
+            max-width: 130px;
+            min-width: 30px;
+            font-size: 14px;
+        }
+        QPlainTextEdit {
+            max-height: 80px;
+        }
+        '''
 
     if sections == None:
         sections = {'options': opts.keys()}
@@ -488,12 +490,12 @@ class BaseOptions(object):
             self.callback()
         return
 
-    def showDialog(self, parent, wrap=2, section_wrap=2):
+    def showDialog(self, parent, wrap=2, section_wrap=2, style=None):
         """Auto create tk vars, widgets for corresponding options and
            and return the frame"""
 
         dialog, self.widgets = dialogFromOptions(parent, self.opts, self.groups,
-                                wrap=wrap, section_wrap=section_wrap)
+                                wrap=wrap, section_wrap=section_wrap, style=style)
         return dialog
 
     def setWidgetValue(self, key, value):

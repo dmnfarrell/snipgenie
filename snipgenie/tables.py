@@ -291,6 +291,9 @@ class DataFrameTable(QTableView):
         vh = self.verticalHeader()
         h = vh.defaultSectionSize()
         vh.setDefaultSectionSize(h-2)
+        hh = self.horizontalHeader()
+        w = hh.defaultSectionSize()
+        hh.setDefaultSectionSize(w-2)
         return
 
     def importFile(self, filename=None, dialog=False, **kwargs):
@@ -346,6 +349,36 @@ class DataFrameTable(QTableView):
         rows = list(dict.fromkeys(rows).keys())
         cols = list(dict.fromkeys(cols).keys())
         return df.iloc[rows,cols]
+
+    def setSelected(self, rows, cols):
+        """
+        Set selection programmatically from a list of rows and cols.
+        https://doc.qt.io/archives/qtjambi-4.5.2_01/com/trolltech/qt/model-view-selection.html
+        """
+
+        #print (rows,cols)
+        if len(rows)==0 or len(cols)==0:
+            return
+        topleft = self.model.index(rows[0], cols[0])
+        bottomright = self.model.index(rows[-1], cols[-1])
+        selection = QtCore.QItemSelection(topleft, bottomright)
+        mode = QtCore.QItemSelectionModel.Select
+        self.selectionModel().select(selection, mode)
+        return
+
+    def getScrollPosition(self):
+        """Get current row/col position"""
+
+        hb = self.horizontalScrollBar()
+        vb = self.verticalScrollBar()
+        return vb.value(),hb.value()
+
+    def setScrollPosition(self, row, col):
+        """Move to row/col position"""
+
+        idx = self.model.index(row, col)
+        self.scrollTo(idx)
+        return
 
     def handleDoubleClick(self, item):
 
@@ -829,7 +862,7 @@ class MyHeaderView(QHeaderView):
 
     def __init__(self, parent=None):
         super().__init__(Qt.Horizontal, parent)
-        self._font = QFont("Arial", 12)
+        self._font = QFont("Arial", 11)
         self._metrics = QFontMetrics(self._font)
         self._descent = self._metrics.descent()
         self._margin = 10
@@ -856,7 +889,8 @@ class SNPTableModel(DataFrameModel):
     def __init__(self, dataframe=None, *args):
 
         DataFrameModel.__init__(self, dataframe)
-        self.colors = {'A':'lightblue', 'T':'#ff704d', 'C':'#5cd65c', 'G':'yellow'}
+        self.colors = {'A':'lightblue', 'T':'#ff704d', 'C':'#5cd65c',
+                        'G':'yellow','N':'gray'}
         self.df = dataframe
 
     def data(self, index, role):
@@ -892,6 +926,7 @@ class SNPTable(DataFrameTable):
         self.setHorizontalHeader(headerview)
         hh = self.horizontalHeader()
         hh.setDefaultSectionSize(18)
+        self.transposed = False
         return
 
     def setDataFrame(self, df):
@@ -903,15 +938,43 @@ class SNPTable(DataFrameTable):
         return
 
     def addActions(self, event, row):
+        """Right click action menu"""
 
+        df = self.model.df
         menu = self.menu
-        uniquepositionsAction = menu.addAction("View unique positions")
+        #uniquepositionsAction = menu.addAction("View unique positions")
+        gotoPositionAction = menu.addAction("Go to position")
         transposeAction = menu.addAction("Transpose")
-        action = menu.exec_(self.mapToGlobal(event.pos()))
+        loadAction = menu.addAction("Load SNP table")
+        zoominAction = menu.addAction("Zoom in")
+        zoomoutAction = menu.addAction("Zoom out")
+        action = menu.exec_(event.globalPos())
         if action == transposeAction:
             self.model.df = self.model.df.T
             self.refresh()
-        elif action == uniquepositionsAction:
-            self.app.show_unique_positions(row)
+            self.transposed = not self.transposed
+        elif action == gotoPositionAction:
+            pos,ok = QInputDialog.getInt(self,"Move to position","Enter position")
+            if not ok:
+                return
+            if self.transposed == True:
+                row = df.index.get_loc(pos)
+                self.setScrollPosition(row,0)
+            else:
+                col = df.columns.get_loc(pos)
+                self.setScrollPosition(0,col)
+        elif action == loadAction:
+            filename, _ = QFileDialog.getOpenFileName(self, 'Open File', './',
+                                        filter="Text Files(*.csv *.txt);;All Files(*.*)" )
+            if not filename:
+                return
+            df = pd.read_csv(filename, sep=' ', index_col=0).T
+            self.setDataFrame(df)
+        elif action == zoomoutAction:
+            self.zoomOut()
+        elif action == zoominAction:
+            self.zoomIn()         
+        #elif action == uniquepositionsAction:
+        #    self.app.show_unique_positions(row)
 
         return

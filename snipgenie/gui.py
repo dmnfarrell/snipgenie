@@ -91,7 +91,8 @@ class App(QMainWindow):
 
         self.setWindowIcon(QIcon(logoimg))
         self.create_menu()
-        self.main = QSplitter(self)
+        self.main = QSplitter()
+
         screen_resolution = QGuiApplication.primaryScreen().availableGeometry()
         width, height = screen_resolution.width()*0.7, screen_resolution.height()*.7
         if screen_resolution.width()>1280:
@@ -121,7 +122,7 @@ class App(QMainWindow):
             self.load_project(project)
         self.threadpool = QtCore.QThreadPool()
         mpl.style.use('bmh')
-        self.discoverPlugins()
+        self.discover_plugins()
         self.redirect_stdout()
         return
 
@@ -277,10 +278,10 @@ class App(QMainWindow):
         """Add all GUI elements"""
 
         self.docks = {}
-        self.m = QSplitter(self.main)
+        #self.m = QSplitter(self.main)
+        self.m = self.main
 
         dialog = QWidget()
-        #self.m.addWidget(left)
         l = QVBoxLayout(dialog)
         lbl = QLabel("Reference Genome:")
         l.addWidget(lbl)
@@ -313,13 +314,13 @@ class App(QMainWindow):
         #general plot window
         self.plotview = widgets.PlotViewer(self)
 
-        center = QWidget()
+        center = QSplitter(Qt.Vertical)
         self.m.addWidget(center)
-        l = QVBoxLayout(center)
+        #l = QVBoxLayout(center)
         self.table_widget = tables.DataFrameWidget(parent=center, toolbar=True,
                             app=self, plotter=self.plotview)
         self.fastq_table = self.table_widget.table
-        l.addWidget(self.table_widget)
+        center.addWidget(self.table_widget)
 
         #self.fastq_table = tables.SampleTable(center, app=self,
         #                    dataframe=pd.DataFrame(), lotter=self.plotview)
@@ -329,7 +330,7 @@ class App(QMainWindow):
         self.tabs.setTabsClosable(True)
         self.tabs.setMovable(True)
         self.tabs.tabCloseRequested.connect(self.close_tab)
-        l.addWidget(self.tabs)
+        center.addWidget(self.tabs)
 
         self.right = right = QWidget()
         self.m.addWidget(self.right)
@@ -368,7 +369,6 @@ class App(QMainWindow):
         self.statusBar.addWidget(self.progressbar, 3)
         self.progressbar.setAlignment(Qt.AlignRight)
         self.setStatusBar(self.statusBar)
-
         return
 
     @Slot(int)
@@ -441,7 +441,7 @@ class App(QMainWindow):
         self.style_menu.addAction('Dark', lambda: self.set_style('dark'))
         self.view_menu.addAction(self.style_menu.menuAction())
 
-        self.analysis_menu = QMenu('&Analysis', self)
+        self.analysis_menu = QMenu('Analysis', self)
         self.menuBar().addSeparator()
         self.menuBar().addMenu(self.analysis_menu)
         self.analysis_menu.addAction('Trim Reads',
@@ -489,7 +489,7 @@ class App(QMainWindow):
         #self.tools_menu.addAction('M.bovis SNP typing',
         #    lambda: self.run_threaded_process(self.snp_typing, self.processing_completed))
 
-        self.settings_menu = QMenu('&Settings', self)
+        self.settings_menu = QMenu('Settings', self)
         self.menuBar().addMenu(self.settings_menu)
         self.settings_menu.addAction('Set Output Folder', self.set_output_folder)
         self.settings_menu.addAction('Set Reference Sequence', self.set_reference)
@@ -499,13 +499,13 @@ class App(QMainWindow):
         self.settings_menu.addAction('Add Sample Meta Data', self.merge_meta_data)
         self.settings_menu.addAction('Clean Up Files', self.clean_up)
 
-        self.presets_menu = QMenu('&Preset Genomes', self)
+        self.presets_menu = QMenu('Preset Genomes', self)
         self.menuBar().addMenu(self.presets_menu)
         self.load_presets_menu()
 
         self.dock_menu = QMenu('Docks', self)
         self.menuBar().addMenu(self.dock_menu)
-        
+
         self.plugin_menu = QMenu('Plugins', self)
         self.menuBar().addMenu(self.plugin_menu)
 
@@ -1703,7 +1703,7 @@ class App(QMainWindow):
         dlg.exec_()
         return
 
-    def discoverPlugins(self):
+    def discover_plugins(self):
         """Discover available plugins"""
 
         from . import plugin
@@ -1714,7 +1714,7 @@ class App(QMainWindow):
         self.updatePluginMenu()
         return
 
-    def loadPlugin(self, plugin):
+    def load_plugin(self, plugin):
         """Instantiate the plugin and call it's main method"""
 
         index = self.tabs.currentIndex()
@@ -1740,7 +1740,7 @@ class App(QMainWindow):
             self.showPlugin(p)
         return
 
-    def showPlugin(self, plugin):
+    def show_plugin(self, plugin):
         """Add plugin as dock widget"""
 
         dockstyle = '''
@@ -1767,7 +1767,7 @@ class App(QMainWindow):
             print (plg)
             def func(p, **kwargs):
                 def new():
-                   self.loadPlugin(p)
+                   self.load_plugin(p)
                 return new
             if hasattr(plg,'iconfile'):
                 icon = QIcon(os.path.join(pluginiconpath,plg.iconfile))

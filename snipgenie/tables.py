@@ -26,6 +26,7 @@ import numpy as np
 from .qt import *
 from pandas.api.types import is_datetime64_any_dtype as is_datetime
 import pylab as plt
+import matplotlib as mpl
 from . import widgets
 
 if 'Windows' in platform.platform():
@@ -278,6 +279,9 @@ class DataFrameTable(QTableView):
         vh = self.verticalHeader()
         h = vh.defaultSectionSize()
         vh.setDefaultSectionSize(h+2)
+        hh = self.horizontalHeader()
+        w = hh.defaultSectionSize()
+        hh.setDefaultSectionSize(w+2)
         return
 
     def zoomOut(self, fontsize=None):
@@ -915,7 +919,8 @@ class SNPTableModel(DataFrameModel):
 
 class SNPTable(DataFrameTable):
     """
-    QTableView with pandas DataFrame as model.
+    Table for SNP alignment view.
+    See docs for format of file.
     """
     def __init__(self, parent=None, app=None, dataframe=None, *args):
         DataFrameTable.__init__(self, parent, dataframe)
@@ -973,8 +978,102 @@ class SNPTable(DataFrameTable):
         elif action == zoomoutAction:
             self.zoomOut()
         elif action == zoominAction:
-            self.zoomIn()         
+            self.zoomIn()
         #elif action == uniquepositionsAction:
         #    self.app.show_unique_positions(row)
+
+        return
+
+class DistMatrixTableModel(DataFrameModel):
+
+    def __init__(self, dataframe=None, *args):
+
+        DataFrameModel.__init__(self, dataframe)
+        self.df = dataframe
+        self.updateColors()
+
+    def data(self, index, role):
+        """see https://www.pythonguis.com/tutorials/qtableview-modelviews-numpy-pandas/"""
+
+        i = index.row()
+        j = index.column()
+        rowname = self.df.index[i]
+        value = self.df.iloc[i, j]
+        if role == QtCore.Qt.DisplayRole:
+            return str(value)
+        elif role == QtCore.Qt.BackgroundRole:
+            clr = self.colors.iloc[i, j]
+            qc = QColor()
+            qc.setRgbF(*clr)
+            return qc
+        elif role == QtCore.Qt.TextAlignmentRole:
+            return QtCore.Qt.AlignCenter
+
+    def updateColors(self):
+
+        import matplotlib.colors as mcolors
+        max=self.df.max().max()
+        norm = mpl.colors.Normalize(vmin=0, vmax=max, clip=True)
+        mapper = plt.cm.ScalarMappable(norm=norm, cmap=plt.cm.Blues)
+        lut = plt.cm.viridis()
+        self.colors = self.df.applymap(lambda x: mapper.to_rgba(x))
+        #print (self.colors)
+        return
+
+    def flags(self, index):
+            return Qt.ItemIsSelectable|Qt.ItemIsEnabled
+
+class DistMatrixTable(DataFrameTable):
+    """
+    Table for a distance matrix.
+    """
+    def __init__(self, parent=None, app=None, dataframe=None, *args):
+        DataFrameTable.__init__(self, parent, dataframe)
+        tm = DistMatrixTableModel(dataframe)
+        self.setModel(tm)
+        self.app = app
+        headerview = MyHeaderView()
+        self.setHorizontalHeader(headerview)
+        hh = self.horizontalHeader()
+        hh.setDefaultSectionSize(18)
+        self.transposed = False
+        return
+
+    def setDataFrame(self, df):
+        """Override to use right model"""
+
+        tm = DistMatrixTableModel(df)
+        self.setModel(tm)
+        self.model = tm
+        tm.updateColors()
+        return
+
+    def addActions(self, event, row):
+        """Right click action menu"""
+
+        df = self.model.df
+        menu = self.menu
+        loadAction = menu.addAction("Load SNP Matrix")
+        zoominAction = menu.addAction("Zoom in")
+        zoomoutAction = menu.addAction("Zoom out")
+        action = menu.exec_(event.globalPos())
+
+        if action == loadAction:
+            filename, _ = QFileDialog.getOpenFileName(self, 'Open File', './',
+                                        filter="Text Files(*.csv *.txt);;All Files(*.*)" )
+            if not filename:
+                return
+            df = pd.read_csv(filename, sep=' ', index_col=0)
+            self.setDataFrame(df)
+        elif action == zoomoutAction:
+            self.zoomOut()
+        elif action == zoominAction:
+            self.zoomIn()
+        return
+
+    def orderByPhylogeny(self):
+        """Cluster labels by phylogeny tip order"""
+        #load parent phylo tree
+        #get order of tips and use to order dataframe
 
         return

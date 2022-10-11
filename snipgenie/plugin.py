@@ -21,14 +21,12 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 
-from __future__ import absolute_import, division, print_function
 import inspect
 import sys,os,platform,time,traceback
 import pickle, gzip
 from collections import OrderedDict
 from .qt import *
 import pandas as pd
-#from . import util
 
 homepath = os.path.expanduser("~")
 module_path = os.path.dirname(os.path.abspath(__file__))
@@ -153,18 +151,19 @@ def get_plugins_instances(capability):
 
     result = []
     for plugin in Plugin.__subclasses__():
-        print (plugin)
+        #print (plugin)
         if capability in plugin.capabilities:
             if not plugin in _instances:
                 _instances[plugin] = plugin()
             result.append(_instances[plugin])
     return result
 
-def get_plugins_classes(capability):
+def get_plugins_classes(capability='gui'):
     """Returns classes of available plugins"""
 
     result = []
     for plugin in Plugin.__subclasses__():
+        print (plugin)
         if capability in plugin.capabilities:
             result.append(plugin)
     return result
@@ -188,7 +187,6 @@ def describe_class(obj):
     if count==0:
       print ('No members')
     return methods
-
 
 def describe_func(obj, method=False):
    """ Describe the function object passed as argument.

@@ -193,15 +193,6 @@ class App(QMainWindow):
         self.style = style
         return
 
-    def update_plugins(self):
-        """Update table for a plugin if it needs it"""
-
-        for o in self.openplugins:
-            w = self.getCurrentTable()
-            self.openplugins[o].table = w
-            self.openplugins[o]._update()
-        return
-
     def update_ref_genome(self):
         """Update the ref genome labels"""
 
@@ -331,6 +322,7 @@ class App(QMainWindow):
         self.tabs.setMovable(True)
         self.tabs.tabCloseRequested.connect(self.close_tab)
         center.addWidget(self.tabs)
+        center.setSizes((100,50))
 
         self.right = right = QWidget()
         self.m.addWidget(self.right)
@@ -635,6 +627,12 @@ class App(QMainWindow):
         self.clear_tabs()
         self.update_ref_genome()
         self.update_mask()
+        return
+
+    def setup_paths(self):
+        """Set paths to important files in proj folder"""
+
+        self.snp_dist
         return
 
     def load_project(self, filename=None):
@@ -1058,8 +1056,8 @@ class App(QMainWindow):
         filename = self.results['snp_dist']
         if not os.path.exists(filename):
             return
-        mat = pd.read_csv(filename)
-        table = tables.DefaultTable(self.tabs, app=self, dataframe=mat)
+        mat = pd.read_csv(filename,index_col=0)
+        table = tables.DistMatrixTable(self.tabs, app=self, dataframe=mat)
         i = self.tabs.addTab(table, 'snp_dist')
         return
 
@@ -1711,7 +1709,7 @@ class App(QMainWindow):
         other = os.path.join(settingspath, 'plugins')
         paths = [default,other]
         failed = plugin.init_plugin_system(paths)
-        self.updatePluginMenu()
+        self.update_plugin_menu()
         return
 
     def load_plugin(self, plugin):
@@ -1758,7 +1756,7 @@ class App(QMainWindow):
         self.docks[plugin.name] = dock
         return
 
-    def updatePluginMenu(self):
+    def update_plugin_menu(self):
         """Update plugins"""
 
         from . import plugin

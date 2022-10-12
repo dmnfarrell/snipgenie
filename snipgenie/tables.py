@@ -479,7 +479,7 @@ class DataFrameTable(QTableView):
         menu = self.menu
         copyAction = menu.addAction("Copy")
         exportAction = menu.addAction("Export Table")
-        action = menu.exec_(self.mapToGlobal(event.pos()))
+        action = menu.exec_(event.globalPos())
         if action == copyAction:
             self.copy()
         elif action == exportAction:
@@ -866,7 +866,7 @@ class MyHeaderView(QHeaderView):
 
     def __init__(self, parent=None):
         super().__init__(Qt.Horizontal, parent)
-        self._font = QFont("Arial", 11)
+        self._font = QFont("Arial", 10)
         self._metrics = QFontMetrics(self._font)
         self._descent = self._metrics.descent()
         self._margin = 10
@@ -1010,13 +1010,17 @@ class DistMatrixTableModel(DataFrameModel):
             return QtCore.Qt.AlignCenter
 
     def updateColors(self):
+        """Update color mapping for cells"""
 
         import matplotlib.colors as mcolors
-        max=self.df.max().max()
-        norm = mpl.colors.Normalize(vmin=0, vmax=max, clip=True)
-        mapper = plt.cm.ScalarMappable(norm=norm, cmap=plt.cm.Blues)
-        lut = plt.cm.viridis()
-        self.colors = self.df.applymap(lambda x: mapper.to_rgba(x))
+        df = self.df
+        #max = df.max().max()
+        #norm = mpl.colors.Normalize(vmin=0, vmax=max, clip=True)
+        #mapper = plt.cm.ScalarMappable(norm=norm, cmap=plt.cm.Blues)
+        #self.colors = df.applymap(lambda x: mapper.to_rgba(x))
+        lut = plt.cm.coolwarm(df.to_numpy().flatten())
+        lut = {i:plt.cm.coolwarm(i) for i in df.to_numpy().flatten()}
+        self.colors = df.applymap(lambda x: lut[x])
         #print (self.colors)
         return
 
@@ -1037,6 +1041,7 @@ class DistMatrixTable(DataFrameTable):
         hh = self.horizontalHeader()
         hh.setDefaultSectionSize(18)
         self.transposed = False
+        self.zoomOut(10)
         return
 
     def setDataFrame(self, df):
@@ -1046,6 +1051,103 @@ class DistMatrixTable(DataFrameTable):
         self.setModel(tm)
         self.model = tm
         tm.updateColors()
+        return
+
+    def addActions(self, event, row):
+        """Right click action menu"""
+
+        df = self.model.df
+        menu = self.menu
+        orderbyPhyloAction = menu.addAction("Order By Phylogeny")
+        loadAction = menu.addAction("Load SNP Matrix")
+        zoominAction = menu.addAction("Zoom in")
+        zoomoutAction = menu.addAction("Zoom out")
+        action = menu.exec_(event.globalPos())
+
+        if action == orderbyPhyloAction:
+            self.orderByPhylogeny()
+        elif action == loadAction:
+            filename, _ = QFileDialog.getOpenFileName(self, 'Open File', './',
+                                        filter="Text Files(*.csv *.txt);;All Files(*.*)" )
+            if not filename:
+                return
+            df = pd.read_csv(filename, sep=' ', index_col=0)
+            self.setDataFrame(df)
+        elif action == zoomoutAction:
+            self.zoomOut()
+        elif action == zoominAction:
+            self.zoomIn()
+        return
+
+    def orderByPhylogeny(self):
+        """Cluster labels by phylogeny tip order"""
+
+        #load parent phylo tree
+        treefile = self.app.treefile
+        from Bio import Phylo
+        tree = Phylo.read(treefile, "newick")
+        #get order of tips and use to order dataframe
+        df = self.model.df
+        tips = [leaf.name for leaf in tree.get_terminals()]
+        tips.remove('ref')
+        #print (tips)
+        df = df.reindex(tips)
+        df = df.reindex(tips,axis=1)
+        #print (df)
+        self.setDataFrame(df)
+        return
+
+    def refresh(self):
+        DataFrameTable.refresh(self)
+        #self.model.updateColors()
+
+class CSQTableModel(DataFrameModel):
+
+    def __init__(self, dataframe=None, *args):
+
+        DataFrameModel.__init__(self, dataframe)
+        self.df = dataframe
+
+    def data(self, index, role):
+
+        i = index.row()
+        j = index.column()
+        rowname = self.df.index[i]
+        value = self.df.iloc[i, j]
+        if role == QtCore.Qt.DisplayRole:
+            return str(value)
+        elif role == QtCore.Qt.BackgroundRole:
+            if value == 0 or j <= 3:
+                return QColor('white')
+            else:
+                return QColor('black')
+        elif role == QtCore.Qt.TextAlignmentRole:
+            if j>2:
+                return QtCore.Qt.AlignCenter
+        elif role == QtCore.Qt.EditRole:
+            return
+
+class CSQTable(DataFrameTable):
+    """
+    Table for a csq matrix.
+    """
+    def __init__(self, parent=None, app=None, dataframe=None, *args):
+        DataFrameTable.__init__(self, parent, dataframe)
+        tm = CSQTableModel(dataframe)
+        self.setModel(tm)
+        self.app = app
+        headerview = MyHeaderView()
+        self.setHorizontalHeader(headerview)
+        hh = self.horizontalHeader()
+        hh.setDefaultSectionSize(18)
+        return
+
+    def setDataFrame(self, df):
+        """Override to use right model"""
+
+        tm = CSQTableModel(df)
+        self.setModel(tm)
+        self.model = tm
         return
 
     def addActions(self, event, row):
@@ -1063,17 +1165,10 @@ class DistMatrixTable(DataFrameTable):
                                         filter="Text Files(*.csv *.txt);;All Files(*.*)" )
             if not filename:
                 return
-            df = pd.read_csv(filename, sep=' ', index_col=0)
+            df = pd.read_csv(filename, sep=',')
             self.setDataFrame(df)
         elif action == zoomoutAction:
             self.zoomOut()
         elif action == zoominAction:
             self.zoomIn()
-        return
-
-    def orderByPhylogeny(self):
-        """Cluster labels by phylogeny tip order"""
-        #load parent phylo tree
-        #get order of tips and use to order dataframe
-
         return

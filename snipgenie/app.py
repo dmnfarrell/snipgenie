@@ -892,9 +892,9 @@ class WorkFlow(object):
                         unmapped=unmapped,
                         threads=self.threads, overwrite=self.overwrite)
 
-        lowdepth = samples[samples.meandepth<10]
+        lowdepth = samples[samples.meandepth<15]
         if len(lowdepth)>0:
-            print ('%s samples have low average depth' %len(lowdepth))
+            print ('%s samples have mean depth <15' %len(lowdepth))
 
         #mapping stats
         if 'mapped' not in samples.columns and self.get_stats == True:

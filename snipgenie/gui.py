@@ -227,13 +227,13 @@ class App(QMainWindow):
                     'action': lambda: self.run_threaded_process(self.align_files, self.alignment_completed),
                     'file':'align-reads'},
                  'Call Variants': {
-                    'action': lambda: self.run_threaded_process(self.variant_calling, self.processing_completed),
+                    'action': lambda: self.run_threaded_process(self.variant_calling, self.calling_completed),
                     'file':'call-variants'},
                  'SNP Viewer': {
                     'action':  self.snp_viewer,
                     'file':'snp-viewer'},
-                 'Make Phylogeny': {
-                    'action': lambda: self.run_threaded_process(self.make_phylo_tree, self.phylogeny_completed),
+                 'Show Phylogeny': {
+                    'action': self.show_phylogeny,
                     'file':'phylogeny'},
                  'Quit': {'action':self.quit,'file':'application-exit'}
                 }
@@ -322,7 +322,7 @@ class App(QMainWindow):
         self.tabs.setMovable(True)
         self.tabs.tabCloseRequested.connect(self.close_tab)
         center.addWidget(self.tabs)
-        center.setSizes((100,50))
+        center.setSizes((100,100))
 
         self.right = right = QWidget()
         self.m.addWidget(self.right)
@@ -433,7 +433,7 @@ class App(QMainWindow):
         self.style_menu.addAction('Dark', lambda: self.set_style('dark'))
         self.view_menu.addAction(self.style_menu.menuAction())
 
-        self.analysis_menu = QMenu('Analysis', self)
+        self.analysis_menu = QMenu('Workflow', self)
         self.menuBar().addSeparator()
         self.menuBar().addMenu(self.analysis_menu)
         self.analysis_menu.addAction('Trim Reads',
@@ -444,9 +444,10 @@ class App(QMainWindow):
         icon = QIcon(os.path.join(iconpath,'call-variants.png'))
         self.analysis_menu.addAction(icon, 'Call Variants',
             lambda: self.run_threaded_process(self.variant_calling, self.processing_completed))
-        self.analysis_menu.addAction('Create SNP alignment',
-            lambda: self.run_threaded_process(self.snp_alignment, self.snp_align_completed))
-        self.analysis_menu.addAction('Make Phylogeny',
+        #self.analysis_menu.addAction('Create SNP alignment',
+        #    lambda: self.run_threaded_process(self.snp_alignment, self.snp_align_completed))
+        icon = QIcon(os.path.join(iconpath,'phylogeny.png'))
+        self.analysis_menu.addAction(icon, 'Build Phylogeny',
             lambda: self.run_threaded_process(self.make_phylo_tree, self.phylogeny_completed))
         #self.analysis_menu.addSeparator()
         #self.analysis_menu.addAction('Run Workflow', self.run)
@@ -467,8 +468,9 @@ class App(QMainWindow):
         self.tools_menu.addAction('Fastq Qualities Report', self.fastq_quality_report)
 
         self.tools_menu.addAction('Show Annotation', self.show_ref_annotation)
-        self.tools_menu.addAction('Plot SNP Matrix', self.plot_snp_matrix)
+        #self.tools_menu.addAction('Plot SNP Matrix', self.plot_dist_matrix)
         self.tools_menu.addAction('SNP Viewer', self.snp_viewer)
+        self.tools_menu.addAction('CSQ Viewer', self.csq_viewer)
         #self.tools_menu.addAction('Map View', self.show_map)
         self.tools_menu.addAction('Tree Viewer', self.tree_viewer)
         self.tools_menu.addSeparator()
@@ -632,7 +634,11 @@ class App(QMainWindow):
     def setup_paths(self):
         """Set paths to important files in proj folder"""
 
-        self.snp_dist
+        self.core_fasta = os.path.join(self.outputdir, 'core.fa')
+        self.dist_matrix = os.path.join(self.outputdir, 'snpdist.csv')
+        self.snp_matrix = os.path.join(self.outputdir, 'core.txt')
+        self.csq_matrix = os.path.join(self.outputdir, 'csq.matrix')
+        self.treefile = os.path.join(self.outputdir,'tree.newick')
         return
 
     def load_project(self, filename=None):
@@ -658,11 +664,8 @@ class App(QMainWindow):
         self.proj_file = filename
         self.projectlabel.setText(self.proj_file)
         self.outdirLabel.setText(self.outputdir)
-        #print (self.results)
-        #if 'vcf_file' in self.results:
-        #    self.show_variants()
-        if 'snp_dist' in self.results:
-            self.show_snpdist()
+        self.setup_paths()
+        self.show_snpdist()
         #load any saved maps
         #if 'gisviewer' in data.keys():
             #self.show_map()
@@ -1027,8 +1030,15 @@ class App(QMainWindow):
                                     gff_file=gff_file, mask=self.mask_file,
                                     custom_filters=proximity,
                                     callback=progress_callback.emit)
-        self.results['nuc_matrix'] = os.path.join(self.outputdir, 'core.txt')
-        self.results['csq_matrix'] = os.path.join(self.outputdir, 'csq.matrix')
+        #self.results['nuc_matrix'] = os.path.join(self.outputdir, 'core.txt')
+        #self.results['csq_matrix'] = os.path.join(self.outputdir, 'csq.matrix')
+        self.snp_alignment()
+        return
+
+    def calling_completed(self):
+
+        self.processing_completed()
+        self.show_snpdist()
         return
 
     def show_variants(self):
@@ -1053,38 +1063,31 @@ class App(QMainWindow):
     def show_snpdist(self):
         """Show SNP distance matrix"""
 
-        filename = self.results['snp_dist']
-        if not os.path.exists(filename):
+        if not os.path.exists(self.dist_matrix):
             return
-        mat = pd.read_csv(filename,index_col=0)
+        mat = pd.read_csv(self.dist_matrix,index_col=0)
+        if 'SNP dist' in self.get_tabs():
+            self.tabs.removeTab(0)
         table = tables.DistMatrixTable(self.tabs, app=self, dataframe=mat)
-        i = self.tabs.addTab(table, 'snp_dist')
+        i = self.tabs.addTab(table, 'SNP dist')
+        self.tabs.setCurrentIndex(i)
         return
 
-    def snp_alignment(self, progress_callback):
+    def snp_alignment(self, progress_callback=None):
         """Make snp matrix from variant positions"""
 
         self.opts.applyOptions()
         kwds = self.opts.kwds
         vcf_file = self.results['vcf_file']
         print('Making SNP alignment')
-        result, smat = tools.core_alignment_from_vcf(vcf_file,
-                                                callback=progress_callback.emit)
-        #print (result)
+        result, smat = tools.core_alignment_from_vcf(vcf_file)
+        print (result)
         outfasta = os.path.join(self.outputdir, 'core.fa')
-        self.results['snp_file'] = outfasta
         SeqIO.write(result, outfasta, 'fasta')
-        self.results['snp_dist'] = os.path.join(self.outputdir, 'snpdist.csv')
         from Bio import AlignIO
         aln = AlignIO.read(outfasta, 'fasta')
         snp_dist = tools.snp_dist_matrix(aln)
-        snp_dist.to_csv(self.results['snp_dist'], sep=',')
-        return
-
-    def snp_align_completed(self):
-
-        self.processing_completed()
-        self.show_snpdist()
+        snp_dist.to_csv(self.dist_matrix, sep=',')
         return
 
     def missing_sites(self, progress_callback=None):
@@ -1119,6 +1122,20 @@ class App(QMainWindow):
             self.tabs.setCurrentIndex(idx)
         return
 
+    def csq_viewer(self):
+
+        if not os.path.exists(self.csq_matrix):
+            return
+        mat = pd.read_csv(self.csq_matrix)
+        #print (mat)
+        if 'CSQ' in self.get_tabs():
+            self.tabs.removeTab(0)
+        table = tables.CSQTable(self.tabs, app=self, dataframe=mat)
+        i = self.tabs.addTab(table, 'CSQ table')
+        self.tabs.setCurrentIndex(i)
+
+        return
+
     def make_phylo_tree(self, progress_callback=None, method='raxml'):
         """Make phylogenetic tree"""
 
@@ -1137,9 +1154,9 @@ class App(QMainWindow):
     def phylogeny_completed(self):
 
         self.processing_completed()
-        self.show_tree()
+        self.show_phylogeny()
 
-    def show_tree(self):
+    def show_phylogeny(self):
         """Show current tree"""
 
         self.tree_viewer()
@@ -1467,10 +1484,9 @@ class App(QMainWindow):
                 webbrowser.open_new(out)
         return
 
-    def plot_snp_matrix(self):
+    def plot_dist_matrix(self):
 
-        snp_dist = os.path.join(self.outputdir, 'snpdist.csv')
-        mat = pd.read_csv(snp_dist,index_col=0)
+        mat = pd.read_csv(self.dist_matrix,index_col=0)
         #fig,ax = plt.subplots(1,1,figsize=(8,8))
         #plotting.heatmap(mat, cmap='coolwarm', ax=ax)
         import seaborn as sns
@@ -1539,10 +1555,10 @@ class App(QMainWindow):
         from . import snp_typing
         df = self.fastq_table.model.df
         #use ALL snp sites including uninformative
-        if not 'snp_dist' in self.results:
+        if not os.path.exists(self.snp_matrix):
             print ('You need to create a SNP alignment first')
             return
-        snpmat = pd.read_csv(self.results['snp_dist'],sep=' ',index_col=0)
+        snpmat = pd.read_csv(self.snp_matrix, sep=' ',index_col=0)
         #print (nucmat)
         rows = self.fastq_table.getSelectedRows()
         data = df.iloc[rows]

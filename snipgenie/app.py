@@ -220,12 +220,15 @@ def mapping_stats(samples):
         d = tools.samtools_flagstat(x)
         s = pd.Series(d)
         return s
-    #bams = get_files_from_paths(path, '*.bam')
+
     for i,r in samples.iterrows():
         s = get_stats(r.bam_file)
         samples.loc[i,'mapped'] = s['mapped']
-        samples.loc[i,'reads'] = s['total']
-        samples.loc[i,'perc_mapped'] = round(s['mapped']/s['total']*100,2)
+        total = tools.get_fastq_size(r.filename1)
+        #if 'filename2' in samples.columns:
+        #    total += tools.get_fastq_size(r.filename1)
+        samples.loc[i,'reads'] = total
+        samples.loc[i,'perc_mapped'] = round(s['mapped']/total*100,2)
     return samples
 
 def clean_bam_files(samples, path, remove=False):
@@ -332,11 +335,13 @@ def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform
             subprocess.check_output(cmd,shell=True)
             print (cmd)
         #index = df.index
+
         df.loc[i,'bam_file'] = os.path.abspath(out)
         #find mean depth/coverage
-        cols = ['coverage','meandepth']
-        c = tools.samtools_coverage(out)
-        df.loc[i,cols] = c[cols]
+        if 'meandepth' not in df.columns or pd.isnull(df.loc[i,'meandepth']):
+            cols = ['coverage','meandepth']
+            c = tools.samtools_coverage(out)
+            df.loc[i,cols] = c[cols]
 
     return df
 
@@ -783,9 +788,12 @@ class WorkFlow(object):
         for i in defaults:
             if i not in self.__dict__:
                 self.__dict__[i] = defaults[i]
+        #make output folder
+        if not os.path.exists(self.outdir):
+            os.makedirs(self.outdir, exist_ok=True)
         #start logger
         self.logfile = os.path.join(self.outdir, 'run.log')
-        sys.stdout = Logger(self.logfile)
+        #sys.stdout = Logger(self.logfile)
         print ('The following options were supplied')
         dt_string = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         print("time: ", dt_string)
@@ -798,8 +806,6 @@ class WorkFlow(object):
     def setup(self):
         """Setup main parameters"""
 
-        if not os.path.exists(self.outdir):
-            os.makedirs(self.outdir, exist_ok=True)
         if self.species != None:
             s = self.species
             if s not in preset_genomes:

@@ -418,6 +418,89 @@ class TreeViewer(QWidget):
         self.update()
         return
 
+class TidyTreeViewer(QWidget):
+    """Phylogeny viewer widget with toytree"""
+    def __init__(self, parent=None, filename=None):
+
+        super(TidyTreeViewer, self).__init__(parent)
+        self.setGeometry(QtCore.QRect(200, 200, 1000, 300))
+        self.setMinimumHeight(150)
+        self.add_widgets()
+        #self.create_menu(self)
+        self.tree = None
+        self.width = 400
+        self.height = 500
+
+    def add_widgets(self):
+        """Add widgets"""
+
+        layout = self.layout = QVBoxLayout()
+        self.main = QWidget()
+        vbox = QVBoxLayout(self.main)
+        layout.addWidget(self.main)
+
+        self.browser = QWebEngineView()
+        vbox = QVBoxLayout()
+        self.setLayout(vbox)
+        vbox.addWidget(self.browser)
+        self.browser.setMinimumHeight(500)
+
+    def update(self):
+        """Update the tree view"""
+
+        if self.tree == None:
+            self.browser.setHtml('')
+            #self.tipitems.clear()
+        html = self.test2()
+        self.browser.setHtml(html)
+        return
+
+    def test(self):
+
+        print (module_path)
+        jsfile = os.path.join(module_path,'tidytree.js')
+        html = '''
+        <!DOCTYPE html>
+        <html lang="en-UK">
+
+        <body>
+        <h2> tree test</h2>
+    	<script src="https://d3js.org/d3.v5.min.js"></script>
+    	<script src="%s"></script>
+        <script type="text/javascript">
+            let newick = "(A:0.1,B:0.2,(C:0.3,D:0.4):0.5);";
+            let tree = new TidyTree(newick, { parent: "body" });
+        </script>
+        </body>
+        </html>
+        ''' %jsfile
+        print (html)
+        return html
+
+    def test2(self):
+        jsfile = os.path.join(module_path,'tidytree.js')
+        html = '''
+        <!DOCTYPE html>
+        <html lang="en-UK">
+
+        <body>
+        <h2> tree test</h2>
+    	<script src="https://d3js.org/d3.v3.min.js"></script>
+    	<script src="https://veg.github.io/phylotree.js/phylotree.js"></script>
+        <script type="text/javascript">
+        var example_tree = "(A:0.1,B:0.2,(C:0.3,D:0.4):0.5);";
+        var tree = d3.layout.phylotree()
+                     .svg(d3.select("#tree_display"));
+
+        tree(example_tree).layout();
+
+        </script>
+        </body>
+        </html>
+        '''
+        print (html)
+        return html
+        return
 
 def main():
     "Run the application"

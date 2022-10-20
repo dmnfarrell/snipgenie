@@ -103,6 +103,7 @@ class App(QMainWindow):
 
         self.running = False
         self.recent_files = ['']
+        self.opentables = {}
         self.openplugins = {}
 
         self.main.setFocus()
@@ -272,7 +273,15 @@ class App(QMainWindow):
         #self.m = QSplitter(self.main)
         self.m = self.main
 
+        style = '''
+        QWidget {
+            font-size: 12px;
+            max-height: 180px;
+            }
+        '''
         dialog = QWidget()
+        dialog.setStyleSheet(style)
+        #dialog.setFixedSize(200, 200)
         l = QVBoxLayout(dialog)
         lbl = QLabel("Reference Genome:")
         l.addWidget(lbl)
@@ -312,7 +321,7 @@ class App(QMainWindow):
                             app=self, plotter=self.plotview)
         self.fastq_table = self.table_widget.table
         center.addWidget(self.table_widget)
-
+        self.opentables['main'] = self.fastq_table
         #self.fastq_table = tables.SampleTable(center, app=self,
         #                    dataframe=pd.DataFrame(), lotter=self.plotview)
         #l.addWidget(self.fastq_table)
@@ -339,7 +348,7 @@ class App(QMainWindow):
 
         self.right_tabs.addTab(self.plotview, 'plots')
 
-        self.m.setSizes([50,200,150])
+        self.m.setSizes([200,150])
         self.m.setStretchFactor(1,0)
 
         self.statusBar = QStatusBar()
@@ -787,6 +796,7 @@ class App(QMainWindow):
         if len(df)>0:
             new = pd.concat([df,new],sort=False).reset_index(drop=True)
             new = new.drop_duplicates('filename1')
+
         self.fastq_table.setDataFrame(new)
         self.fastq_table.resizeColumns()
         app.write_samples(df[['sample']], self.outputdir)
@@ -907,7 +917,8 @@ class App(QMainWindow):
             if reply == QMessageBox.Cancel:
                 return
             elif reply == QMessageBox.Yes:
-                df = pd.read_csv(results_file)
+                #ensure sample col object type when we import
+                df = pd.read_csv(results_file, dtype={'sample':'object'})
                 self.fastq_table.model.df = df
                 self.fastq_table.refresh()
                 self.results['vcf_file'] = os.path.join(self.outputdir, 'snps.vcf.gz')
@@ -1071,6 +1082,7 @@ class App(QMainWindow):
         table = tables.DistMatrixTable(self.tabs, app=self, dataframe=mat)
         i = self.tabs.addTab(table, 'SNP dist')
         self.tabs.setCurrentIndex(i)
+        self.opentables['SNP dist'] = table
         return
 
     def snp_alignment(self, progress_callback=None):
@@ -1120,6 +1132,7 @@ class App(QMainWindow):
         if not 'SNP table' in self.get_tabs():
             idx = self.tabs.addTab(self.snpviewer, 'SNP table')
             self.tabs.setCurrentIndex(idx)
+        self.opentables['SNP table'] = self.snpviewer.table
         return
 
     def csq_viewer(self):
@@ -1133,7 +1146,7 @@ class App(QMainWindow):
         table = tables.CSQTable(self.tabs, app=self, dataframe=mat)
         i = self.tabs.addTab(table, 'CSQ table')
         self.tabs.setCurrentIndex(i)
-
+        self.opentables['CSQ table'] = table
         return
 
     def make_phylo_tree(self, progress_callback=None, method='raxml'):
@@ -1329,7 +1342,8 @@ class App(QMainWindow):
         rows = self.fastq_table.getSelectedRows()
         data = df.iloc[rows]
         for i,r in data.iterrows():
-            df.loc[i,'reads'] = tools.get_fastq_size(r.filename1)
+            total = tools.get_fastq_size(r.filename1)
+            df.loc[i,'reads'] = total
         return
 
     def add_gc_mean(self, progress_callback):
@@ -1360,8 +1374,9 @@ class App(QMainWindow):
                 continue
             s = get_stats(r.bam_file)
             df.loc[i,'mapped'] = s['mapped']
-            df.loc[i,'reads_mapped'] = s['total']
-            df.loc[i,'perc_mapped'] = s['perc_mapped']
+            total = df.loc[i,'reads']
+            df.loc[i,'perc_mapped'] = round(s['mapped']/total*100,2)
+            print (s['mapped'],total)
         #self.fastq_table.setDataFrame(df)
         return
 
@@ -1429,15 +1444,18 @@ class App(QMainWindow):
         row = self.fastq_table.getSelectedRows()[0]
         data = df.iloc[row]
         name = data['sample']
-        c = app.blast_contaminants(data.filename1)
-
+        c = app.blast_contaminants(data.filename1, limit=10000)
+        if len(c) == 0:
+            print ('no contaminants in DB found')
+            return
         w = widgets.PlotViewer(self)
-        fig,ax = plt.subplots(1,1, figsize=(7,5), dpi=120)
+        #fig,ax = plt.subplots(1,1, figsize=(7,5), dpi=120)
+        ax = w.ax
         c.perc_hits.plot(kind='barh',ax=ax)
         ax.set_xlabel('% total')
         ax.set_title('sequence contaminants - %s' %name)
         plt.tight_layout()
-        w.set_figure(fig)
+        #w.set_figure(fig)
 
         i = self.tabs.addTab(w, 'contam:'+name)
         self.tabs.setCurrentIndex(i)
@@ -1503,11 +1521,12 @@ class App(QMainWindow):
         """Show web page in a tab"""
 
         #from PySide2.QtWebEngineWidgets import QWebEngineView
-        browser = QWebEngineView()
+        #browser = QWebEngineView()
+        bw = widgets.BrowserViewer(self)
         url = QUrl.fromUserInput(link)
-        print (url)
-        browser.setUrl(url)
-        idx = self.right_tabs.addTab(browser, name)
+        bw.browser.setUrl(url)
+
+        idx = self.right_tabs.addTab(bw, name)
         self.right_tabs.setCurrentIndex(idx)
         return
 
@@ -1658,15 +1677,17 @@ class App(QMainWindow):
 
     def zoom_in(self):
 
-        w = self.fastq_table
-        w.zoomIn()
+        for i in self.opentables:
+            w=self.opentables[i]
+            w.zoomIn()
         self.info.zoomIn()
         return
 
     def zoom_out(self):
 
-        w = self.fastq_table
-        w.zoomOut()
+        for i in self.opentables:
+            w=self.opentables[i]
+            w.zoomOut()
         self.info.zoomOut()
         return
 

@@ -428,7 +428,6 @@ class DataFrameTable(QTableView):
         hheader = self.horizontalHeader()
         idx = hheader.logicalIndexAt(pos)
         column = self.model.df.columns[idx]
-        #model = self.model
         menu = QMenu(self)
         sortAction = menu.addAction("Sort \u2193")
         sortDescAction = menu.addAction("Sort \u2191")
@@ -436,6 +435,7 @@ class DataFrameTable(QTableView):
         renameColumnAction = menu.addAction("Rename Column")
         addColumnAction = menu.addAction("Add Column")
         plotAction = menu.addAction("Histogram")
+        #colorbyAction = menu.addAction("Color By Value")
 
         action = menu.exec_(self.mapToGlobal(pos))
         if action == sortAction:
@@ -450,6 +450,8 @@ class DataFrameTable(QTableView):
             self.addColumn()
         elif action == plotAction:
             self.plotHist(column)
+        #elif action == colorbyAction:
+        #    self.model.setColumnColor(idx, 'red')
         return
 
     def keyPressEvent(self, event):
@@ -703,6 +705,11 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         #print (self.df)
         return
 
+    def setColumnColor(self, columnIndex, color):
+        for i in range(self.rowCount()):
+            self.item(i, columnIndex).setBackground(color)
+        return
+
     def flags(self, index):
             return Qt.ItemIsSelectable|Qt.ItemIsEnabled|Qt.ItemIsEditable
 
@@ -730,10 +737,36 @@ class SampleTableModel(DataFrameModel):
         rowname = self.df.index[i]
         value = self.df.iloc[i, j]
         colname = self.df.columns[j]
-        #if role == QtCore.Qt.DisplayRole:
-        #    return value
+        #print (self.df.dtypes)
+        coltype = self.df[self.df.columns[j]].dtype
+        isdate = is_datetime(coltype)
         color = QColor(self.bg)
-        if role == QtCore.Qt.BackgroundRole:
+        if role == QtCore.Qt.DisplayRole:
+            value = self.df.iloc[i, j]
+            if isdate:
+                return value.strftime(TIMEFORMAT)
+            elif type(value) != str:
+                if type(value) in [float,np.float64] and np.isnan(value):
+                    return ''
+                elif type(value) == np.float:
+                    return value
+                else:
+                    return (str(value))
+            else:
+                return '{0}'.format(value)
+        elif (role == QtCore.Qt.EditRole):
+            value = self.df.iloc[i, j]
+            #print (coltype)
+            #print (value)
+            if type(value) is str:
+                try:
+                    return float(value)
+                except:
+                    return str(value)
+
+            if np.isnan(value):
+                return ''
+        elif role == QtCore.Qt.BackgroundRole:
             #color warnings
             if colname == 'meandepth':
                 if value < 20:
@@ -744,8 +777,6 @@ class SampleTableModel(DataFrameModel):
             else:
                 color = QColor(self.bg)
             return color
-        else:
-            return super(SampleTableModel, self).data(index, role)
 
     def flags(self, index):
             return Qt.ItemIsSelectable|Qt.ItemIsEnabled
@@ -878,8 +909,8 @@ class MyHeaderView(QHeaderView):
         painter.drawText(- rect.height() + self._margin,
                          rect.left() + (rect.width() + self._descent) / 2, data)
 
-    def sizeHint(self):
-        return QtCore.QSize(0, self._get_text_width() + 2 * self._margin)
+    #def sizeHint(self):
+    #    return QtCore.QSize(0, self._get_text_width() + 2 * self._margin)
 
     def _get_text_width(self):
         return max([self._metrics.width(self._get_data(i))
@@ -916,6 +947,9 @@ class SNPTableModel(DataFrameModel):
 
     def flags(self, index):
             return Qt.ItemIsSelectable|Qt.ItemIsEnabled
+
+    #def rowCount(self, index=None):
+    #    return 1
 
 class SNPTable(DataFrameTable):
     """
@@ -981,8 +1015,8 @@ class SNPTable(DataFrameTable):
             self.zoomIn()
         #elif action == uniquepositionsAction:
         #    self.app.show_unique_positions(row)
-
         return
+
 
 class DistMatrixTableModel(DataFrameModel):
 
@@ -1124,8 +1158,9 @@ class CSQTableModel(DataFrameModel):
         elif role == QtCore.Qt.TextAlignmentRole:
             if j>2:
                 return QtCore.Qt.AlignCenter
-        elif role == QtCore.Qt.EditRole:
-            return
+
+    def flags(self, index):
+            return Qt.ItemIsSelectable|Qt.ItemIsEnabled
 
 class CSQTable(DataFrameTable):
     """
@@ -1140,6 +1175,11 @@ class CSQTable(DataFrameTable):
         self.setHorizontalHeader(headerview)
         hh = self.horizontalHeader()
         hh.setDefaultSectionSize(18)
+        #hh.setSectionResizeMode(QHeaderView.Stretch)
+        self.setColumnWidth(0, 80)
+        self.setColumnWidth(1, 100)
+        self.setColumnWidth(2, 100)
+
         return
 
     def setDataFrame(self, df):
@@ -1155,7 +1195,7 @@ class CSQTable(DataFrameTable):
 
         df = self.model.df
         menu = self.menu
-        loadAction = menu.addAction("Load SNP Matrix")
+        loadAction = menu.addAction("Load Table")
         zoominAction = menu.addAction("Zoom in")
         zoomoutAction = menu.addAction("Zoom out")
         action = menu.exec_(event.globalPos())

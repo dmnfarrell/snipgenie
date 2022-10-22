@@ -263,7 +263,7 @@ def fetch_contam_file():
     tools.gunzip(filename, destfile)
     return
 
-def blast_contaminants(filename, limit=2000):
+def blast_contaminants(filename, limit=2000, pident=98, qcovs=90):
     """Blast reads to contaminants database
     Returns: percentages of reads assigned to each species.
     """
@@ -274,7 +274,7 @@ def blast_contaminants(filename, limit=2000):
     seqs = tools.fastq_to_rec(filename, limit)
     bl = tools.blast_sequences(path,seqs,maxseqs=1)
     bl['stitle'] = bl.stitle.apply(lambda x: x.split('__')[0])
-    bl = bl[(bl.qcovs>90) & (bl.pident>98)]
+    bl = bl[(bl.qcovs>qcovs) & (bl.pident>pident)]
     c = bl.stitle.value_counts()
     c = pd.DataFrame(c)
     c.columns = ['hits']

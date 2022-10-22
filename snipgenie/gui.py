@@ -1444,7 +1444,7 @@ class App(QMainWindow):
         row = self.fastq_table.getSelectedRows()[0]
         data = df.iloc[row]
         name = data['sample']
-        c = app.blast_contaminants(data.filename1, limit=10000)
+        c = app.blast_contaminants(data.filename1, limit=100000, pident=80)
         if len(c) == 0:
             print ('no contaminants in DB found')
             return

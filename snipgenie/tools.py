@@ -361,9 +361,17 @@ def fasta_to_dataframe(infile, header_sep=None, key='name', seqkey='sequence'):
     df[key] = df[key].str.replace('|','_')
     return df
 
+def fastq_random_seqs(filename):
+    from pyfaidx import Fasta
+    randpos = random.randint(0,)
+    seqs = Fasta(filename)
+    return
+
 def fastq_to_rec(filename, size=500):
     """Get reads from a fastq file
-    Returns: seqrecords
+        Args:
+            size: limit
+        Returns: biopython seqrecords
     """
 
     ext = os.path.splitext(filename)[1]

@@ -23,10 +23,10 @@ import inspect
 import sys,os,platform,time,traceback
 import pickle, gzip
 from collections import OrderedDict
-from tablexplore.qt import *
+from snipgenie.qt import *
 import pandas as pd
-from tablexplore import util, core, dialogs
-from tablexplore.plugin import Plugin
+from snipgenie import app, widgets, tables
+from snipgenie.plugin import Plugin
 
 class ExamplePlugin(Plugin):
     """Template plugin for SNiPgenie"""
@@ -37,14 +37,13 @@ class ExamplePlugin(Plugin):
     menuentry = 'Example Plugin'
     name = 'Example Plugin'
 
-    def __init__(self, parent=None, table=None):
+    def __init__(self, parent=None):
         """Customise this and/or doFrame for your widgets"""
 
         if parent==None:
             return
         self.parent = parent
-        self.table = table
-        self.createWidgets()
+        self.create_widgets()
         return
 
     def _createMenuBar(self):
@@ -52,7 +51,7 @@ class ExamplePlugin(Plugin):
 
         return
 
-    def createWidgets(self):
+    def create_widgets(self):
         """Create widgets if GUI plugin"""
 
         self.main = QWidget()
@@ -60,7 +59,7 @@ class ExamplePlugin(Plugin):
         layout = self.layout = QVBoxLayout()
         layout.setAlignment(QtCore.Qt.AlignTop)
         self.main.setLayout(layout)
-        tb = self.textbox = dialogs.PlainTextEditor()
+        tb = self.textbox = widgets.PlainTextEditor()
         tb.resize(300,300)
         layout.addWidget(tb)
         text = 'This is a sample plugin.\n'\
@@ -68,21 +67,30 @@ class ExamplePlugin(Plugin):
         'for code examples.'
         tb.insertPlainText(text)
         #add a table widget
-        t = self.tablewidget = core.DataFrameWidget(self.main, font=core.FONT,
-                                    statusbar=False, toolbar=False)
+        df = pd.DataFrame({'a':[5,8,10,12],'b':[2,4,5,7]})
+        t = self.tablewidget = tables.DataFrameTable(self.main)
+        self.new_table()
         t.resize(300,300)
         layout.addWidget(self.tablewidget)
         #add some buttons
-        bw = self.createButtons(self.main)
+        bw = self.create_buttons(self.main)
         layout.addWidget(bw)
         return
 
-    def createButtons(self, parent):
+    def new_table(self):
+        import numpy as np
+        a=np.random.randint(0,10,10)
+        b=np.random.randint(0,100,10)
+        df = pd.DataFrame({'a':a,'b':b})
+        self.tablewidget.setDataFrame(df)
+        return
+
+    def create_buttons(self, parent):
 
         bw = QWidget(parent)
         vbox = QVBoxLayout(bw)
-        button = QPushButton("Close")
-        button.clicked.connect(self.quit)
+        button = QPushButton("New Table")
+        button.clicked.connect(self.new_table)
         vbox.addWidget(button)
         return bw
 

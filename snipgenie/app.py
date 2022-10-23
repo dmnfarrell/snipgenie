@@ -501,7 +501,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     subprocess.check_output(cmd,shell=True)
 
     #relabel samples in vcf header
-    if relabel == True:
+    if relabel == True:        
         relabel_vcfheader(vcfout, sample_file)
 
     #filters

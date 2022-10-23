@@ -19,8 +19,9 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 
+from PyInstaller.utils.hooks import collect_submodules
 block_cipher = None
-
+#hidden_imports = collect_submodules('sqlite')
 
 a = Analysis(['main.py'],
              binaries=[('win_binaries/*', 'bin')],
@@ -31,6 +32,7 @@ a = Analysis(['main.py'],
              win_private_assemblies=False,
              cipher=block_cipher,
              noarchive=False,
+             #hiddenimports=hidden_imports,
              datas=[ ('snipgenie/logo.png', 'snipgenie/'),
 		     ('snipgenie/icons/*', 'snipgenie/icons/'),
                      ('snipgenie/data/*', 'snipgenie/data/'),

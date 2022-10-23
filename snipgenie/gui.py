@@ -979,7 +979,8 @@ class App(QMainWindow):
         overwrite = kwds['overwrite']
         df = self.fastq_table.model.df
         rows = self.fastq_table.getSelectedRows()
-        new = df.loc[rows]
+        #print (rows)
+        new = df.iloc[rows]
         #print (new)
         print ('Aligning reads. This may take some time.')
         ref = self.ref_genome
@@ -1754,7 +1755,6 @@ class App(QMainWindow):
 
         index = self.tabs.currentIndex()
         name = self.tabs.tabText(index)
-        tablew = self.sheets[name]
         if not hasattr(self, 'openplugins'):
             self.openplugins = {}
         openplugins = self.openplugins
@@ -1764,7 +1764,7 @@ class App(QMainWindow):
             self.docks[plugin.name].show()
         else:
             try:
-                p = plugin(parent=self, table=tablew)
+                p = plugin(parent=self)
                 #track which plugin is running
                 openplugins[plugin.name] = p
             except Exception as e:
@@ -1772,7 +1772,7 @@ class App(QMainWindow):
                 return
 
             #plugin should be added as a dock widget
-            self.showPlugin(p)
+            self.show_plugin(p)
         return
 
     def show_plugin(self, plugin):
@@ -1780,7 +1780,7 @@ class App(QMainWindow):
 
         dockstyle = '''
             QDockWidget::title {
-                background-color: #d7edce;
+                background-color: #EDC6B3;
             }
         '''
         dock = QDockWidget(plugin.name)

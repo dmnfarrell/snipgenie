@@ -330,6 +330,17 @@ def blast_sequences(database, seqs, labels=None, **kwargs):
     df = blast_fasta(database, 'tempseq.fa', **kwargs)
     return df
 
+def kraken(file1, file2='', dbname='STANDARD16', threads=4):
+    """Run kraken2 on single/paired end fastq files"""
+
+    os.environ['KRAKEN2_DB_PATH'] = '/local/kraken2'
+    cmd = 'kraken2 -db {db} --report krakenreport.txt --threads {t} --paired {f1} {f2} > kraken.out'.format(f1=file1,f2=file2,t=threads,db=dbname)
+    print (cmd)
+    subprocess.check_output(cmd, shell=True)
+    rep=pd.read_csv('krakenreport.txt',sep='\t',names=['perc_frag','n_frags_root','n_frags','rank_code','taxid','name'])
+    rep['name'] = rep.name.str.lstrip()
+    return rep
+
 def dataframe_to_fasta(df, seqkey='translation', idkey='locus_tag',
                      descrkey='description',
                      outfile='out.faa'):
@@ -361,13 +372,18 @@ def fasta_to_dataframe(infile, header_sep=None, key='name', seqkey='sequence'):
     df[key] = df[key].str.replace('|','_')
     return df
 
-def fastq_random_seqs(filename):
-    from pyfaidx import Fasta
-    randpos = random.randint(0,)
-    seqs = Fasta(filename)
-    return
+def fastq_random_seqs(filename, size=50):
+    """Random sequences from fastq file. Requires pyfastx.
+    Creates a fastq index which will be a large file.
+    """
 
-def fastq_to_rec(filename, size=500):
+    import pyfastx
+    fq = pyfastx.Fastq(filename, build_index=True)
+    pos = np.random.randint(1,len(fq),size)
+    seqs = [SeqRecord(Seq(fq[i].seq),id=str(fq[i].name)) for i in pos]
+    return seqs
+
+def fastq_to_rec(filename, size=50):
     """Get reads from a fastq file
         Args:
             size: limit

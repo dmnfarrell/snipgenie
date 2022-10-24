@@ -773,7 +773,7 @@ class App(QMainWindow):
         """Update samples file to reflect table"""
 
         df = self.fastq_table.model.df
-        app.write_samples(df, self.outputdir)
+        app.write_samples(df[['sample']], self.outputdir)
         return
 
     def load_fastq_table(self, filenames):
@@ -1445,7 +1445,7 @@ class App(QMainWindow):
         row = self.fastq_table.getSelectedRows()[0]
         data = df.iloc[row]
         name = data['sample']
-        c = app.blast_contaminants(data.filename1, limit=100000, pident=80)
+        c = app.blast_contaminants(data.filename1, limit=10000, pident=80)
         if len(c) == 0:
             print ('no contaminants in DB found')
             return
@@ -1770,7 +1770,6 @@ class App(QMainWindow):
             except Exception as e:
                 QMessageBox.information(self, "Plugin error", str(e))
                 return
-
             #plugin should be added as a dock widget
             self.show_plugin(p)
         return
@@ -1789,7 +1788,10 @@ class App(QMainWindow):
         area.setWidgetResizable(True)
         dock.setWidget(area)
         area.setWidget(plugin.main)
-        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
+        if plugin.side == 'left':
+            self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
+        else:
+            self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock)
         self.docks[plugin.name] = dock
         return
 
@@ -1799,7 +1801,7 @@ class App(QMainWindow):
         from . import plugin
         plgmenu = self.plugin_menu
         for plg in plugin.get_plugins_classes('gui'):
-            print (plg)
+            #print (plg)
             def func(p, **kwargs):
                 def new():
                    self.load_plugin(p)

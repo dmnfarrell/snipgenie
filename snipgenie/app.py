@@ -200,10 +200,10 @@ def check_samples_unique(samples):
         return False
 
 def write_samples(df, path):
-    """Write out sample names using dataframe from get_samples"""
+    """Write out sample names only using dataframe from get_samples"""
 
     filename = os.path.join(path, 'samples.txt')
-    df.to_csv(filename,index=False,header=False)
+    df.to_csv(filename, index=False, header=False)
     return filename
 
 def check_samples_aligned(samples, outdir):
@@ -263,7 +263,7 @@ def fetch_contam_file():
     tools.gunzip(filename, destfile)
     return
 
-def blast_contaminants(filename, limit=2000, pident=98, qcovs=90):
+def blast_contaminants(filename, limit=2000, random=False, pident=98, qcovs=90):
     """Blast reads to contaminants database
     Returns: percentages of reads assigned to each species.
     """
@@ -271,7 +271,10 @@ def blast_contaminants(filename, limit=2000, pident=98, qcovs=90):
     fetch_contam_file()
     path = os.path.join(sequence_path,'contam.fa')
     tools.make_blast_database(path)
-    seqs = tools.fastq_to_rec(filename, limit)
+    if random == True:
+        seqs = tools.fastq_random_seqs(filename, limit)
+    else:
+        seqs = tools.fastq_to_rec(filename, limit)
     bl = tools.blast_sequences(path,seqs,maxseqs=1)
     bl['stitle'] = bl.stitle.apply(lambda x: x.split('__')[0])
     bl = bl[(bl.qcovs>qcovs) & (bl.pident>pident)]
@@ -501,7 +504,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     subprocess.check_output(cmd,shell=True)
 
     #relabel samples in vcf header
-    if relabel == True:        
+    if relabel == True:
         relabel_vcfheader(vcfout, sample_file)
 
     #filters

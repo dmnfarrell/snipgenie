@@ -163,7 +163,7 @@ def get_plugins_classes(capability='gui'):
 
     result = []
     for plugin in Plugin.__subclasses__():
-        print (plugin)
+        #print (plugin)
         if capability in plugin.capabilities:
             result.append(plugin)
     return result

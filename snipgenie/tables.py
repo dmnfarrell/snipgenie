@@ -909,8 +909,8 @@ class MyHeaderView(QHeaderView):
         painter.drawText(- rect.height() + self._margin,
                          rect.left() + (rect.width() + self._descent) / 2, data)
 
-    #def sizeHint(self):
-    #    return QtCore.QSize(0, self._get_text_width() + 2 * self._margin)
+    def sizeHint(self):
+        return QtCore.QSize(0, self._get_text_width() + 2 * self._margin)
 
     def _get_text_width(self):
         return max([self._metrics.width(self._get_data(i))

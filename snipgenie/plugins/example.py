@@ -36,7 +36,8 @@ class ExamplePlugin(Plugin):
     requires = ['']
     menuentry = 'Example Plugin'
     name = 'Example Plugin'
-
+    side = 'right'
+    
     def __init__(self, parent=None):
         """Customise this and/or doFrame for your widgets"""
 

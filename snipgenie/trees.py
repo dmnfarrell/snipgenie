@@ -100,11 +100,11 @@ def get_colormap(values):
     clrs = dict(list(zip(labels,colors)))
     return clrs
 
-def run_fasttree(infile, bootstraps=100, outpath='.'):
+def run_fasttree(infile, outpath, bootstraps=100):
     """Run fasttree"""
 
     fc = tools.get_cmd('fasttree')
-    out = os.path.join(outpath,'fasttree.newick')
+    out = os.path.join(outpath,'tree.newick')
     cmd = '{fc} -nt {i} > {o}'.format(fc=fc,b=bootstraps,i=infile,o=out)
     tmp = subprocess.check_output(cmd, shell=True)
     return out

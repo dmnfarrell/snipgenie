@@ -109,7 +109,7 @@ def fetch_binaries():
     os.makedirs(bin_path, exist_ok=True)
     names = ['bcftools.exe','bwa.exe','samtools.exe','tabix.exe',
              'subread-align.exe','subread-buildindex.exe','fasttree.exe',
-             'makeblastdb.exe','minimap2.exe',
+             'makeblastdb.exe','minimap2.exe','rush.exe',
              'msys-2.0.dll','msys-bz2-1.dll','msys-lzma-5.dll','msys-ncursesw6.dll','msys-z.dll']
     for n in names:
         filename = os.path.join(bin_path,n)
@@ -906,9 +906,9 @@ class WorkFlow(object):
             print ('%s samples have mean depth <15' %len(lowdepth))
 
         #mapping stats
-        if 'mapped' not in samples.columns and self.get_stats == True:
-            print ('getting mapping stats..')
-            samples = mapping_stats(samples)
+        #if 'mapped' not in samples.columns and self.get_stats == True:
+            #print ('getting mapping stats..')
+            #samples = mapping_stats(samples)
         #save sample table
         samples.to_csv(os.path.join(self.outdir,'samples.csv'),index=False)
 
@@ -952,8 +952,11 @@ class WorkFlow(object):
             if len(bam_files) <= 2:
                 print ('Cannot build tree, too few samples.')
                 return
-            treefile = trees.run_RAXML(outfasta, threads=self.threads,
-                        bootstraps=self.bootstraps, outpath=self.outdir)
+            if platform.system() == 'Windows':
+                treefile = trees.run_fasttree(outfasta, self.outdir)
+            else:
+                treefile = trees.run_RAXML(outfasta, threads=self.threads,
+                            bootstraps=self.bootstraps, outpath=self.outdir)
             if treefile == None:
                 return
             ls = len(smat)

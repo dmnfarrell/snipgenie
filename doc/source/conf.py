@@ -31,7 +31,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'snpgenie'
+project = u'snipgenie'
 copyright = u'2019-, Damien Farrell'
 
 #from pandastable import __version__
@@ -84,7 +84,7 @@ html_logo = 'logo.png'
 
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'snpgeniedoc'
+htmlhelp_basename = 'snipgeniedoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -96,7 +96,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'snpgenie.tex', u'snpgenie Documentation',
+  ('index', 'snipgenie.tex', u'snpgenie Documentation',
    u'Damien Farrell', 'manual'),
 ]
 
@@ -106,7 +106,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'snpgenie', u'snpgenie Documentation',
+    ('index', 'snipgenie', u'snipgenie Documentation',
      [u'Damien Farrell'], 1)
 ]
 
@@ -120,7 +120,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'snpgenie', u'snpgenie Documentation',
-   u'Damien Farrell', 'snpgenie', 'One line description of project.',
+  ('index', 'snipgenie', u'snipgenie Documentation',
+   u'Damien Farrell', 'snipgenie', 'One line description of project.',
    'Miscellaneous'),
 ]

@@ -1,53 +1,53 @@
-snpgenie package
-===================
+snipgenie package
+=================
 
 Submodules
 ----------
 
-snpgenie\.gui module
+snipgenie\.gui module
 ----------------------
 
-.. automodule:: snpgenie.gui
+.. automodule:: snipgenie.gui
     :members:
     :undoc-members:
     :show-inheritance:
 
-snpgenie\.widgets module
+snipgenie\.widgets module
 --------------------------
 
-.. automodule:: snpgenie.widgets
+.. automodule:: snipgenie.widgets
     :members:
     :undoc-members:
     :show-inheritance:
 
-snpgenie\.tools module
+snipgenie\.tools module
 ------------------------
 
-.. automodule:: snpgenie.tools
+.. automodule:: snipgenie.tools
     :members:
     :undoc-members:
     :show-inheritance:
 
-snpgenie\.app module
+snipgenie\.app module
 ----------------------
 
-.. automodule:: snpgenie.app
+.. automodule:: snipgenie.app
     :members:
     :undoc-members:
     :show-inheritance:
 
-snpgenie\.aligners module
+snipgenie\.aligners module
 ---------------------------
 
-.. automodule:: snpgenie.aligners
+.. automodule:: snipgenie.aligners
     :members:
     :undoc-members:
     :show-inheritance:
 
-snpgenie\.plotting module
+snipgenie\.plotting module
 ---------------------------
 
-.. automodule:: snpgenie.plotting
+.. automodule:: snipgenie.plotting
     :members:
     :undoc-members:
     :show-inheritance:
@@ -56,7 +56,7 @@ snpgenie\.plotting module
 Module contents
 ---------------
 
-.. automodule:: snpgenie
+.. automodule:: snipgenie
     :members:
     :undoc-members:
     :show-inheritance:

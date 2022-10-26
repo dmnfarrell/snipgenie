@@ -376,7 +376,7 @@ def fastq_random_seqs(filename, size=50):
     """Random sequences from fastq file. Requires pyfastx.
     Creates a fastq index which will be a large file.
     """
-
+    #see https://pythonforbiologists.com/randomly-sampling-reads-from-a-fastq-file.html
     import pyfastx
     fq = pyfastx.Fastq(filename, build_index=True)
     pos = np.random.randint(1,len(fq),size)
@@ -476,6 +476,7 @@ def records_to_dataframe(records, cds=False, nucl_seq=False):
     for rec in records:
         featurekeys = []
         allfeat = []
+        keys = []
         for (item, f) in enumerate(rec.features):
             x = f.__dict__
             quals = f.qualifiers
@@ -499,7 +500,8 @@ def records_to_dataframe(records, cds=False, nucl_seq=False):
                     d['sequence'] = str(Seq(nseq).reverse_complement())
                 else:
                     d['sequence'] = nseq
-        quals = list(quals.keys())+['id','start','end','strand','feat_type','sequence']
+            keys += [i for i in quals.keys() if i not in keys]
+        quals = keys+['id','start','end','strand','feat_type','sequence']
         df = pd.DataFrame(allfeat,columns=quals)
         if 'translation' in df.keys():
             df['length'] = df.translation.astype('str').str.len()

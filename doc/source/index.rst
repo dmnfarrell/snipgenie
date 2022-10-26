@@ -1,6 +1,6 @@
 
-Welcome to snpgenie documentation.
-==================================
+SNiPgenie documentation.
+========================
 
 Contents:
 

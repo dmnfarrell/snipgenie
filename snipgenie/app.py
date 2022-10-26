@@ -52,12 +52,15 @@ msmeg_genome = os.path.join(sequence_path, 'Msmeg-MC2.fa')
 msmeg_gb = os.path.join(datadir, 'Msmeg-MC2.gb')
 mbovis_mask =  os.path.join(datadir, 'Mbovis_AF212297_mask.bed')
 mtb_mask =  os.path.join(datadir, 'MTB-H37Rv_mask.bed')
+sarscov2_genome = os.path.join(sequence_path, 'Sars-Cov-2.fa')
+sarscov2_gb = os.path.join(datadir, 'Sars-Cov-2.gb')
 
 preset_genomes = {
            'Mbovis-AF212297':{'sequence':mbovis_genome, 'gb':mbovis_gb, 'mask':mbovis_mask},
            'MTB-H37Rv':{'sequence':mtb_genome, 'gb':mtb_gb, 'mask':mtb_mask},
            'MAP-K10':{'sequence':map_genome, 'gb':map_gb},
-           'M.smegmatis-MC2155':{'sequence':msmeg_genome, 'gb':msmeg_gb}
+           'M.smegmatis-MC2155':{'sequence':msmeg_genome, 'gb':msmeg_gb},
+           'Sars-Cov-2':{'sequence':sarscov2_genome, 'gb':sarscov2_gb}
            }
 
 #windows only path to binaries
@@ -91,7 +94,7 @@ def check_platform():
 def copy_ref_genomes():
     """Copy default ref genome files to config dir"""
 
-    files =  glob.glob(os.path.join(datadir, '*.fa'))
+    files = glob.glob(os.path.join(datadir, '*.fa'))
     path = sequence_path
     if not os.path.exists(path):
         os.makedirs(path,exist_ok=True)
@@ -540,14 +543,16 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     #consequence calling
     if gff_file != None:
         print ('consequence calling..')
-        csqout = os.path.join(outpath, 'csq.tsv')
-        m = csq_call(ref, gff_file, snpsout, csqout)
-        m.to_csv(os.path.join(outpath,'csq.matrix'))
-        #indels as well
-        csqout = os.path.join(outpath, 'csq_indels.tsv')
-        m = csq_call(ref, gff_file, indelsout, csqout)
-        m.to_csv(os.path.join(outpath,'csq_indels.matrix'))
-
+        try:
+            csqout = os.path.join(outpath, 'csq.tsv')
+            m = csq_call(ref, gff_file, snpsout, csqout)
+            m.to_csv(os.path.join(outpath,'csq.matrix'))
+            #indels as well
+            csqout = os.path.join(outpath, 'csq_indels.tsv')
+            m = csq_call(ref, gff_file, indelsout, csqout)
+            m.to_csv(os.path.join(outpath,'csq_indels.matrix'))
+        except Exception as e:
+            print (e)
     print ('took %s seconds' %str(round(time.time()-st,0)))
     return snpsout
 

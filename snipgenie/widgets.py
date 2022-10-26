@@ -953,11 +953,12 @@ class SimpleBamViewer(QDialog):
             df = tools.genbank_to_dataframe(gb_file)
             if 'locus_tag' in df.columns:
                 df.loc[df["gene"].isnull(),'gene'] = df.locus_tag
-            genes = df.gene.unique()
-            self.annot = df
-            self.geneselect.addItems(genes)
-            self.geneselect.setStyleSheet("QComboBox { combobox-popup: 0; }");
-            self.geneselect.setMaxVisibleItems(10)
+            if 'gene' in df.columns:
+                genes = df.gene.unique()
+                self.annot = df
+                self.geneselect.addItems(genes)
+                self.geneselect.setStyleSheet("QComboBox { combobox-popup: 0; }");
+                self.geneselect.setMaxVisibleItems(10)
         self.chrom = chromnames[0]
         self.chromselect.addItems(chromnames)
         self.chromselect.setStyleSheet("QComboBox { combobox-popup: 0; }");

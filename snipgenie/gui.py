@@ -529,7 +529,7 @@ class App(QMainWindow):
                 mask = genomes[name]['mask']
             else:
                 mask = None
-            def func(seqname,gbfile,mask,ask):
+            '''def func(seqname,gbfile,mask,ask):
 
                 if ask == True:
                     msg = 'This will replace the current reference with a preset.'
@@ -539,9 +539,23 @@ class App(QMainWindow):
                         return
                 self.set_reference(seqname, ask=False)
                 self.set_annotation(gbfile)
-                self.set_mask(mask)
+                self.set_mask(mask)'''
+            func = self.load_preset_genome
             receiver = lambda seqname=seqname, gb=gbfile, mask=mask, ask=ask: func(seqname, gb, mask, ask)
             self.presets_menu.addAction('%s' %name, receiver)
+        return
+
+    def load_preset_genome(self, seqname, gbfile, mask, ask):
+
+        if ask == True:
+            msg = 'This will replace the current reference with a preset.'
+            reply = QMessageBox.question(self, 'Warning!', msg,
+                                            QMessageBox.No | QMessageBox.Yes )
+            if reply == QMessageBox.No:
+                return
+        self.set_reference(seqname, ask=False)
+        self.set_annotation(gbfile)
+        self.set_mask(mask)
         return
 
     def show_recent_files(self):
@@ -671,8 +685,7 @@ class App(QMainWindow):
         self.update_ref_genome()
         self.update_mask()
         self.proj_file = filename
-        self.projectlabel.setText(self.proj_file)
-        self.outdirLabel.setText(self.outputdir)
+        self.update_labels()
         self.setup_paths()
         self.show_snpdist()
         #load any saved maps
@@ -687,6 +700,10 @@ class App(QMainWindow):
         self.add_recent_file(filename)
         self.check_fastq_table()
         return
+
+    def update_labels(self):
+        self.projectlabel.setText(self.proj_file)
+        self.outdirLabel.setText(self.outputdir)
 
     def load_project_dialog(self):
         """Load project"""
@@ -786,6 +803,7 @@ class App(QMainWindow):
             return
         self.opts.applyOptions()
         kwds = self.opts.kwds
+        print (kwds)
         df = self.fastq_table.model.df
         new = app.get_samples(filenames, sep=kwds['labelsep'])
         #pivoted
@@ -799,7 +817,8 @@ class App(QMainWindow):
 
         self.fastq_table.setDataFrame(new)
         self.fastq_table.resizeColumns()
-        app.write_samples(df[['sample']], self.outputdir)
+        #print (new)
+        app.write_samples(new[['sample']], self.outputdir)
         return
 
     def load_fastq_folder_dialog(self):
@@ -921,7 +940,6 @@ class App(QMainWindow):
                 df = pd.read_csv(results_file, dtype={'sample':'object'})
                 self.fastq_table.model.df = df
                 self.fastq_table.refresh()
-                self.results['vcf_file'] = os.path.join(self.outputdir, 'snps.vcf.gz')
         self.outdirLabel.setText(self.outputdir)
         return
 
@@ -1042,9 +1060,8 @@ class App(QMainWindow):
                                     gff_file=gff_file, mask=self.mask_file,
                                     custom_filters=proximity,
                                     callback=progress_callback.emit)
-        #self.results['nuc_matrix'] = os.path.join(self.outputdir, 'core.txt')
-        #self.results['csq_matrix'] = os.path.join(self.outputdir, 'csq.matrix')
         self.snp_alignment()
+
         return
 
     def calling_completed(self):
@@ -1094,9 +1111,10 @@ class App(QMainWindow):
         vcf_file = self.results['vcf_file']
         print('Making SNP alignment')
         result, smat = tools.core_alignment_from_vcf(vcf_file)
-        print (result)
+        #print (result)
         outfasta = os.path.join(self.outputdir, 'core.fa')
         SeqIO.write(result, outfasta, 'fasta')
+        smat.to_csv(os.path.join(self.outputdir,'core.txt'), sep=' ')
         from Bio import AlignIO
         aln = AlignIO.read(outfasta, 'fasta')
         snp_dist = tools.snp_dist_matrix(aln)
@@ -1156,12 +1174,13 @@ class App(QMainWindow):
         corefasta = os.path.join(self.outputdir, 'core.fa')
         bootstraps = 100
         if method == 'raxml':
-            outfile = os.path.join(self.outputdir,'RAxML_bipartitions.variants')
             treefile = trees.run_RAXML(corefasta, bootstraps=bootstraps, outpath=self.outputdir)
         elif method == 'fasttree':
-            outfile = os.path.join(self.outputdir,'fasttree.newick')
             treefile = trees.run_fasttree(corefasta, bootstraps=bootstraps, outpath=self.outputdir)
-
+        outfile = os.path.join(self.outputdir,'tree.newick')
+        snpmat = pd.read_csv(self.snp_matrix, sep=' ',index_col=0)
+        ls = len(snpmat)
+        trees.convert_branch_lengths(treefile, outfile, ls)
         self.treefile = outfile
         return
 
@@ -1174,7 +1193,7 @@ class App(QMainWindow):
         """Show current tree"""
 
         self.tree_viewer()
-        filename = os.path.join(self.outputdir,'RAxML_bipartitions.variants')
+        filename = os.path.join(self.outputdir,'tree.newick')
         self.treeviewer.load_tree(filename)
         self.treeviewer.update()
         return
@@ -1255,7 +1274,7 @@ class App(QMainWindow):
         """Show annotation in table"""
 
         gb_file = self.ref_gb
-        df = tools.genbank_to_dataframe(gb_file)
+        df = tools.genbank_to_dataframe(gb_file)        
         t = tables.DataFrameTable(self.tabs, dataframe=df)
         i = self.tabs.addTab(t, 'ref_annotation')
         self.tabs.setCurrentIndex(i)
@@ -1445,7 +1464,7 @@ class App(QMainWindow):
         row = self.fastq_table.getSelectedRows()[0]
         data = df.iloc[row]
         name = data['sample']
-        c = app.blast_contaminants(data.filename1, limit=10000, pident=80)
+        c = app.blast_contaminants(data.filename1, limit=10000, pident=95)
         if len(c) == 0:
             print ('no contaminants in DB found')
             return
@@ -1828,7 +1847,8 @@ class App(QMainWindow):
     def online_documentation(self,event=None):
         """Open the online documentation"""
 
-        link='https://github.com/dmnfarrell/snipgenie'
+        link = 'https://github.com/dmnfarrell/snipgenie'
+        link = 'https://snipgenie.readthedocs.io/'
         self.show_browser_tab(link, 'help')
         return
 
@@ -1935,7 +1955,7 @@ class AppOptions(widgets.BaseOptions):
         genomes = []
         aligners = ['bwa','subread','minimap2']
         platforms = ['illumina','ont']
-        separators = ['_','-','|',';','~']
+        separators = ['_','-','|',';','~','.']
         cpus = os.cpu_count()
         self.groups = {'general':['threads','labelsep','overwrite'],
                         'trimming':['quality'],

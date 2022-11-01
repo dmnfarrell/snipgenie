@@ -276,7 +276,7 @@ class App(QMainWindow):
         style = '''
         QWidget {
             font-size: 12px;
-            max-height: 180px;
+            max-height: 160px;
             }
         '''
         dialog = QWidget()
@@ -461,7 +461,7 @@ class App(QMainWindow):
         #self.analysis_menu.addSeparator()
         #self.analysis_menu.addAction('Run Workflow', self.run)
 
-        self.tools_menu = QMenu('Tools', self)
+        self.tools_menu = QMenu('Entrez', self)
         self.menuBar().addMenu(self.tools_menu)
 
         self.tools_menu.addAction('Get Read Stats',
@@ -1274,7 +1274,7 @@ class App(QMainWindow):
         """Show annotation in table"""
 
         gb_file = self.ref_gb
-        df = tools.genbank_to_dataframe(gb_file)        
+        df = tools.genbank_to_dataframe(gb_file)
         t = tables.DataFrameTable(self.tabs, dataframe=df)
         i = self.tabs.addTab(t, 'ref_annotation')
         self.tabs.setCurrentIndex(i)

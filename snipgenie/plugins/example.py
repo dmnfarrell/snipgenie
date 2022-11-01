@@ -18,7 +18,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 
-from __future__ import absolute_import, division, print_function
 import inspect
 import sys,os,platform,time,traceback
 import pickle, gzip
@@ -32,12 +31,12 @@ class ExamplePlugin(Plugin):
     """Template plugin for SNiPgenie"""
 
     #uncomment capabilities list to appear in menu
-    capabilities = ['gui']
+    capabilities = []
     requires = ['']
     menuentry = 'Example Plugin'
     name = 'Example Plugin'
     side = 'right'
-    
+
     def __init__(self, parent=None):
         """Customise this and/or doFrame for your widgets"""
 

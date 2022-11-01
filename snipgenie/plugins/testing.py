@@ -18,7 +18,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 
-from __future__ import absolute_import, division, print_function
 import sys,os,platform,time,tempfile,glob
 import pickle, gzip
 import random
@@ -170,6 +169,13 @@ class TestingPlugin(Plugin):
         #print (filenames)
         parent.opts.setWidgetValue('labelsep', '.')
         parent.load_fastq_table(filenames)
+        self.create_meta_data()
+
+        #add meta data
+        df=parent.fastq_table.model.df
+        df = df.merge(self.meta,left_index=True,right_index=True)
+        parent.fastq_table.setDataFrame(df)
+
         ref = self.refbox.currentText()
         #add ref genome
         gm = app.preset_genomes[ref]

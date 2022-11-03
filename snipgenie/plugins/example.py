@@ -94,9 +94,10 @@ class ExamplePlugin(Plugin):
         vbox.addWidget(button)
         return bw
 
-    def apply(self):
-        """Run something"""
+    def project_closed(self):
+        """Run when parent project is closed"""
 
+        print ('project closed - clean up plugin')
         return
 
     def quit(self, evt=None):

@@ -81,12 +81,16 @@ widgetstyle = '''
         min-width: 300px;}
 '''
 
+class Communicate(QObject):
+    newproj = Signal()
+
 class App(QMainWindow):
     """GUI Application using PySide2 widgets"""
     def __init__(self, filenames=[], project=None):
 
         QMainWindow.__init__(self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        self.comms = Communicate()
         self.setWindowTitle("snipgenie")
 
         self.setWindowIcon(QIcon(logoimg))
@@ -652,6 +656,8 @@ class App(QMainWindow):
         self.clear_tabs()
         self.update_ref_genome()
         self.update_mask()
+        #self.clear_plugins()
+        self.comms.newproj.emit()
         return
 
     def setup_paths(self):
@@ -1788,6 +1794,7 @@ class App(QMainWindow):
                 openplugins[plugin.name] = p
             except Exception as e:
                 QMessageBox.information(self, "Plugin error", str(e))
+                print(traceback.format_exc())
                 return
             #plugin should be added as a dock widget
             self.show_plugin(p)
@@ -1815,6 +1822,7 @@ class App(QMainWindow):
             dock.setFloating(True)
             #dock.setGeometry(100, 0, 200, 30)
         self.docks[plugin.name] = dock
+        self.comms.newproj.connect(plugin.project_closed)
         return
 
     def update_plugin_menu(self):
@@ -1833,6 +1841,18 @@ class App(QMainWindow):
                 plgmenu.addAction(icon, plg.menuentry, func(plg))
             else:
                 plgmenu.addAction(plg.menuentry, func(plg))
+        return
+
+    def clear_plugins(self):
+        """remove all open plugins"""
+
+        for p in self.openplugins.copy():
+            print (p)
+            plugin = self.openplugins[p]
+            del self.openplugins[plugin.name]
+            #self.docks[plugin.name].
+            del self.docks[plugin.name]
+
         return
 
     def preferences(self):

@@ -29,7 +29,10 @@ from Bio import Entrez
 from snipgenie import app, widgets, tables, aligners, tools
 from snipgenie.plugin import Plugin
 
+#location for sequences to align against
 index_path = os.path.join(app.config_path, 'contam')
+if not os.path.exists(index_path):
+    os.makedirs(index_path, exist_ok=True)
 
 class Genome(object):
     def __init__(self, name, description=None, filename=None):
@@ -37,6 +40,9 @@ class Genome(object):
         self.name = name
         self.filename = filename
         self.description = description
+        d = self.description
+        if d != None:
+            self.get_species()
         return
 
     def get_species(self):
@@ -61,7 +67,7 @@ class ContaminationCheckerPlugin(Plugin):
     side = 'right' #dock location to load plugin
 
     def __init__(self, parent=None):
-        """Customise this and/or doFrame for your widgets"""
+        """Customise this and/or create_widgets"""
 
         if parent==None:
             return
@@ -69,9 +75,6 @@ class ContaminationCheckerPlugin(Plugin):
         self.outpath = os.path.join(self.parent.outputdir, 'contam')
         if not os.path.exists(self.outpath):
             os.makedirs(self.outpath, exist_ok=True)
-        self.mapped = os.path.join(self.outpath, 'mapped')
-        if not os.path.exists(self.mapped):
-            os.makedirs(self.mapped, exist_ok=True)
 
         self.genomes = {}
         self.create_widgets()
@@ -88,16 +91,32 @@ class ContaminationCheckerPlugin(Plugin):
         layout = self.layout = QVBoxLayout()
         layout.setAlignment(QtCore.Qt.AlignTop)
         self.main.setLayout(layout)
-        #add buttons
+
         self.tree = QTreeWidget()
-        self.tree.setHeaderItem(QTreeWidgetItem(["name","desc"]))
+        self.tree.setHeaderItem(QTreeWidgetItem(["name","desc","filename"]))
+        self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.tree.customContextMenuRequested.connect(self.show_tree_menu)
         layout.addWidget(self.tree)
-        t = self.result_table = tables.DataFrameTable(self.main)
-        #t.resize(20,5)
+
+        t = self.result_table = tables.DataFrameTable(self.main, plotter=self.parent.plotview)
         layout.addWidget(t)
         bw = self.create_buttons(self.main)
         layout.addWidget(bw)
-        #self.createMenu(self.main)
+        return
+
+    def show_tree_menu(self, pos):
+        """Show right cick tree menu"""
+
+        item = self.tree.itemAt( pos )
+        menu = QMenu(self.tree)
+        propsAction = menu.addAction("Properties")
+        deleteAction = menu.addAction("Delete")
+        action = menu.exec_(self.tree.mapToGlobal(pos))
+        if action == propsAction:
+            self.set_sequence_properties()
+        elif action == deleteAction:
+            self.remove_sequence()
         return
 
     def create_menu(self, parent):
@@ -126,13 +145,17 @@ class ContaminationCheckerPlugin(Plugin):
         button = QPushButton("Clean Files")
         button.clicked.connect(self.clean_files)
         vbox.addWidget(button)
-        #button = QPushButton("Find Genome")
+        #button = QPushButton("Find NCBI Sequence")
         #button.clicked.connect(self.find_sequence_ncbi)
         #vbox.addWidget(button)
-        button = QPushButton("Fetch Sequence")
+        button = QPushButton("Add sequence")
+        button.clicked.connect(self.add_sequence)
+        vbox.addWidget(button)
+        button = QPushButton("Fetch NCBI Sequence")
         button.clicked.connect(self.fetch_sequence)
         vbox.addWidget(button)
         button = QPushButton("Run")
+        button.setStyleSheet("background-color: red")
         button.clicked.connect(self.run)
         vbox.addWidget(button)
         return bw
@@ -140,13 +163,17 @@ class ContaminationCheckerPlugin(Plugin):
     def update_folders(self):
         """Update output folders"""
 
-        self.mapped = os.path.join(self.outpath, 'mapped')
         return
 
     def clean_files(self):
         """Clean aligned files"""
 
-        files = glob.glob(os.path.join(self.mapped,'*.bam'))
+        reply = QMessageBox.question(self.main, 'Confirm',
+                                "This will clean all aligned files.\nAre you sure?",
+                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.No:
+            return False
+        files = glob.glob(os.path.join(self.outpath,'*.bam'))
         for f in files:
             os.remove(f)
         return
@@ -161,9 +188,9 @@ class ContaminationCheckerPlugin(Plugin):
             #print (rec)
             first, _, desc = rec.description.partition(" ")
             g = self.genomes[rec.id] = Genome(rec.id, desc, f)
-            g.get_species()
+
         #print (self.genomes)
-        self.update_sequences()
+        self.update_treelist()
         return
 
     def set_folder(self):
@@ -177,11 +204,51 @@ class ContaminationCheckerPlugin(Plugin):
         return
 
     def fetch_defaults(self):
-        """get default genome seqs"""
+        """Get some default genome seqs from Genbank"""
 
         names = ['NC_002516','NZ_AP022609','CP089304','NZ_CP01680']
         for name in names:
             self.efetch(name)
+        return
+
+    def add_sequence(self):
+        """Add a sequence from local fasta- may be more than one seq in fasta file"""
+
+        filename, _ = QFileDialog.getOpenFileName(self.main, 'Add sequence', './',
+                                        filter="Fasta Files(*.fa *.fasta);;All Files(*.*)")
+        if not filename:
+            return
+        recs = list(SeqIO.parse(filename, format='fasta'))
+        rec = recs[0]
+        self.genomes[rec.id] = Genome(rec.id, rec.description, filename)
+        self.update_treelist()
+        return
+
+    def remove_sequence(self):
+        """Remove sequence"""
+
+        item = self.tree.selectedItems()[0]
+        row = self.tree.selectedIndexes()[0].row()
+        name = item.text(0)
+        del self.genomes[name]
+        self.tree.takeTopLevelItem(row)
+        return
+
+    def set_sequence_properties(self):
+
+        item = self.tree.selectedItems()[0]
+        name = item.text(0)
+        g = self.genomes[name]
+        opts = {'name':{'type':'entry','default':g.name},
+                'desc':{'type':'entry','default':g.description},
+                'species':{'type':'entry','default':g.species},
+                }
+        dlg = widgets.MultipleInputDialog(self.main, opts, title='Edit Genome Info',
+                            width=350,height=150)
+        dlg.exec_()
+        if not dlg.accepted:
+            return
+
         return
 
     def fetch_sequence(self):
@@ -221,7 +288,7 @@ class ContaminationCheckerPlugin(Plugin):
 
     def fetch_completed(self):
 
-        self.update_sequences()
+        self.update_treelist()
         self.parent.processing_completed()
         return
 
@@ -274,7 +341,7 @@ class ContaminationCheckerPlugin(Plugin):
             names.append(item.text(0))
         return names
 
-    def update_sequences(self):
+    def update_treelist(self):
         """Refresh entries in tree"""
 
         for i in self.genomes:
@@ -288,6 +355,7 @@ class ContaminationCheckerPlugin(Plugin):
             item.setCheckState(0, QtCore.Qt.Checked)
             item.setText(0, i)
             item.setText(1, g.description)
+            item.setText(2, g.filename)
         return
 
     def build_indexes(self):
@@ -312,7 +380,7 @@ class ContaminationCheckerPlugin(Plugin):
             new = df.iloc[rows]
             threads = 8
             names = self.get_checked()
-            outdir = self.mapped
+            outdir = self.outpath
             #align to each index in turn
             for acc in self.genomes:
                 print (acc)
@@ -342,20 +410,29 @@ class ContaminationCheckerPlugin(Plugin):
     def get_results(self):
         """Reuslts from mapping"""
 
-        bamfiles = glob.glob(os.path.join(self.mapped,'*.bam'))
+        bamfiles = glob.glob(os.path.join(self.outpath,'*.bam'))
         #print (bamfiles)
         results = []
         for f in bamfiles:
             sample, idx = os.path.splitext(os.path.basename(f))[0].split('~~')
-            d = tools.samtools_flagstat(f)
-            total = d['total']
+            if idx not in self.genomes:
+                continue
             g = self.genomes[idx]
-            results.append([sample,idx,g.species,total])
+            d = tools.samtools_flagstat(f)
+            #total = tools.get_fastq_size(r.filename1)
+            mapped = d['total']
+            results.append([sample,idx,g.species,mapped])
             print (sample, idx)
             #print (d)
 
         df = self.results = pd.DataFrame(results, columns=['sample','ref','species','total'])
-        print (df)
+        #print (df)
         p = pd.pivot_table(df, index='sample',columns='species',values='total')
         self.result_table.setDataFrame(p)
+        return
+
+    def project_closed(self):
+        """Run when parent project is closed"""
+
+
         return

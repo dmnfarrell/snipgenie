@@ -9,6 +9,9 @@ CHANGES
 * fix to keeping unmapped reads when not needed
 * check samples match a previous raw.bcf file when running
 * re-added wgmlst code
+* plugin system for gui
+* gui - contam plugin added
+* gui - testing plugin
 
 0.5.0
 -----

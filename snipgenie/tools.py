@@ -873,7 +873,8 @@ def samtools_flagstat(filename):
     for c,v in zip(cols,x):
         #print (c,v)
         d[c] = v
-    d['perc_mapped'] = round(d['mapped']/d['total']*100,2)
+
+    #d['perc_mapped'] = round(d['mapped']/d['total']*100,2)
     return d
 
 def samtools_tview(bam_file, chrom, pos, width=200, ref='', display='T'):

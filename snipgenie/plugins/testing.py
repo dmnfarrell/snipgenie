@@ -39,6 +39,7 @@ class TestingPlugin(Plugin):
     requires = ['']
     menuentry = 'Testing'
     name = 'Testing'
+    iconfile = 'tests.png'
     side = 'right' #dock location to load plugin
 
     def __init__(self, parent=None, table=None):

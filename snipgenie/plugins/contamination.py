@@ -39,6 +39,16 @@ class Genome(object):
         self.description = description
         return
 
+    def get_species(self):
+        """Get species from desc"""
+
+        d = self.description
+        self.species = '_'.join(d.split()[:2])
+        return
+
+    def __repr__(self):
+        return 'genome object %s' %self.__dict__
+
 class ContaminationCheckerPlugin(Plugin):
     """Contam checker plugin for SNiPgenie"""
 
@@ -47,23 +57,28 @@ class ContaminationCheckerPlugin(Plugin):
     requires = ['']
     menuentry = 'Contamination Check'
     name = 'Contamination Check'
+    iconfile = 'contam.png'
     side = 'right' #dock location to load plugin
 
-    def __init__(self, parent=None, table=None):
+    def __init__(self, parent=None):
         """Customise this and/or doFrame for your widgets"""
 
         if parent==None:
             return
         self.parent = parent
-        self.table = table
-        self.outpath = os.path.join(tempfile.gettempdir(), 'contam')
+        self.outpath = os.path.join(self.parent.outputdir, 'contam')
         if not os.path.exists(self.outpath):
             os.makedirs(self.outpath, exist_ok=True)
+        self.mapped = os.path.join(self.outpath, 'mapped')
+        if not os.path.exists(self.mapped):
+            os.makedirs(self.mapped, exist_ok=True)
 
         self.genomes = {}
         self.create_widgets()
         self.fetch_defaults()
         self.find_files()
+        #get previous results if present
+        self.get_results()
         return
 
     def create_widgets(self):
@@ -77,19 +92,21 @@ class ContaminationCheckerPlugin(Plugin):
         self.tree = QTreeWidget()
         self.tree.setHeaderItem(QTreeWidgetItem(["name","desc"]))
         layout.addWidget(self.tree)
+        t = self.result_table = tables.DataFrameTable(self.main)
+        #t.resize(20,5)
+        layout.addWidget(t)
         bw = self.create_buttons(self.main)
         layout.addWidget(bw)
         #self.createMenu(self.main)
         return
 
-    def createMenu(self, parent):
+    def create_menu(self, parent):
         """Main menu"""
 
         self.menubar = QMenuBar(parent)
         self.entrez_menu = QMenu('Entrez', parent)
         self.menubar.addMenu(self.entrez_menu)
         self.entrez_menu.addAction('Default', self.find_sequence_ncbi)
-
         return
 
     def create_buttons(self, parent):
@@ -109,9 +126,9 @@ class ContaminationCheckerPlugin(Plugin):
         button = QPushButton("Clean Files")
         button.clicked.connect(self.clean_files)
         vbox.addWidget(button)
-        button = QPushButton("Find Genome")
-        button.clicked.connect(self.find_sequence_ncbi)
-        vbox.addWidget(button)
+        #button = QPushButton("Find Genome")
+        #button.clicked.connect(self.find_sequence_ncbi)
+        #vbox.addWidget(button)
         button = QPushButton("Fetch Sequence")
         button.clicked.connect(self.fetch_sequence)
         vbox.addWidget(button)
@@ -120,28 +137,33 @@ class ContaminationCheckerPlugin(Plugin):
         vbox.addWidget(button)
         return bw
 
-    def clean_files(self):
-        """Clean"""
-
-        return
-
-    def find_files(self):
-        """Find genome files"""
-
-        for f in glob.glob(os.path.join(index_path,'*.fa')):
-            print (f)
-            rec = SeqIO.read(f, "fasta")
-            idx = os.path.basename(f)
-            #print (rec)
-            self.genomes[rec.id] = Genome(rec.id, rec.description, f)
-        print (self.genomes)
-        self.update_sequences()
-        return
-
     def update_folders(self):
         """Update output folders"""
 
         self.mapped = os.path.join(self.outpath, 'mapped')
+        return
+
+    def clean_files(self):
+        """Clean aligned files"""
+
+        files = glob.glob(os.path.join(self.mapped,'*.bam'))
+        for f in files:
+            os.remove(f)
+        return
+
+    def find_files(self):
+        """Find genome files and store them"""
+
+        for f in glob.glob(os.path.join(index_path,'*.fa')):
+            #print (f)
+            rec = SeqIO.read(f, "fasta")
+            idx = os.path.basename(f)
+            #print (rec)
+            first, _, desc = rec.description.partition(" ")
+            g = self.genomes[rec.id] = Genome(rec.id, desc, f)
+            g.get_species()
+        #print (self.genomes)
+        self.update_sequences()
         return
 
     def set_folder(self):
@@ -154,51 +176,20 @@ class ContaminationCheckerPlugin(Plugin):
         self.update_folders()
         return
 
-    def find_sequence_ncbi(self):
-        """Search for sequence using esearch"""
-
-        opts = {'keywords':{'type':'entry','default':''},
-                }
-        dlg = widgets.MultipleInputDialog(self.main, opts, title='Find Sequence',
-                            width=250,height=150)
-        dlg.exec_()
-        if not dlg.accepted:
-            return
-        kwds = dlg.values
-        acc = kwds['accession']
-        keyword = kwds['keyword']
-        #self.fetch_sequence(keyword)
-        self.esearch(keyword)
-        return
-
-    def esearch(self, keyword=""):
-        """entrez search"""
-
-        def func(progress_callback):
-            Entrez.email = "A.N.Other@example.com"
-            handle = Entrez.esearch(db="nucleotide", term=keyword)
-            record = Entrez.read(handle)
-            print (record["IdList"])
-        self.parent.run_threaded_process(func, self.parent.processing_completed)
-        return
-
-    def search_completed(self):
-
-        return
-
     def fetch_defaults(self):
         """get default genome seqs"""
 
-        names = ['NC_002516','NZ_AP022609','NZ_SILH01000002','CP089304','NZ_CP01680']
+        names = ['NC_002516','NZ_AP022609','CP089304','NZ_CP01680']
         for name in names:
             self.efetch(name)
         return
 
     def fetch_sequence(self):
+        """Fetch a fasta sequence from genbank nucl DB"""
 
         opts = {'accession':{'type':'entry','default':''},
                 }
-        dlg = widgets.MultipleInputDialog(self.main, opts, title='Find Sequence',
+        dlg = widgets.MultipleInputDialog(self.main, opts, title='Enter NCBI Accession',
                             width=250,height=150)
         dlg.exec_()
         if not dlg.accepted:
@@ -208,12 +199,13 @@ class ContaminationCheckerPlugin(Plugin):
         return
 
     def efetch(self, accession):
-        """Fetch a fasta sequence from genbank nucl DB"""
+        """Fetch a fasta sequence from entrez using efetch"""
 
         print (accession)
         def func(progress_callback):
             filename = os.path.join(index_path, accession+'.fa')
             if os.path.isfile(filename):
+                print ('file present')
                 return
             Entrez.email = "A.N.Other@example.com"
             handle = Entrez.efetch(db="nucleotide", id=accession, rettype="fasta", retmode="text")
@@ -223,7 +215,6 @@ class ContaminationCheckerPlugin(Plugin):
             handle.close()
             print ('downloaded to %s' %filename)
             rec = SeqIO.read(filename, "fasta")
-            #print (rec.description)
             self.genomes[accession] = Genome(rec.id, rec.description, filename)
         self.parent.run_threaded_process(func, self.fetch_completed)
         return
@@ -234,7 +225,38 @@ class ContaminationCheckerPlugin(Plugin):
         self.parent.processing_completed()
         return
 
+    def find_sequence_ncbi(self):
+        """Search for sequence using esearch"""
+
+        opts = {'terms':{'type':'entry','default':'','label':'Search Terms'},
+                }
+        dlg = widgets.MultipleInputDialog(self.main, opts, title='Find Sequence',
+                            width=250,height=150)
+        dlg.exec_()
+        if not dlg.accepted:
+            return
+        kwds = dlg.values
+        terms = kwds['terms']
+        self.esearch(terms)
+        return
+
+    def esearch(self, terms):
+        """entrez search"""
+
+        def func(progress_callback):
+            Entrez.email = "A.N.Other@example.com"
+            handle = Entrez.esearch(db="nucleotide", term=terms)
+            record = Entrez.read(handle)
+            print (record["IdList"])
+        self.parent.run_threaded_process(func, self.search_completed)
+        return
+
+    def search_completed(self):
+        self.parent.processing_completed()
+        return
+
     def get_checked(self):
+        """Get checked sequence names"""
 
         names=[]
         for i in range(self.tree.topLevelItemCount()):
@@ -246,24 +268,26 @@ class ContaminationCheckerPlugin(Plugin):
     def get_items(self):
 
         names=[]
+        #print (self.tree.topLevelItemCount())
         for i in range(self.tree.topLevelItemCount()):
             item = self.tree.topLevelItem(i)
+            names.append(item.text(0))
         return names
 
     def update_sequences(self):
-        """Add entry to tree"""
+        """Refresh entries in tree"""
 
-        names = self.get_items()
         for i in self.genomes:
+            names = self.get_items()
             if i in names:
                 continue
+            #print (names, i)
             g = self.genomes[i]
             item = QTreeWidgetItem(self.tree)
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(0, QtCore.Qt.Checked)
             item.setText(0, i)
             item.setText(1, g.description)
-
         return
 
     def build_indexes(self):
@@ -278,29 +302,60 @@ class ContaminationCheckerPlugin(Plugin):
         return
 
     def run(self):
-        """Run against genomes"""
+        """Run against selected genomes"""
 
-        table = self.parent.fastq_table
-        df = table.model.df.copy()
-        rows = table.getSelectedRows()
-        new = df.iloc[rows]
-        self.mapped = os.path.join(self.outpath, 'mapped')
-        threads = 8
+        self.results = []
         def func(progress_callback):
-            for idx in self.genomes:
-                print (idx)
-                g = self.genomes[idx]
-                aligners.build_bwa_index(g.filename)
-                self.df = app.align_reads(new, idx=g.filename, outdir=self.mapped, overwrite=False)
-                print(self.df)
-        self.parent.run_threaded_process(func, self.parent.processing_completed)
-        #print (self.df)
-        #app.mapping_stats(samples)
+            table = self.parent.fastq_table
+            df = table.model.df.copy()
+            rows = table.getSelectedRows()
+            new = df.iloc[rows]
+            threads = 8
+            names = self.get_checked()
+            outdir = self.mapped
+            #align to each index in turn
+            for acc in self.genomes:
+                print (acc)
+                g = self.genomes[acc]
+                aligners.build_bwa_index(g.filename, show_cmd=False)
+                for i,r in new.iterrows():
+                    sample =  r['sample']
+                    label = sample + '~~' + acc #label for bam
+                    file1 = r.filename1
+                    if 'filename2' in df.columns:
+                        file2 = r.filename2
+                    else:
+                        file2 = None
+
+                    out = os.path.join(outdir,label+'.bam')
+                    aligners.bwa_align(file1, file2, idx=g.filename, out=out, overwrite=False)
+                    print (out)
+
+        self.parent.run_threaded_process(func, self.run_completed)
         return
 
-    def about(self):
-        """About this plugin"""
+    def run_completed(self):
+        self.parent.processing_completed()
+        self.get_results()
+        return
 
-        txt = "This plugin is a contamination checker...\n"+\
-               "version: %s" %self.version
-        return txt
+    def get_results(self):
+        """Reuslts from mapping"""
+
+        bamfiles = glob.glob(os.path.join(self.mapped,'*.bam'))
+        #print (bamfiles)
+        results = []
+        for f in bamfiles:
+            sample, idx = os.path.splitext(os.path.basename(f))[0].split('~~')
+            d = tools.samtools_flagstat(f)
+            total = d['total']
+            g = self.genomes[idx]
+            results.append([sample,idx,g.species,total])
+            print (sample, idx)
+            #print (d)
+
+        df = self.results = pd.DataFrame(results, columns=['sample','ref','species','total'])
+        print (df)
+        p = pd.pivot_table(df, index='sample',columns='species',values='total')
+        self.result_table.setDataFrame(p)
+        return

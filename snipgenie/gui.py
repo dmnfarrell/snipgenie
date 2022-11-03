@@ -461,7 +461,7 @@ class App(QMainWindow):
         #self.analysis_menu.addSeparator()
         #self.analysis_menu.addAction('Run Workflow', self.run)
 
-        self.tools_menu = QMenu('Entrez', self)
+        self.tools_menu = QMenu('Tools', self)
         self.menuBar().addMenu(self.tools_menu)
 
         self.tools_menu.addAction('Get Read Stats',
@@ -1811,6 +1811,9 @@ class App(QMainWindow):
             self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
         else:
             self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock)
+        if plugin.side == 'floating':
+            dock.setFloating(True)
+            #dock.setGeometry(100, 0, 200, 30)
         self.docks[plugin.name] = dock
         return
 
@@ -1835,12 +1838,11 @@ class App(QMainWindow):
     def preferences(self):
         """Preferences dialog"""
 
-        from . import dialogs
         opts = {}
         for k in core.defaults.keys():
             opts[k] = getattr(core,k)
         opts['THEME'] = self.theme
-        dlg = dialogs.PreferencesDialog(self, opts)
+        dlg = widgets.PreferencesDialog(self, opts)
         dlg.exec_()
         return
 

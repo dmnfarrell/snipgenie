@@ -34,9 +34,13 @@ module_path = os.path.dirname(os.path.abspath(__file__))
 BOWTIE_INDEXES = os.path.join(config_path, 'genome')
 SUBREAD_INDEXES = os.path.join(config_path, 'genome')
 
-def build_bwa_index(fastafile, path=None, show_cmd=True):
+def build_bwa_index(fastafile, path=None, show_cmd=True, overwrite=True):
     """Build a bwa index"""
 
+    out = fastafile+'.bwt'
+    if os.path.exists(out) and overwrite == False:
+        return
+    print ('indexing..')
     bwacmd = tools.get_cmd('bwa')
     cmd = '{b} index {i}'.format(b=bwacmd,i=fastafile)
     subprocess.check_output(cmd, shell=True)

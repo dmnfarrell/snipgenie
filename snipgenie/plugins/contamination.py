@@ -34,27 +34,6 @@ index_path = os.path.join(app.config_path, 'contam')
 if not os.path.exists(index_path):
     os.makedirs(index_path, exist_ok=True)
 
-class Genome(object):
-    def __init__(self, name, description=None, filename=None):
-
-        self.name = name
-        self.filename = filename
-        self.description = description
-        d = self.description
-        if d != None:
-            self.get_species()
-        return
-
-    def get_species(self):
-        """Get species from desc"""
-
-        d = self.description
-        self.species = '_'.join(d.split()[:2])
-        return
-
-    def __repr__(self):
-        return 'genome object %s' %self.__dict__
-
 class ContaminationCheckerPlugin(Plugin):
     """Contam checker plugin for SNiPgenie"""
 
@@ -76,10 +55,13 @@ class ContaminationCheckerPlugin(Plugin):
         if not os.path.exists(self.outpath):
             os.makedirs(self.outpath, exist_ok=True)
 
-        self.genomes = {}
+        self.refs = pd.DataFrame(columns=['name','description','filename','species'])
+        self.ref_table = os.path.join(index_path,'contam_refs.csv')
+        self.numreads = 100000
         self.create_widgets()
         self.fetch_defaults()
-        self.find_files()
+        #self.find_files()
+        self.load_table()
         #get previous results if present
         self.get_results()
         return
@@ -93,7 +75,7 @@ class ContaminationCheckerPlugin(Plugin):
         self.main.setLayout(layout)
 
         self.tree = QTreeWidget()
-        self.tree.setHeaderItem(QTreeWidgetItem(["name","desc","filename"]))
+        self.tree.setHeaderItem(QTreeWidgetItem(["name","species","desc","filename"]))
         self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.show_tree_menu)
@@ -114,7 +96,7 @@ class ContaminationCheckerPlugin(Plugin):
         deleteAction = menu.addAction("Delete")
         action = menu.exec_(self.tree.mapToGlobal(pos))
         if action == propsAction:
-            self.set_sequence_properties()
+            self.edit_sequence_properties()
         elif action == deleteAction:
             self.remove_sequence()
         return
@@ -136,7 +118,7 @@ class ContaminationCheckerPlugin(Plugin):
         w = QLabel('Read limit:')
         vbox.addWidget(w)
         self.readsentry = w = QLineEdit()
-        w.setText(str(100000))
+        w.setText(str(self.numreads))
         vbox.addWidget(w)
 
         button = QPushButton("Set Folder")
@@ -173,13 +155,20 @@ class ContaminationCheckerPlugin(Plugin):
                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.No:
             return False
-        files = glob.glob(os.path.join(self.outpath,'*.bam'))
+        files = glob.glob(os.path.join(self.outpath,'*.*'))
         for f in files:
             os.remove(f)
         return
 
-    def find_files(self):
-        """Find genome files and store them"""
+    def load_table(self):
+        """load genomes table"""
+
+        self.refs = pd.read_csv(self.ref_table, index_col=0)
+        self.update_treelist()
+        return
+
+    '''def find_files(self):
+        """Find sequence files in default folder and store them in table if missing"""
 
         for f in glob.glob(os.path.join(index_path,'*.fa')):
             #print (f)
@@ -187,11 +176,13 @@ class ContaminationCheckerPlugin(Plugin):
             idx = os.path.basename(f)
             #print (rec)
             first, _, desc = rec.description.partition(" ")
-            g = self.genomes[rec.id] = Genome(rec.id, desc, f)
+            d = rec.description
+            species = '_'.join(d.split()[1:3])
+            self.refs.loc[rec.id] = [rec.id, rec.description, f, species]
 
-        #print (self.genomes)
         self.update_treelist()
-        return
+        self.refs.to_csv(self.ref_table)
+        return'''
 
     def set_folder(self):
         """Set test folder"""
@@ -211,6 +202,13 @@ class ContaminationCheckerPlugin(Plugin):
             self.efetch(name)
         return
 
+    def read_fasta_header(self, filename):
+        """Fasta header only"""
+
+        with open(filename, 'r') as f:
+            x = f.readline().strip()[1:]
+        return x.split(' ')
+
     def add_sequence(self):
         """Add a sequence from local fasta- may be more than one seq in fasta file"""
 
@@ -218,10 +216,17 @@ class ContaminationCheckerPlugin(Plugin):
                                         filter="Fasta Files(*.fa *.fasta);;All Files(*.*)")
         if not filename:
             return
+        #header = self.read_fasta_header(filename)
+        #print (header)
         recs = list(SeqIO.parse(filename, format='fasta'))
         rec = recs[0]
-        self.genomes[rec.id] = Genome(rec.id, rec.description, filename)
+
+        d = rec.description
+        species = '_'.join(d.split()[1:3])
+        self.refs.loc[rec.id] = [rec.id, rec.description, filename, species]
         self.update_treelist()
+        #print (self.refs)
+        self.refs.to_csv(self.ref_table)
         return
 
     def remove_sequence(self):
@@ -230,25 +235,34 @@ class ContaminationCheckerPlugin(Plugin):
         item = self.tree.selectedItems()[0]
         row = self.tree.selectedIndexes()[0].row()
         name = item.text(0)
-        del self.genomes[name]
+        self.refs = self.refs.drop(name)
+        self.refs.to_csv(self.ref_table)
         self.tree.takeTopLevelItem(row)
         return
 
-    def set_sequence_properties(self):
+    def edit_sequence_properties(self):
+        """Edit ref sequence"""
 
         item = self.tree.selectedItems()[0]
         name = item.text(0)
-        g = self.genomes[name]
+        g = self.refs.loc[name]
+
         opts = {'name':{'type':'entry','default':g.name},
                 'desc':{'type':'entry','default':g.description},
                 'species':{'type':'entry','default':g.species},
                 }
         dlg = widgets.MultipleInputDialog(self.main, opts, title='Edit Genome Info',
-                            width=350,height=150)
+                            width=500,height=150)
         dlg.exec_()
         if not dlg.accepted:
             return
-
+        kwds = dlg.values
+        self.refs = self.refs.drop(name)
+        new = kwds['name']
+        self.refs.loc[new] = [new,kwds['desc'],g.filename,kwds['species']]
+        self.refs.to_csv(self.ref_table)
+        #print (self.refs)
+        self.update_treelist()
         return
 
     def fetch_sequence(self):
@@ -268,11 +282,10 @@ class ContaminationCheckerPlugin(Plugin):
     def efetch(self, accession):
         """Fetch a fasta sequence from entrez using efetch"""
 
-        print (accession)
         def func(progress_callback):
             filename = os.path.join(index_path, accession+'.fa')
             if os.path.isfile(filename):
-                print ('file present')
+                print ('%s file present' %accession)
                 return
             Entrez.email = "A.N.Other@example.com"
             handle = Entrez.efetch(db="nucleotide", id=accession, rettype="fasta", retmode="text")
@@ -282,7 +295,7 @@ class ContaminationCheckerPlugin(Plugin):
             handle.close()
             print ('downloaded to %s' %filename)
             rec = SeqIO.read(filename, "fasta")
-            self.genomes[accession] = Genome(rec.id, rec.description, filename)
+            self.refs.loc[accession] = [rec.id, rec.description, filename, None]
         self.parent.run_threaded_process(func, self.fetch_completed)
         return
 
@@ -344,18 +357,16 @@ class ContaminationCheckerPlugin(Plugin):
     def update_treelist(self):
         """Refresh entries in tree"""
 
-        for i in self.genomes:
-            names = self.get_items()
-            if i in names:
-                continue
-            #print (names, i)
-            g = self.genomes[i]
+        self.tree.clear()
+        for i,r in self.refs.iterrows():
+            #print (i,r)
             item = QTreeWidgetItem(self.tree)
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(0, QtCore.Qt.Checked)
-            item.setText(0, i)
-            item.setText(1, g.description)
-            item.setText(2, g.filename)
+            item.setText(0, r.name)
+            item.setText(1, r.species)
+            item.setText(2, r.description)
+            item.setText(3, r.filename)
         return
 
     def build_indexes(self):
@@ -363,10 +374,35 @@ class ContaminationCheckerPlugin(Plugin):
 
         def func(progress_callback):
             print ('building index..')
-            for a in genomes:
-                g=genomes[a]
-                aligners.build_bwa_index(g.filename)
+            #for a in genomes:
+            for i,r in self.refs.iterrows():
+                aligners.build_bwa_index(r.filename)
         self.parent.run_threaded_process(func, self.parent.processing_completed)
+        return
+
+    def subset_reads(self, filename, path='/tmp', numreads=10000, overwrite=False):
+        """Subset of reads"""
+
+        from Bio import SeqIO, bgzf
+        from gzip import open as gzopen
+        new = os.path.join(path,os.path.basename(filename))
+        if os.path.exists(new) and overwrite == False:
+            return new
+        print ('subsetting %s reads' %numreads)
+        recs = SeqIO.parse(gzopen(filename, "rt"), "fastq")
+        i=0
+        with bgzf.BgzfWriter(new, "wb") as outgz:
+            for rec in recs:
+                if i>numreads:
+                    break
+                SeqIO.write(sequences=rec, handle=outgz, format="fastq")
+                i+=1
+        return new
+
+    def save_unmapped_reads(self):
+        """Save unmapped reads to new files"""
+
+        #cmd =
         return
 
     def run(self):
@@ -377,15 +413,19 @@ class ContaminationCheckerPlugin(Plugin):
             table = self.parent.fastq_table
             df = table.model.df.copy()
             rows = table.getSelectedRows()
-            new = df.iloc[rows]
-            threads = 8
-            names = self.get_checked()
+            new = df.iloc[rows] #subset of sample table to run
+            self.parent.opts.applyOptions()
+            kwds = self.parent.opts.kwds
+            threads = kwds['threads']
+            self.numreads = int(self.readsentry.text())
+            checked = self.get_checked()
             outdir = self.outpath
             #align to each index in turn
-            for acc in self.genomes:
+            for acc,g in self.refs.iterrows():
+                if acc not in checked:
+                    continue
                 print (acc)
-                g = self.genomes[acc]
-                aligners.build_bwa_index(g.filename, show_cmd=False)
+                aligners.build_bwa_index(g.filename, show_cmd=False, overwrite=False)
                 for i,r in new.iterrows():
                     sample =  r['sample']
                     label = sample + '~~' + acc #label for bam
@@ -395,8 +435,12 @@ class ContaminationCheckerPlugin(Plugin):
                     else:
                         file2 = None
 
+                    #align subset reads
+                    tmp1 = self.subset_reads(file1, outdir, self.numreads)
+                    tmp2 = self.subset_reads(file2, outdir, self.numreads)
                     out = os.path.join(outdir,label+'.bam')
-                    aligners.bwa_align(file1, file2, idx=g.filename, out=out, overwrite=False)
+                    aligners.bwa_align(tmp1, tmp2, idx=g.filename, out=out,
+                                        threads=threads, overwrite=False)
                     print (out)
 
         self.parent.run_threaded_process(func, self.run_completed)
@@ -410,29 +454,45 @@ class ContaminationCheckerPlugin(Plugin):
     def get_results(self):
         """Reuslts from mapping"""
 
+        print ('getting results..')
         bamfiles = glob.glob(os.path.join(self.outpath,'*.bam'))
         #print (bamfiles)
         results = []
+        checked = self.get_checked()
         for f in bamfiles:
             sample, idx = os.path.splitext(os.path.basename(f))[0].split('~~')
-            if idx not in self.genomes:
+            if idx not in self.refs.index:
                 continue
-            g = self.genomes[idx]
+            r = self.refs.loc[idx]
             d = tools.samtools_flagstat(f)
             #total = tools.get_fastq_size(r.filename1)
-            mapped = d['total']
-            results.append([sample,idx,g.species,mapped])
-            print (sample, idx)
+            mapped = d['primary']
+            perc = round(mapped/self.numreads*2*100,2) #assumes numreads unchanged since alignment!
+            results.append([sample,idx,r.species,mapped,perc])
+            #print (sample, idx)
             #print (d)
 
-        df = self.results = pd.DataFrame(results, columns=['sample','ref','species','total'])
-        #print (df)
-        p = pd.pivot_table(df, index='sample',columns='species',values='total')
+        df = self.results = pd.DataFrame(results, columns=['sample','ref','species','total','perc'])
+        df = df[df.ref.isin(checked)]
+        p = pd.pivot_table(df, index='sample',columns='ref',values='total')
         self.result_table.setDataFrame(p)
+        return
+
+    def save_data(self):
+        """Return save data"""
+
+        data = {}
+        data['numreads'] = self.numreads
+        data['checked'] = self.get_checked()
+        return data
+
+    def load_data(self, data):
+        """Load any saved data from project. Run in constructor."""
+
+        self.numreads = data['numreads']
         return
 
     def project_closed(self):
         """Run when parent project is closed"""
-
 
         return

@@ -81,6 +81,12 @@ class Plugin(object):
             self.__class__.__name__,
             self.capabilities)
 
+    def save_data(self):
+        """Return save data"""
+
+        data = {}
+        return data
+        
     def quit(self, evt=None):
 
         return

@@ -487,7 +487,6 @@ class App(QMainWindow):
         #self.tools_menu.addAction('Map View', self.show_map)
         self.tools_menu.addAction('Tree Viewer', self.tree_viewer)
         self.tools_menu.addSeparator()
-        self.tools_menu.addAction('Online BLAST', self.show_blast_url)
         self.tools_menu.addAction('Check Heterozygosity', self.check_heterozygosity)
         self.tools_menu.addAction('RD Analysis (MTBC)',
             lambda: self.run_threaded_process(self.rd_analysis, self.rd_analysis_completed))
@@ -520,6 +519,8 @@ class App(QMainWindow):
         self.menuBar().addMenu(self.help_menu)
         self.help_menu.addAction('View Error Log', self.show_error_log)
         self.help_menu.addAction('Help', self.online_documentation)
+        self.help_menu.addAction('Online BLAST', self.show_blast_url)
+        self.help_menu.addAction('Nucleotide DB search', self.show_nucldb_url)
         self.help_menu.addAction('About', self.about)
 
     def load_presets_menu(self,ask=True):
@@ -606,6 +607,7 @@ class App(QMainWindow):
         self.opts.applyOptions()
         data['options'] = self.opts.kwds
         self.projectlabel.setText(filename)
+        self.save_plugin_data()
         pickle.dump(data, open(filename,'wb'))
         self.add_recent_file(filename)
         return
@@ -1504,7 +1506,13 @@ class App(QMainWindow):
 
     def show_blast_url(self):
 
-        link = 'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_SPEC=GeoBlast&PAGE_TYPE=BlastSearch'
+        link = 'https://blast.ncbi.nlm.nih.gov/'
+        self.show_browser_tab(link, 'NCBI Blast')
+        return
+
+    def show_nucldb_url(self):
+
+        link = 'https://www.ncbi.nlm.nih.gov/nuccore/'
         self.show_browser_tab(link, 'NCBI Blast')
         return
 
@@ -1843,6 +1851,19 @@ class App(QMainWindow):
                 plgmenu.addAction(plg.menuentry, func(plg))
         return
 
+    def save_plugin_data(self):
+        """Save data for any plugins that need it"""
+
+        data = {}
+        for p in self.openplugins:
+            plugin = self.openplugins[p]
+            print (plugin)
+            d = plugin.save_data()
+            if d is not None:
+                data[plugin.name] = d
+        print (data)
+        return data
+
     def clear_plugins(self):
         """remove all open plugins"""
 
@@ -1852,7 +1873,6 @@ class App(QMainWindow):
             del self.openplugins[plugin.name]
             #self.docks[plugin.name].
             del self.docks[plugin.name]
-
         return
 
     def preferences(self):

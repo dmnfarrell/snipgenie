@@ -60,7 +60,8 @@ class ContaminationCheckerPlugin(Plugin):
         self.numreads = 100000
         self.create_widgets()
         self.fetch_defaults()
-        #self.find_files()
+        if not os.path.exists(self.ref_table):
+            self.find_files()
         self.load_table()
         #get previous results if present
         self.get_results()
@@ -81,7 +82,9 @@ class ContaminationCheckerPlugin(Plugin):
         self.tree.customContextMenuRequested.connect(self.show_tree_menu)
         layout.addWidget(self.tree)
 
-        t = self.result_table = tables.DataFrameTable(self.main, plotter=self.parent.plotview)
+        #t = self.result_table = tables.DataFrameTable(self.main)
+        t = self.table_widget = tables.DataFrameWidget(self.main, toolbar=True)
+        self.result_table = self.table_widget.table
         layout.addWidget(t)
         bw = self.create_buttons(self.main)
         layout.addWidget(bw)
@@ -167,7 +170,7 @@ class ContaminationCheckerPlugin(Plugin):
         self.update_treelist()
         return
 
-    '''def find_files(self):
+    def find_files(self):
         """Find sequence files in default folder and store them in table if missing"""
 
         for f in glob.glob(os.path.join(index_path,'*.fa')):
@@ -182,7 +185,7 @@ class ContaminationCheckerPlugin(Plugin):
 
         self.update_treelist()
         self.refs.to_csv(self.ref_table)
-        return'''
+        return
 
     def set_folder(self):
         """Set test folder"""

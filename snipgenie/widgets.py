@@ -32,7 +32,7 @@ try:
 except AttributeError:
     def _fromUtf8(s):
         return s
-from . import tools, plotting
+from . import core, tools, plotting
 
 module_path = os.path.dirname(os.path.abspath(__file__))
 iconpath = os.path.join(module_path, 'icons')
@@ -253,7 +253,7 @@ def addToolBarItems(toolbar, parent, items):
 
     for i in items:
         if 'file' in items[i]:
-            iconfile = os.path.join(iconpath,items[i]['file']+'.png')
+            iconfile = os.path.join(iconpath,items[i]['file'])
             icon = QIcon(iconfile)
         else:
             icon = QIcon.fromTheme(items[i]['icon'])
@@ -495,6 +495,124 @@ class MergeDialog(BasicDialog):
             res = pd.concat([self.df, self.df2])
         self.result.model.df = res
         self.result.refresh()
+        return
+
+class PreferencesDialog(QDialog):
+    """Preferences dialog from config parser options"""
+
+    def __init__(self, parent, options={}):
+
+        super(PreferencesDialog, self).__init__(parent)
+        self.parent = parent
+        self.setWindowTitle('Preferences')
+        self.resize(400, 200)
+        self.setGeometry(QtCore.QRect(300,300, 600, 200))
+        self.setMaximumWidth(600)
+        self.setMaximumHeight(300)
+        self.createWidgets(options)
+        self.show()
+        return
+
+    def createWidgets(self, options):
+        """create widgets"""
+
+        import pylab as plt
+
+        colormaps = sorted(m for m in plt.cm.datad if not m.endswith("_r"))
+        timeformats = ['%m/%d/%Y','%d/%m/%Y','%d/%m/%y',
+                '%Y/%m/%d','%y/%m/%d','%Y/%d/%m',
+                '%d-%b-%Y','%b-%d-%Y',
+                '%Y-%m-%d %H:%M:%S','%Y-%m-%d %H:%M',
+                '%d-%m-%Y %H:%M:%S','%d-%m-%Y %H:%M',
+                '%Y','%m','%d','%b']
+        plotstyles = ['','default', 'classic', 'fivethirtyeight',
+                     'seaborn-pastel','seaborn-whitegrid', 'ggplot','bmh',
+                     'grayscale','dark_background']
+        themes = QStyleFactory.keys() + ['dark','light']
+
+        self.opts = {
+                'FONT':{'type':'font','default':options['FONT'],'label':'Font'},                
+                'FONTSIZE':{'type':'spinbox','default':options['FONTSIZE'],'range':(5,40),
+                            'interval':1,'label':'Font Size'},
+                'TIMEFORMAT':{'type':'combobox','default':options['TIMEFORMAT'],
+                            'items':timeformats,'label':'Date/Time format'},
+                'PLOTSTYLE':{'type':'combobox','default':options['PLOTSTYLE'],
+                            'items':plotstyles,'label':'Plot Style'},
+                'DPI':{'type':'entry','default':options['DPI'],#'range':(20,300),'interval':10,
+                        'label':'Plot DPI'},
+                'ICONSIZE':{'type':'spinbox','default':options['ICONSIZE'],'range':(16,64), 'label':'Icon Size'},
+                'THEME':{'type':'combobox','default':options['THEME'],'items': themes,
+                        'label': 'Default Theme'}
+                }
+        sections = {'table':['FONT','FONTSIZE','TIMEFORMAT'],
+                    'view':['ICONSIZE','PLOTSTYLE','DPI','THEME']
+                    }
+
+        dialog, self.widgets = dialogFromOptions(self, self.opts, sections)
+
+        self.layout = QVBoxLayout(self)
+        self.layout.addWidget(dialog)
+        dialog.setFocus()
+        bw = self.createButtons(self)
+        self.layout.addWidget(bw)
+        return
+
+    def createButtons(self, parent):
+
+        bw = self.button_widget = QWidget(parent)
+        vbox = QHBoxLayout(bw)
+        button = QPushButton("Apply")
+        button.clicked.connect(self.apply)
+        vbox.addWidget(button)
+        button = QPushButton("Reset")
+        button.clicked.connect(self.reset)
+        vbox.addWidget(button)
+        button = QPushButton("Close")
+        button.clicked.connect(self.close)
+        vbox.addWidget(button)
+        return bw
+
+    def apply(self):
+        """Apply options to current table"""
+
+        kwds = getWidgetValues(self.widgets)
+        core.FONT = kwds['FONT']
+        core.FONTSIZE = kwds['FONTSIZE']
+        core.BGCOLOR = kwds['BGCOLOR']
+        core.TIMEFORMAT = kwds['TIMEFORMAT']
+        core.PRECISION = kwds['PRECISION']
+        core.SHOWPLOTTER = kwds['SHOWPLOTTER']
+        core.PLOTSTYLE = kwds['PLOTSTYLE']
+        core.DPI = kwds['DPI']
+        core.ICONSIZE = kwds['ICONSIZE']
+        self.parent.theme = kwds['THEME']
+        self.parent.refresh()
+        self.parent.applySettings()
+        return
+
+    def updateWidgets(self, kwds=None):
+        """Update widgets from stored or supplied kwds"""
+
+        if kwds == None:
+            kwds = self.kwds
+        for k in kwds:
+            setWidgetValues(self.widgets, {k: kwds[k]})
+        return
+
+    def setDefaults(self):
+        """Populate default kwds dict"""
+
+        self.kwds = {}
+        for o in self.opts:
+            self.kwds[o] = core.defaults[o]
+        return
+
+    def reset(self):
+        """Reset to defaults"""
+
+        self.setDefaults()
+        self.updateWidgets()
+        self.apply()
         return
 
 class BaseOptions(object):

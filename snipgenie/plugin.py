@@ -82,11 +82,16 @@ class Plugin(object):
             self.capabilities)
 
     def save_data(self):
-        """Return save data"""
+        """Return save data - optional"""
 
         data = {}
         return data
-        
+
+    def project_closed(self):
+        """Run when parent project is closed - optional"""
+
+        return
+
     def quit(self, evt=None):
 
         return

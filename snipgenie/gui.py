@@ -30,7 +30,7 @@ import numpy as np
 import pylab as plt
 from Bio import SeqIO
 import matplotlib as mpl
-from . import tools, aligners, app, widgets, tables, plotting, trees
+from . import core, tools, aligners, app, widgets, tables, plotting, trees
 
 homepath = os.path.expanduser("~")
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
@@ -316,19 +316,17 @@ class App(QMainWindow):
             action.setCheckable(True)
 
         #general plot window
-        self.plotview = widgets.PlotViewer(self)
+        #self.plotview = widgets.PlotViewer(self)
 
         center = QSplitter(Qt.Vertical)
         self.m.addWidget(center)
-        #l = QVBoxLayout(center)
-        self.table_widget = tables.DataFrameWidget(parent=center, toolbar=True,
-                            app=self, plotter=self.plotview)
-        self.fastq_table = self.table_widget.table
+
+        self.fastq_table = tables.SampleTable(self, dataframe=pd.DataFrame, app=self)
+        self.table_widget = tables.DataFrameWidget(parent=center, table=self.fastq_table,
+                            toolbar=True)
+        #self.fastq_table = self.table_widget.table
         center.addWidget(self.table_widget)
         self.opentables['main'] = self.fastq_table
-        #self.fastq_table = tables.SampleTable(center, app=self,
-        #                    dataframe=pd.DataFrame(), lotter=self.plotview)
-        #l.addWidget(self.fastq_table)
 
         self.tabs = QTabWidget(center)
         self.tabs.setTabsClosable(True)
@@ -350,7 +348,7 @@ class App(QMainWindow):
         self.right_tabs.addTab(self.info, 'log')
         self.info.append("Welcome\n")
 
-        self.right_tabs.addTab(self.plotview, 'plots')
+        #self.right_tabs.addTab(self.plotview, 'plots')
 
         self.m.setSizes([200,150])
         self.m.setStretchFactor(1,0)
@@ -1881,7 +1879,7 @@ class App(QMainWindow):
         opts = {}
         for k in core.defaults.keys():
             opts[k] = getattr(core,k)
-        opts['THEME'] = self.theme
+        #opts['THEME'] = core.TEH
         dlg = widgets.PreferencesDialog(self, opts)
         dlg.exec_()
         return

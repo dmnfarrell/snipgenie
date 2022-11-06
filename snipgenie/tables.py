@@ -27,28 +27,7 @@ from .qt import *
 from pandas.api.types import is_datetime64_any_dtype as is_datetime
 import pylab as plt
 import matplotlib as mpl
-from . import widgets
-
-if 'Windows' in platform.platform():
-    defaultfont = 'Arial'
-else:
-    defaultfont = 'Monospace'
-defaults = {
-            'FONT' :defaultfont,
-            'FONTSIZE' : 12,
-            'ALIGNMENT' : 'w',
-            'COLUMNWIDTH' : 80,
-            'TIMEFORMAT' :'%m/%d/%Y',
-            'SHOWPLOTTER' : True,
-            'ICONSIZE' : 26,
-            'DPI' : 100,
-            'BGCOLOR' : '#F4F4F3',
-            'THEME': 'Fusion'
-}
-#populate current class variable
-for k in defaults:
-    vars()[k] = defaults[k]
-
+from . import widgets, core
 
 class ColumnHeader(QHeaderView):
     def __init__(self):
@@ -57,14 +36,18 @@ class ColumnHeader(QHeaderView):
 
 class DataFrameWidget(QWidget):
     """Widget containing a tableview and statusbar"""
-    def __init__(self, parent=None, statusbar=True, toolbar=False, **kwargs):
+    def __init__(self, parent=None, table=None, statusbar=True, toolbar=False, **kwargs):
+        """Widget for tables allows us to pass any table subclass"""
 
         super(DataFrameWidget, self).__init__()
         l = self.layout = QGridLayout()
         l.setSpacing(2)
         self.setLayout(self.layout)
-
-        self.table = SampleTable(self, dataframe=pd.DataFrame(), **kwargs)
+        #self.plotview = widgets.PlotViewer()
+        if table == None:
+            self.table = DataFrameTable(self, dataframe=pd.DataFrame())#, **kwargs)
+        else:
+            self.table = table
         l.addWidget(self.table, 1, 1)
         if toolbar == True:
             self.createToolbar()
@@ -110,13 +93,15 @@ class DataFrameWidget(QWidget):
         self.setLayout(self.layout)
         items = {
                  'copy': {'action':self.copy,'file':'copy','shortcut':'Ctrl+C'},
-                 'plot': {'action':self.plot,'file':'hist'},
-                 'scatter': {'action':self.plot,'file':'scatter'},
-                 #'filter':{'action':self.filter,'file':'table-filter'}
+                 'bar': {'action':self.plot_hist,'file':'plot_bar'},
+                 'hist': {'action':self.plot_bar,'file':'plot_hist'},
+                 'scatter': {'action':self.plot_scatter,'file':'plot_scatter'},
+                 'pie': {'action':self.plot_pie,'file':'plot_pie'},
+                 #'filter':{'action':sel-f.filter,'file':'table-filter'}
                  }
 
         self.toolbar = toolbar = QToolBar("Toolbar")
-        toolbar.setIconSize(QtCore.QSize(ICONSIZE, ICONSIZE))
+        toolbar.setIconSize(QtCore.QSize(core.ICONSIZE, core.ICONSIZE))
         toolbar.setOrientation(QtCore.Qt.Vertical)
         widgets.addToolBarItems(toolbar, self, items)
         self.layout.addWidget(toolbar,1,2)
@@ -141,18 +126,28 @@ class DataFrameWidget(QWidget):
         df.to_clipboard()
         return
 
-    def plot(self):
+    def plot_bar(self):
         """Plot from selection"""
 
-        if self.pf == None:
-            self.createPlotViewer()
-        self.pf.setVisible(True)
-        df = self.getSelectedDataFrame()
-        self.pf.replot(df)
+        self.table.plot(kind='bar')
         return
 
-    def scatter(self):
+    def plot_hist(self):
+        """Plot from selection"""
 
+        self.table.plot(kind='hist')
+        return
+
+    def plot_scatter(self):
+        self.table.plot(kind='scatter')
+        return
+
+    def plot_line(self):
+
+        return
+
+    def plot_pie(self):
+        self.table.plot(kind='pie')
         return
 
     def filter(self):
@@ -245,7 +240,11 @@ class DataFrameTable(QTableView):
         self.model = tm
         self.setWordWrap(False)
         self.setCornerButtonEnabled(True)
-        self.plotview = plotter
+        if plotter == None:
+            self.plotview = widgets.PlotViewer()
+        else:
+            self.plotview = plotter
+        print (self.plotview)
         return
 
     def updateFont(self):
@@ -481,11 +480,15 @@ class DataFrameTable(QTableView):
         menu = self.menu
         copyAction = menu.addAction("Copy")
         exportAction = menu.addAction("Export Table")
+        plotAction = menu.addAction("Plot Bar")
         action = menu.exec_(event.globalPos())
         if action == copyAction:
             self.copy()
         elif action == exportAction:
             self.exportTable()
+        elif action == plotAction:
+            self.plot(kind='bar')
+
         return
 
     def setIndex(self):
@@ -578,16 +581,23 @@ class DataFrameTable(QTableView):
             self.model.sort(idx, ascending)
         return
 
-    def plotHist(self, column):
+    def plot(self, kind='bar'):
 
         df = self.model.df
-        d = df[column]
-        #fig,ax = plt.subplots(1,1, figsize=(7,5), dpi=120)
+        idx = self.getSelectedColumns()
+        cols = df.columns[idx]
+        d = df[cols]
         self.plotview.clear()
         ax = self.plotview.ax
-        d.hist(bins=12, ax=ax)
-        ax.set_title(column)
+        if kind == 'bar':
+            d.plot(kind='bar',ax=ax)
+        elif kind == 'pie':
+            d.plot(kind='pie',ax=ax)
+        #ax.set_title(col)
+        plt.tight_layout()
         self.plotview.redraw()
+        self.plotview.show()
+        self.plotview.activateWindow()
         return
 
     def getMemory(self):
@@ -792,7 +802,6 @@ class SampleTable(DataFrameTable):
         self.setWordWrap(False)
         tm = SampleTableModel(dataframe)
         self.setModel(tm)
-        self.plotview = plotter
         return
 
     def setDataFrame(self, df):

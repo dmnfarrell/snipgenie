@@ -507,6 +507,8 @@ class App(QMainWindow):
         self.menuBar().addMenu(self.presets_menu)
         self.load_presets_menu()
 
+        #self.tools_menu.setEnabled(False)
+
         self.dock_menu = QMenu('Docks', self)
         self.menuBar().addMenu(self.dock_menu)
 
@@ -656,7 +658,7 @@ class App(QMainWindow):
         self.clear_tabs()
         self.update_ref_genome()
         self.update_mask()
-        #self.clear_plugins()
+        self.clear_plugins()
         self.comms.newproj.emit()
         return
 
@@ -1802,7 +1804,7 @@ class App(QMainWindow):
                 #track which plugin is running
                 openplugins[plugin.name] = p
                 #load data if any saved in project
-                print (self.plugindata)
+                #print (self.plugindata)
                 if plugin.name in self.plugindata:
                     p.load_data(self.plugindata[plugin.name])
             except Exception as e:
@@ -1873,8 +1875,8 @@ class App(QMainWindow):
         """remove all open plugins"""
 
         for p in self.openplugins.copy():
-            print (p)
             plugin = self.openplugins[p]
+            plugin.main.deleteLater()
             del self.openplugins[plugin.name]
             #self.docks[plugin.name].
             del self.docks[plugin.name]

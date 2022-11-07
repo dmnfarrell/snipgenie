@@ -477,7 +477,7 @@ class ContaminationCheckerPlugin(Plugin):
 
         df = self.results = pd.DataFrame(results, columns=['sample','ref','species','total','perc'])
         df = df[df.ref.isin(checked)]
-        p = pd.pivot_table(df, index='sample',columns='ref',values='total')
+        p = pd.pivot_table(df, index='sample',columns='species',values='total')
         self.result_table.setDataFrame(p)
         return
 
@@ -490,15 +490,19 @@ class ContaminationCheckerPlugin(Plugin):
         return data
 
     def load_data(self, data):
-        """Load any saved data from project. Run in constructor."""
+        """Load any saved data from project.
+        Run when plugin is initially launched."""
 
-        print (data)
         self.numreads = data['numreads']
         self.readsentry.setText(str(self.numreads))
+        checked = data['checked']
+        for i in range(self.tree.topLevelItemCount()):
+            item = self.tree.topLevelItem(i)
+            if item.text(0) not in checked:
+                item.setCheckState(0, QtCore.Qt.Unchecked)
         return
 
     def project_closed(self):
         """Run when parent project is closed"""
 
-        
         return

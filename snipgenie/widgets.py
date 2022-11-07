@@ -290,6 +290,59 @@ class MultipleInputDialog(QDialog):
         self.close()
         return
 
+class ColorButton(QPushButton):
+    '''
+    Custom Qt Widget to show a chosen color.
+
+    Left-clicking the button shows the color-chooser, while
+    right-clicking resets the color to None (no-color).
+    '''
+
+    colorChanged = Signal(object)
+
+    def __init__(self, *args, color=None, **kwargs):
+        super(ColorButton, self).__init__(*args, **kwargs)
+
+        self._color = None
+        self._default = color
+        self.pressed.connect(self.onColorPicker)
+
+        # Set the initial/default state.
+        self.setColor(self._default)
+
+    def setColor(self, color):
+
+        if color != self._color:
+            self._color = color
+            self.colorChanged.emit(color)
+
+        if self._color:
+            self.setStyleSheet("background-color: %s;" % self._color)
+        else:
+            self.setStyleSheet("")
+        return
+
+    def color(self):
+        return self._color
+
+    def onColorPicker(self):
+        '''
+        Show color-picker dialog to select color.
+        Qt will use the native dialog by default.
+        '''
+        dlg = QColorDialog(self)
+        if self._color:
+            dlg.setCurrentColor(QColor(self._color))
+
+        if dlg.exec_():
+            self.setColor(dlg.currentColor().name())
+
+    def mousePressEvent(self, e):
+        if e.button() == QtCore.Qt.RightButton:
+            self.setColor(self._default)
+
+        return super(ColorButton, self).mousePressEvent(e)
+
 class ToolBar(QWidget):
     """Toolbar class"""
     def __init__(self, table, parent=None):
@@ -531,9 +584,10 @@ class PreferencesDialog(QDialog):
         themes = QStyleFactory.keys() + ['dark','light']
 
         self.opts = {
-                'FONT':{'type':'font','default':options['FONT'],'label':'Font'},                
+                'FONT':{'type':'font','default':options['FONT'],'label':'Font'},
                 'FONTSIZE':{'type':'spinbox','default':options['FONTSIZE'],'range':(5,40),
                             'interval':1,'label':'Font Size'},
+                'BGCOLOR':{'type':'colorbutton','default':options['BGCOLOR'],'label':'Background Color'},
                 'TIMEFORMAT':{'type':'combobox','default':options['TIMEFORMAT'],
                             'items':timeformats,'label':'Date/Time format'},
                 'PLOTSTYLE':{'type':'combobox','default':options['PLOTSTYLE'],
@@ -544,7 +598,7 @@ class PreferencesDialog(QDialog):
                 'THEME':{'type':'combobox','default':options['THEME'],'items': themes,
                         'label': 'Default Theme'}
                 }
-        sections = {'table':['FONT','FONTSIZE','TIMEFORMAT'],
+        sections = {'table':['FONT','FONTSIZE','TIMEFORMAT','BGCOLOR'],
                     'view':['ICONSIZE','PLOTSTYLE','DPI','THEME']
                     }
 
@@ -836,7 +890,7 @@ class TableViewer(QDialog):
         self.table.model.df = dataframe
         return
 
-class PlotViewer(QDialog):
+class PlotViewer(QWidget):
     """matplotlib plots widget"""
     def __init__(self, parent=None):
 
@@ -845,6 +899,7 @@ class PlotViewer(QDialog):
         self.grid = QGridLayout()
         self.setLayout(self.grid)
         self.create_figure()
+        self.setWindowTitle('plots')
         return
 
     def create_figure(self, fig=None):

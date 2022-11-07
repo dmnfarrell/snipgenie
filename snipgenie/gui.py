@@ -605,7 +605,7 @@ class App(QMainWindow):
         self.opts.applyOptions()
         data['options'] = self.opts.kwds
         self.projectlabel.setText(filename)
-        self.save_plugin_data()
+        data['plugins'] = self.save_plugin_data()
         pickle.dump(data, open(filename,'wb'))
         self.add_recent_file(filename)
         return
@@ -682,6 +682,10 @@ class App(QMainWindow):
 
         if 'options' in data:
             self.opts.updateWidgets(data['options'])
+        if 'plugins' in data:
+            self.plugindata = data['plugins']
+        else:
+            self.plugindata = {}
         ft = self.fastq_table
         ft.setDataFrame(data['inputs'])
         ft.resizeColumns()
@@ -694,10 +698,7 @@ class App(QMainWindow):
         self.update_labels()
         self.setup_paths()
         self.show_snpdist()
-        #load any saved maps
-        #if 'gisviewer' in data.keys():
-            #self.show_map()
-            #self.gisviewer.loadData(data['gisviewer'])
+
         #load tree view
         if 'treeviewer' in data.keys():
             self.tree_viewer()
@@ -1742,6 +1743,7 @@ class App(QMainWindow):
         return
 
     def closeEvent(self, event=None):
+        """Close main window"""
 
         if self.proj_file != None and event != None:
             reply = QMessageBox.question(self, 'Confirm', "Save the current project?",
@@ -1753,6 +1755,7 @@ class App(QMainWindow):
                 self.save_project()
         self.save_settings()
         event.accept()
+        QApplication.closeAllWindows()
         return
 
     def _check_snap(self):
@@ -1798,6 +1801,10 @@ class App(QMainWindow):
                 p = plugin(parent=self)
                 #track which plugin is running
                 openplugins[plugin.name] = p
+                #load data if any saved in project
+                print (self.plugindata)
+                if plugin.name in self.plugindata:
+                    p.load_data(self.plugindata[plugin.name])
             except Exception as e:
                 QMessageBox.information(self, "Plugin error", str(e))
                 print(traceback.format_exc())

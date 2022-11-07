@@ -37,7 +37,9 @@ class ColumnHeader(QHeaderView):
 class DataFrameWidget(QWidget):
     """Widget containing a tableview and statusbar"""
     def __init__(self, parent=None, table=None, statusbar=True, toolbar=False, **kwargs):
-        """Widget for tables allows us to pass any table subclass"""
+        """
+        Widget containing a dataframetable - allows us to pass any table subclass
+        """
 
         super(DataFrameWidget, self).__init__()
         l = self.layout = QGridLayout()
@@ -93,8 +95,9 @@ class DataFrameWidget(QWidget):
         self.setLayout(self.layout)
         items = {
                  'copy': {'action':self.copy,'file':'copy','shortcut':'Ctrl+C'},
-                 'bar': {'action':self.plot_hist,'file':'plot_bar'},
-                 'hist': {'action':self.plot_bar,'file':'plot_hist'},
+                 'bar': {'action':self.plot_bar,'file':'plot_bar'},
+                 'barh': {'action':self.plot_barh,'file':'plot_barh'},
+                 'hist': {'action':self.plot_hist,'file':'plot_hist'},
                  'scatter': {'action':self.plot_scatter,'file':'plot_scatter'},
                  'pie': {'action':self.plot_pie,'file':'plot_pie'},
                  #'filter':{'action':sel-f.filter,'file':'table-filter'}
@@ -132,6 +135,12 @@ class DataFrameWidget(QWidget):
         self.table.plot(kind='bar')
         return
 
+    def plot_barh(self):
+        """Plot from selection"""
+
+        self.table.plot(kind='barh')
+        return
+
     def plot_hist(self):
         """Plot from selection"""
 
@@ -143,7 +152,7 @@ class DataFrameWidget(QWidget):
         return
 
     def plot_line(self):
-
+        self.table.plot(kind='line')
         return
 
     def plot_pie(self):
@@ -206,7 +215,7 @@ class DataFrameTable(QTableView):
         self.parent = parent
         self.clicked.connect(self.showSelection)
         #self.doubleClicked.connect(self.handleDoubleClick)
-        self.setSelectionBehavior(QTableView.SelectRows)
+        #self.setSelectionBehavior(QTableView.SelectRows)
         #self.setSelectionBehavior(QTableView.SelectColumns)
         #self.horizontalHeader = ColumnHeader()
 
@@ -216,6 +225,8 @@ class DataFrameTable(QTableView):
         vh.setMinimumWidth(20)
         vh.setMaximumWidth(500)
 
+        self.headerview = HeaderView(self)
+        self.setHorizontalHeader(self.headerview)
         hh = self.horizontalHeader()
         hh.setVisible(True)
         hh.setSectionsMovable(True)
@@ -244,7 +255,7 @@ class DataFrameTable(QTableView):
             self.plotview = widgets.PlotViewer()
         else:
             self.plotview = plotter
-        print (self.plotview)
+        
         return
 
     def updateFont(self):
@@ -476,18 +487,19 @@ class DataFrameTable(QTableView):
         return
 
     def addActions(self, event, row):
+        """Actions"""
 
         menu = self.menu
         copyAction = menu.addAction("Copy")
         exportAction = menu.addAction("Export Table")
-        plotAction = menu.addAction("Plot Bar")
+        transposeAction = menu.addAction("Transpose")
         action = menu.exec_(event.globalPos())
         if action == copyAction:
             self.copy()
         elif action == exportAction:
             self.exportTable()
-        elif action == plotAction:
-            self.plot(kind='bar')
+        elif action == transposeAction:
+            self.transpose()
 
         return
 
@@ -581,18 +593,38 @@ class DataFrameTable(QTableView):
             self.model.sort(idx, ascending)
         return
 
+    def transpose(self):
+
+        self.model.df = self.model.df.T
+        self.refresh()
+        return
+
     def plot(self, kind='bar'):
+        """Plot table selection"""
 
         df = self.model.df
-        idx = self.getSelectedColumns()
-        cols = df.columns[idx]
-        d = df[cols]
+        #idx = self.getSelectedColumns()
+        #cols = df.columns[idx]
+        #d = df[cols]
+        data = self.getSelectedDataFrame()
+        d = data._get_numeric_data()
+        #print (d)
+        xcol = d.columns[0]
+        ycols = d.columns[1:]
+
         self.plotview.clear()
         ax = self.plotview.ax
         if kind == 'bar':
             d.plot(kind='bar',ax=ax)
+        elif kind == 'barh':
+            d.plot(kind='barh',ax=ax)
+        elif kind == 'hist':
+            d.plot(kind='hist',subplots=True,ax=ax)
+        elif kind == 'scatter':
+            d=d.dropna()
+            d.plot(x=xcol,y=ycols,kind='scatter',ax=ax)
         elif kind == 'pie':
-            d.plot(kind='pie',ax=ax)
+            d.plot(kind='pie',subplots=True,legend=False,ax=ax)
         #ax.set_title(col)
         plt.tight_layout()
         self.plotview.redraw()

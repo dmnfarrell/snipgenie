@@ -492,10 +492,13 @@ class ContaminationCheckerPlugin(Plugin):
     def load_data(self, data):
         """Load any saved data from project. Run in constructor."""
 
+        print (data)
         self.numreads = data['numreads']
+        self.readsentry.setText(str(self.numreads))
         return
 
     def project_closed(self):
         """Run when parent project is closed"""
 
+        
         return

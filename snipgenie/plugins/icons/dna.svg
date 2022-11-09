@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Generator: Adobe Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+
+<svg
+   version="1.1"
+   id="Layer_1"
+   x="0px"
+   y="0px"
+   viewBox="0 0 512 460"
+   xml:space="preserve"
+   sodipodi:docname="dna.svg"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   width="512"
+   height="460"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs2405" /><sodipodi:namedview
+   id="namedview2403"
+   pagecolor="#ffffff"
+   bordercolor="#999999"
+   borderopacity="1"
+   inkscape:pageshadow="0"
+   inkscape:pageopacity="0"
+   inkscape:pagecheckerboard="0"
+   showgrid="false"
+   inkscape:zoom="1.5804348"
+   inkscape:cx="147.74415"
+   inkscape:cy="230"
+   inkscape:window-width="2560"
+   inkscape:window-height="1300"
+   inkscape:window-x="0"
+   inkscape:window-y="0"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="XMLID_1032_"
+   width="459px" />
+<g
+   id="XMLID_1032_">
+	<path
+   id="XMLID_1033_"
+   style="fill:#cbeef6;fill-opacity:0.852713"
+   d="M 230,0 C 102.974,0 0,102.974 0,230 0,329.311 62.943,413.919 151.112,446.112 l 295,-295 C 413.919,62.943 329.311,0 230,0 Z" />
+	<path
+   id="XMLID_1034_"
+   style="fill:#6b9ed6;fill-opacity:0.992248"
+   d="M 446.112,151.112 355,60 H 335 C 335,136.562 286.691,174.389 230.752,218.19 173.845,262.749 115,308.825 115,400 h -10 l 46.112,46.112 C 175.717,455.096 202.285,460 230,460 c 127.026,0 230,-102.975 230,-230 0,-27.715 -4.904,-54.283 -13.888,-78.888 z" />
+	<polygon
+   id="XMLID_1035_"
+   style="fill:#da5b66"
+   points="115,80 230,80 240,70 230,60 115,60 " />
+	<rect
+   id="XMLID_1036_"
+   x="230"
+   y="60"
+   style="fill:#bd0a13"
+   width="115"
+   height="20" />
+	<polygon
+   id="XMLID_1037_"
+   style="fill:#da5b66"
+   points="115,400 230,400 240,390 230,380 115,380 " />
+	<rect
+   id="XMLID_1038_"
+   x="230"
+   y="380"
+   style="fill:#d93722"
+   width="115"
+   height="20" />
+	<polygon
+   id="XMLID_1039_"
+   style="fill:#56e066;fill-opacity:1"
+   points="230,120 240,110 230,100 125,100 125,120 " />
+	<rect
+   id="XMLID_1040_"
+   x="230"
+   y="100"
+   style="fill:#008080;fill-opacity:1"
+   width="105"
+   height="20" />
+	<polygon
+   id="XMLID_1041_"
+   style="fill:#5bcb66;fill-opacity:1"
+   points="230,360 240,350 230,340 125,340 125,360 " />
+	<rect
+   id="XMLID_1042_"
+   x="230"
+   y="340"
+   style="fill:#008080;fill-opacity:1"
+   width="105"
+   height="20" />
+	<polygon
+   id="XMLID_1043_"
+   style="fill:#dae966;fill-opacity:1"
+   points="230,160 240,150 230,140 142,140 142,160 " />
+	<rect
+   id="XMLID_1044_"
+   x="230"
+   y="140"
+   style="fill:#bdb913;fill-opacity:1"
+   width="88"
+   height="20" />
+	<polygon
+   id="XMLID_1045_"
+   style="fill:#dae066;fill-opacity:1"
+   points="230,320 240,310 230,300 142,300 142,320 " />
+	<rect
+   id="XMLID_1046_"
+   x="230"
+   y="300"
+   style="fill:#d9b522;fill-opacity:1"
+   width="88"
+   height="20" />
+	<polygon
+   id="XMLID_1047_"
+   style="fill:#88c1d7;fill-opacity:1"
+   points="230,200 240,190 230,180 179,180 179,200 " />
+	<rect
+   id="XMLID_1048_"
+   x="230"
+   y="180"
+   style="fill:#463ce1;fill-opacity:1"
+   width="51"
+   height="20" />
+	<polygon
+   id="XMLID_1049_"
+   style="fill:#69bff3;fill-opacity:1"
+   points="230,280 240,270 230,260 179,260 179,280 " />
+	<rect
+   id="XMLID_1050_"
+   x="230"
+   y="260"
+   style="fill:#494ddd;fill-opacity:1"
+   width="51"
+   height="20" />
+	<path
+   id="XMLID_1051_"
+   style="fill:#9b3722;fill-opacity:1"
+   d="M 135,400 H 105 C 105,308.825 163.845,262.749 220.752,218.19 276.691,174.389 325,136.562 325,60 h 30 C 355,151.174 296.156,197.25 239.249,241.809 183.31,285.61 135,323.437 135,400 Z" />
+	<path
+   id="XMLID_1052_"
+   style="fill:#600a13;fill-opacity:1"
+   d="M 355,400 H 325 C 325,323.438 276.691,285.611 220.754,241.812 163.845,197.251 105,151.175 105,60 h 30 c 0,76.563 48.31,114.39 104.247,158.189 C 296.156,262.75 355,308.826 355,400 Z" />
+</g>
+<g
+   id="g2372">
+</g>
+<g
+   id="g2374">
+</g>
+<g
+   id="g2376">
+</g>
+<g
+   id="g2378">
+</g>
+<g
+   id="g2380">
+</g>
+<g
+   id="g2382">
+</g>
+<g
+   id="g2384">
+</g>
+<g
+   id="g2386">
+</g>
+<g
+   id="g2388">
+</g>
+<g
+   id="g2390">
+</g>
+<g
+   id="g2392">
+</g>
+<g
+   id="g2394">
+</g>
+<g
+   id="g2396">
+</g>
+<g
+   id="g2398">
+</g>
+<g
+   id="g2400">
+</g>
+</svg>

@@ -920,6 +920,15 @@ class PlotViewer(QWidget):
         self.grid.addWidget(self.toolbar)
         self.fig = fig
         self.canvas = canvas
+
+        iconfile = os.path.join(iconpath,'reduce.png')
+        a = QAction(QIcon(iconfile), "Reduce elements",  self)
+        a.triggered.connect(lambda: self.zoom(zoomin=False))
+        self.toolbar.addAction(a)
+        iconfile = os.path.join(iconpath,'enlarge.png')
+        a = QAction(QIcon(iconfile), "Enlarge elements",  self)
+        a.triggered.connect(lambda: self.zoom(zoomin=True))
+        self.toolbar.addAction(a)
         return
 
     def set_figure(self, fig):
@@ -941,6 +950,23 @@ class PlotViewer(QWidget):
 
     def redraw(self):
         self.canvas.draw()
+
+    def zoom(self, zoomin=True):
+        """Zoom in/out to plot by changing size of elements"""
+
+        if zoomin == False:
+            val=-1.0
+        else:
+            val=1.0
+
+        if len(self.opts['general'].kwds) == 0:
+            return
+
+        self.opts['format'].increment('linewidth',val/5)
+        self.opts['format'].increment('ms',val)
+        self.opts['labels'].increment('fontsize',val)
+        self.refraw()
+        return
 
 class BrowserViewer(QDialog):
     """Browser widget"""

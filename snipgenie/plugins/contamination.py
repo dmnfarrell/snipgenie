@@ -42,7 +42,7 @@ class ContaminationCheckerPlugin(Plugin):
     requires = ['']
     menuentry = 'Contamination Check'
     name = 'Contamination Check'
-    iconfile = 'contam.png'
+    iconfile = 'dna.svg'
     side = 'right' #dock location to load plugin
 
     def __init__(self, parent=None):
@@ -180,7 +180,7 @@ class ContaminationCheckerPlugin(Plugin):
             #print (rec)
             first, _, desc = rec.description.partition(" ")
             d = rec.description
-            species = '_'.join(d.split()[1:3])
+            species = ' '.join(d.split()[1:3])
             self.refs.loc[rec.id] = [rec.id, rec.description, f, species]
 
         self.update_treelist()
@@ -200,9 +200,9 @@ class ContaminationCheckerPlugin(Plugin):
     def fetch_defaults(self):
         """Get some default genome seqs from Genbank"""
 
-        names = ['NC_002516','NZ_AP022609','CP089304','NZ_CP01680']
-        for name in names:
-            self.efetch(name)
+        print ('fetching defaults..')
+        names = ['NC_002516','NZ_AP022609','CP089304','LT799839']
+        self.efetch(names)
         return
 
     def read_fasta_header(self, filename):
@@ -282,23 +282,25 @@ class ContaminationCheckerPlugin(Plugin):
         self.efetch(kwds['accession'])
         return
 
-    def efetch(self, accession):
-        """Fetch a fasta sequence from entrez using efetch"""
+    def efetch(self, accessions):
+        """Fetch fasta sequence(s) by accessions from entrez using efetch"""
 
         def func(progress_callback):
-            filename = os.path.join(index_path, accession+'.fa')
-            if os.path.isfile(filename):
-                print ('%s file present' %accession)
-                return
-            Entrez.email = "A.N.Other@example.com"
-            handle = Entrez.efetch(db="nucleotide", id=accession, rettype="fasta", retmode="text")
-            s = handle.read()
-            with open(filename, "w") as out:
-                out.write(s)
-            handle.close()
-            print ('downloaded to %s' %filename)
-            rec = SeqIO.read(filename, "fasta")
-            self.refs.loc[accession] = [rec.id, rec.description, filename, None]
+            for accession in accessions:
+                filename = os.path.join(index_path, accession+'.fa')
+                #print (filename)
+                if os.path.isfile(filename):
+                    #print ('%s file present' %accession)
+                    continue
+                Entrez.email = "A.N.Other@example.com"
+                handle = Entrez.efetch(db="nucleotide", id=accession, rettype="fasta", retmode="text")
+                s = handle.read()
+                with open(filename, "w") as out:
+                    out.write(s)
+                handle.close()
+                print ('downloaded to %s' %filename)
+                rec = SeqIO.read(filename, "fasta")
+                self.refs.loc[accession] = [rec.id, rec.description, filename, None]
         self.parent.run_threaded_process(func, self.fetch_completed)
         return
 

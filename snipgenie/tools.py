@@ -817,6 +817,7 @@ def core_alignment_from_vcf(vcf_file, callback=None, uninformative=False, missin
                 del S[o]
         #if any missing samples at the site we don't add
         if None in S.values():
+            #print (S)
             missing_sites.append(record.POS)
             if missing == False:
                 continue

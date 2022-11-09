@@ -3,7 +3,7 @@
 
 # SNiPgenie
 
-<img align="right" src=snipgenie/logo.png width=180px>
+<img align="right" src=snipgenie/logo.svg width=180px>
 
 _SNiPgenie_ is a tool for microbial variant calling and phylogenetic analysis from raw read data. It was primarily written to be used with bacterial isolates of M. bovis but can be applied to other species. You need a good quality reference genome to align to. Anyone interested in using the software is encouraged to make suggestions on improving or adding features.
 

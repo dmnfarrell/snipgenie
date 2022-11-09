@@ -27,7 +27,7 @@ from .qt import *
 from pandas.api.types import is_datetime64_any_dtype as is_datetime
 import pylab as plt
 import matplotlib as mpl
-from . import widgets, core
+from . import widgets, core, tools
 
 class ColumnHeader(QHeaderView):
     def __init__(self):
@@ -255,7 +255,7 @@ class DataFrameTable(QTableView):
             self.plotview = widgets.PlotViewer()
         else:
             self.plotview = plotter
-        
+
         return
 
     def updateFont(self):
@@ -1058,7 +1058,6 @@ class SNPTable(DataFrameTable):
         #    self.app.show_unique_positions(row)
         return
 
-
 class DistMatrixTableModel(DataFrameModel):
 
     def __init__(self, dataframe=None, *args):
@@ -1253,3 +1252,75 @@ class CSQTable(DataFrameTable):
         elif action == zoominAction:
             self.zoomIn()
         return
+
+class VCFTableModel(DataFrameModel):
+
+    def __init__(self, dataframe=None, *args):
+
+        DataFrameModel.__init__(self, dataframe)
+        self.colors = {'A':'lightblue', 'T':'#ff704d', 'C':'#5cd65c',
+                        'G':'yellow','N':'gray'}
+        self.df = dataframe
+
+    def data(self, index, role):
+        """see https://www.pythonguis.com/tutorials/qtableview-modelviews-numpy-pandas/"""
+
+        colors = self.colors
+        i = index.row()
+        j = index.column()
+        rowname = self.df.index[i]
+        value = self.df.iloc[i, j]
+        if role == QtCore.Qt.DisplayRole:
+            return str(value)
+        elif role == QtCore.Qt.BackgroundRole:
+            if (isinstance(value, str)):
+                if value in self.colors:
+                    return QColor(self.colors[value])
+
+    def flags(self, index):
+            return Qt.ItemIsSelectable|Qt.ItemIsEnabled
+
+class VCFTable(DataFrameTable):
+    """
+    Table for vcf view.
+    See docs for format of file.
+    """
+    def __init__(self, parent=None, app=None, dataframe=None, *args):
+        DataFrameTable.__init__(self, parent, dataframe)
+        tm = VCFTableModel(dataframe)
+        self.setModel(tm)
+        hh = self.horizontalHeader()
+        hh.setDefaultSectionSize(60)
+        self.app = app
+        self.transposed = False
+        return
+
+    def setDataFrame(self, df):
+        """Override to use right model"""
+
+        tm = VCFTableModel(df)
+        self.setModel(tm)
+        self.model = tm
+        return
+
+    def addActions(self, event, row):
+        """Right click action menu"""
+
+        df = self.model.df
+        menu = self.menu
+        loadAction = menu.addAction("Load VCF")
+        zoominAction = menu.addAction("Zoom in")
+        zoomoutAction = menu.addAction("Zoom out")
+        action = menu.exec_(event.globalPos())
+
+        if action == loadAction:
+            filename, _ = QFileDialog.getOpenFileName(self, 'Open File', './',
+                                        filter="Text Files(*.vcf *.vcf.gz);;All Files(*.*)" )
+            if not filename:
+                return
+            df = tools.vcf_to_dataframe(filename).set_index('sample')
+            self.setDataFrame(df)
+        elif action == zoomoutAction:
+            self.zoomOut()
+        elif action == zoominAction:
+            self.zoomIn()

@@ -351,6 +351,16 @@ def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform
 
     return df
 
+def mpileup(bam_file, out):
+    """Run bcftools for single file."""
+
+    bcftoolscmd = tools.get_cmd('bcftools')
+    cmd = '{bc} mpileup -O b -o {o} -f {r} {b}'.format(r=ref, b=bam_file, o=out, bc=bcftoolscmd)
+    subprocess.check_output(cmd, shell=True)
+    cmd = 'bcftools index {o}'.format(o=out)
+    subprocess.check_output(cmd, shell=True)
+    return
+
 def mpileup_region(region,out,bam_files,callback=None):
     """Run bcftools for single region."""
 
@@ -364,49 +374,33 @@ def mpileup_region(region,out,bam_files,callback=None):
     return
 
 def mpileup_multiprocess(bam_files, ref, outpath, threads=4, callback=None):
-    """Run mpileup in parallel over multiple regions, then concat vcf files.
+    """Run mpileup in parallel over multiple files and make separate bcfs.
     Assumes alignment to a bacterial reference with a single chromosome."""
 
-    bam_files = ' '.join(bam_files)
-    rawbcf = os.path.join(outpath,'raw.bcf')
-    tmpdir = '/tmp'
-    chr = tools.get_chrom(ref)
-    length = tools.get_fasta_length(ref)
-
-    #find regions
-    bsize = int(length/(threads-1))
-    x = np.linspace(1,length,threads,dtype=int)
-    blocks=[]
-    for i in range(len(x)):
-        if i < len(x)-1:
-            blocks.append((x[i],x[i+1]-1))
-    #print (blocks, bsize)
-
+    size = len(bam_files)
     pool = mp.Pool(threads)
     outfiles = []
     st = time.time()
-
-    for start,end in blocks:
-        print (start, end)
-        region = '{c}:{s}-{e}'.format(c=chr,s=start,e=end)
-        out = '{o}/{s}.bcf'.format(o=tmpdir,s=start)
-        #if __name__ == '__main__':
-        f = pool.apply_async(mpileup_region, [region,out,bam_files])
-        print (f)
+    bcfpath = os.path.join(outpath,'bcf')
+    if not os.path.exists(bcfpath):
+        os.mkdir(bcfpath)
+    for bam_file in bam_files:
+        name = os.path.splitext(os.path.basename(bam_file))[0]
+        out = '{o}/{f}.bcf'.format(o=bcfpath,f=name)
         outfiles.append(out)
 
-    pool.close()
-    pool.join()
+    data = list(zip(bam_files,outfiles))
+    #print (data)
+
+    p = mp.Pool(threads)
+    p.map(worker, data)
     t=time.time()-st
     print ('took %s seconds' %str(round(t,3)))
-
-    #concat files
-    cmd = 'bcftools concat {i} -O b -o {o}'.format(i=' '.join(outfiles),o=rawbcf)
+    rawbcf = os.path.join(outpath,'raw.bcf')
+    bcf_files = ' '.join(outfiles)
+    cmd = '{bc} merge -m all -o {r} {b}'.format(b=bcf_files,r=rawbcf, bc=bcftoolscmd)
     print (cmd)
     subprocess.check_output(cmd, shell=True)
-    #remove temp files
-    for f in outfiles:
-        os.remove(f)
     return rawbcf
 
 def mpileup_parallel(bam_files, ref, outpath, threads=4, callback=None, tempdir=None):
@@ -478,7 +472,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     bcftoolscmd = tools.get_cmd('bcftools')
     if not os.path.exists(rawbcf) or overwrite == True:
         print ('running mpileup..')
-        if threads == 1: #platform.system() == 'Windows'
+        if threads == 1: 
             bam_files = ' '.join(bam_files)
             cmd = '{bc} mpileup -a {a} --max-depth 500 -O b --min-MQ 60 -o {o} -f {r} {b}'\
                 .format(bc=bcftoolscmd,r=ref, b=bam_files, o=rawbcf, a=annotatestr)

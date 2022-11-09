@@ -34,7 +34,7 @@ from . import core, tools, aligners, app, widgets, tables, plotting, trees
 
 homepath = os.path.expanduser("~")
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
-logoimg = os.path.join(module_path, 'logo.png')
+logoimg = os.path.join(module_path, 'logo.svg')
 stylepath = os.path.join(module_path, 'styles')
 iconpath = os.path.join(module_path, 'icons')
 pluginiconpath = os.path.join(module_path, 'plugins', 'icons')
@@ -482,6 +482,7 @@ class App(QMainWindow):
         #self.tools_menu.addAction('Plot SNP Matrix', self.plot_dist_matrix)
         self.tools_menu.addAction('SNP Viewer', self.snp_viewer)
         self.tools_menu.addAction('CSQ Viewer', self.csq_viewer)
+        self.tools_menu.addAction('VCF Viewer', self.vcf_viewer)
         #self.tools_menu.addAction('Map View', self.show_map)
         self.tools_menu.addAction('Tree Viewer', self.tree_viewer)
         self.tools_menu.addSeparator()
@@ -1172,9 +1173,22 @@ class App(QMainWindow):
         if 'CSQ' in self.get_tabs():
             self.tabs.removeTab(0)
         table = tables.CSQTable(self.tabs, app=self, dataframe=mat)
-        i = self.tabs.addTab(table, 'CSQ table')
+        i = self.tabs.addTab(table, 'CSQ')
         self.tabs.setCurrentIndex(i)
-        self.opentables['CSQ table'] = table
+        self.opentables['CSQ'] = table
+        return
+
+    def vcf_viewer(self):
+        """Show VCF table"""
+
+        if 'VCF' in self.get_tabs():
+            self.tabs.removeTab(0)
+        vcf_file = os.path.join(self.outputdir, 'snps.vcf.gz')
+        df = tools.vcf_to_dataframe(vcf_file).set_index('sample')
+        table = tables.VCFTable(self.tabs, app=self, dataframe=df)
+        idx = self.tabs.addTab(table, 'VCF')
+        self.tabs.setCurrentIndex(idx)
+        self.opentables['VCF'] = table
         return
 
     def make_phylo_tree(self, progress_callback=None, method='raxml'):

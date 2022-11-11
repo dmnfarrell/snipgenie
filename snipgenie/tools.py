@@ -836,7 +836,7 @@ def core_alignment_from_vcf(vcf_file, callback=None, uninformative=False, missin
             result[name].append(val)
         sites.append(record.POS)
 
-    sites = list(set(sites))
+    sites = sorted(list(set(sites)))
     print ('found %s sites for core snps' %len(sites))
     print ('%s sites with at least one missing sample' %len(missing_sites))
     if uninformative == False:

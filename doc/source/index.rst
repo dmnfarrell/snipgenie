@@ -1,4 +1,3 @@
-
 SNiPgenie documentation.
 ========================
 
@@ -9,6 +8,8 @@ Contents:
 
    description
    usage
+   gui
+   faq
    modules
 
 Indices and tables

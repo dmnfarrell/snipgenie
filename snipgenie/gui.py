@@ -605,6 +605,7 @@ class App(QMainWindow):
         if hasattr(self, 'treeviewer'):
             d=self.treeviewer.saveData()
             data['treeviewer'] = d
+        data['opentables'] = list(self.opentables.keys())
         self.opts.applyOptions()
         data['options'] = self.opts.kwds
         self.projectlabel.setText(filename)
@@ -702,6 +703,9 @@ class App(QMainWindow):
         self.setup_paths()
         self.show_snpdist()
 
+        #if 'opentables' in data:
+            #for key in data['opentables']:
+                #print (key)
         #load tree view
         if 'treeviewer' in data.keys():
             self.tree_viewer()
@@ -1158,13 +1162,14 @@ class App(QMainWindow):
         mat = pd.read_csv(file, sep=' ',index_col=0).sort_index()
         mat = mat.T
         self.snpviewer.load_snps(mat)
-        if not 'SNP table' in self.get_tabs():
-            idx = self.tabs.addTab(self.snpviewer, 'SNP table')
+        if not 'SNP' in self.get_tabs():
+            idx = self.tabs.addTab(self.snpviewer, 'SNP')
             self.tabs.setCurrentIndex(idx)
-        self.opentables['SNP table'] = self.snpviewer.table
+        self.opentables['SNP'] = self.snpviewer.table
         return
 
     def csq_viewer(self):
+        """Show CSQ table - output of bcftools csq"""
 
         if not os.path.exists(self.csq_matrix):
             return

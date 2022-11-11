@@ -1,4 +1,4 @@
-snpgenie
+snipgenie
 ==========
 
 .. toctree::

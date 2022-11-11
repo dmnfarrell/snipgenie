@@ -5,7 +5,7 @@ Submodules
 ----------
 
 snipgenie\.gui module
-----------------------
+---------------------
 
 .. automodule:: snipgenie.gui
     :members:
@@ -13,7 +13,7 @@ snipgenie\.gui module
     :show-inheritance:
 
 snipgenie\.widgets module
---------------------------
+-------------------------
 
 .. automodule:: snipgenie.widgets
     :members:
@@ -21,7 +21,7 @@ snipgenie\.widgets module
     :show-inheritance:
 
 snipgenie\.tools module
-------------------------
+-----------------------
 
 .. automodule:: snipgenie.tools
     :members:
@@ -37,7 +37,7 @@ snipgenie\.app module
     :show-inheritance:
 
 snipgenie\.aligners module
----------------------------
+--------------------------
 
 .. automodule:: snipgenie.aligners
     :members:
@@ -45,13 +45,36 @@ snipgenie\.aligners module
     :show-inheritance:
 
 snipgenie\.plotting module
----------------------------
+--------------------------
 
 .. automodule:: snipgenie.plotting
     :members:
     :undoc-members:
     :show-inheritance:
 
+snipgenie\.trees module
+--------------------------
+
+.. automodule:: snipgenie.trees
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+snipgenie\.phylo module
+--------------------------
+
+.. automodule:: snipgenie.phylo
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+snipgenie\.simulate module
+--------------------------
+
+.. automodule:: snipgenie.simulate
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 Module contents
 ---------------

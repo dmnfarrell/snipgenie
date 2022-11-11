@@ -985,7 +985,9 @@ class SNPTableModel(DataFrameModel):
                     return QColor('gray')
                 else:
                     return QColor(colors[value])
-
+        elif role == QtCore.Qt.TextAlignmentRole:
+            return QtCore.Qt.AlignCenter
+            
     def flags(self, index):
             return Qt.ItemIsSelectable|Qt.ItemIsEnabled
 

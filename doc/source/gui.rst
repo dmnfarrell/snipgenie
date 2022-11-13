@@ -12,4 +12,71 @@ Current features include:
 * Phylogenetic tree viewing
 * Contamination checker
 
+Interface
+---------
+
 .. image:: scr1.png
+
+Basic workflow
+--------------
+
+* The first step is to set an output folder for the results. Choose Settings->Set Output Folder. Note that if this folder already contains a set of results from a previous run of the command line tool the program will attempt to load the sample table.
+* Set a reference genome either by using a preset species or loading a fasta sequence you have previously identified as the one you wish to use. To load a preset use the Preset Genomes menu. The reference should currently be a single chromosome. Preset genomes have an annotation (genbank format) and sometimes a mask file (bed format) associated with them. However you can run without these.
+* Save the project somewhere. It will be saved a single file with a .snipgenie extension. This only saves the loaded tables and settings and not the output results.
+* Load the fastq files you wish to analyse. These can be selected individually or and entire folder added. Use File-> Add Folder or File->Add Fastq Files. When the files are loaded the samples table will be updated to reflect the files and their assigned labels. See importing files.
+* Once files are loaded you can being analysis. Prior to alignment you may want to check your files for contamination, though this can be done at a later stage to exclude samples causing problems (e.g. samples that have poor depth).
+* The first step is align the fastq files. This is accessed from the Workflow menu. You should select the files in the table to be aligned. Just select all rows to align everything.
+* After alignment you will see the table updated
+
+.. figure:: workflow.gif
+   :target: _images/workflow.gif
+   :class: with-shadow
+
+   Basic workflow steps.
+
+Importing files
+---------------
+
+
+Viewing results
+---------------
+
+SNP table
++++++++++
+
+This is a view of the SNPs in a table for all samples and each position. This is loaded from the core.txt file in results that is the product of filtered SNPs. This is what is used to make the final phylogeny. Below is shown the table with positions in the columns and each row is a sample. You can transpose or flip the table too.
+
+.. image:: snp_table.png
+
+VCF table
++++++++++
+
+This lets you view the content of vcf files that are the product of variant calls. Normally useful for debugging errors that might be occurring or checking on the depth and quality values for a position/site. By default the filtered SNPs vcf will be displayed but you can load other vcf/bcf files from the file system.
+
+.. image:: vcf_table.png
+
+Plotting from the tables
+------------------------
+
+Some tables will allow you to make simple plots
+
+Adding sample metadata
+----------------------
+
+
+Checking for contamination
+--------------------------
+
+The program includes a plugin tool called Contamination Check for this purpose. It allows you to
+
+.. image:: contam_check.png
+
+Create test data
+----------------
+
+You might want to make sure the program is working properly before use.
+
+File renaming
+-------------
+
+Batch file renaming

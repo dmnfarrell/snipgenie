@@ -27,7 +27,7 @@ from .qt import *
 from pandas.api.types import is_datetime64_any_dtype as is_datetime
 import pylab as plt
 import matplotlib as mpl
-from . import widgets, core, tools
+from . import widgets, core, tools, plotting
 
 class ColumnHeader(QHeaderView):
     def __init__(self):
@@ -445,7 +445,7 @@ class DataFrameTable(QTableView):
         renameColumnAction = menu.addAction("Rename Column")
         addColumnAction = menu.addAction("Add Column")
         plotAction = menu.addAction("Histogram")
-        #colorbyAction = menu.addAction("Color By Value")
+        colorbyAction = menu.addAction("Color By Column")
 
         action = menu.exec_(self.mapToGlobal(pos))
         if action == sortAction:
@@ -460,8 +460,8 @@ class DataFrameTable(QTableView):
             self.addColumn()
         elif action == plotAction:
             self.plotHist(column)
-        #elif action == colorbyAction:
-        #    self.model.setColumnColor(idx, 'red')
+        elif action == colorbyAction:
+            self.colorByColumn(column)
         return
 
     def keyPressEvent(self, event):
@@ -632,6 +632,14 @@ class DataFrameTable(QTableView):
         self.plotview.activateWindow()
         return
 
+    def colorByColumn(self, col):
+        """Set colorby column"""
+
+        df = self.model.df
+        colors,colormap = plotting.get_color_mapping(df,col,seed=10)
+        self.model.rowcolors = colors
+        return
+
     def getMemory(self):
         """Get memory info as string"""
 
@@ -652,10 +660,10 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         else:
             self.df = dataframe
         self.bg = '#F4F4F3'
+        self.rowcolors = None
         return
 
     def update(self, df):
-        #print('Updating Model')
         self.df = df
 
     def rowCount(self, parent=QtCore.QModelIndex()):
@@ -700,9 +708,13 @@ class DataFrameModel(QtCore.QAbstractTableModel):
 
             if np.isnan(value):
                 return ''
-
         elif role == QtCore.Qt.BackgroundRole:
-            return QColor(self.bg)
+            if self.rowcolors != None:
+                clr = self.rowcolors[i]
+                #print (clr)
+                return QColor(clr)
+            else:
+                return QColor(self.bg)
 
     def headerData(self, col, orientation, role=QtCore.Qt.DisplayRole):
         """What's displayed in the headers"""
@@ -816,6 +828,9 @@ class SampleTableModel(DataFrameModel):
             elif colname == 'coverage':
                 if value < 98:
                     color = QColor('#ff704d')
+            elif self.rowcolors != None:
+                clr = self.rowcolors[i]
+                color = QColor(clr)
             else:
                 color = QColor(self.bg)
             return color
@@ -859,6 +874,7 @@ class SampleTable(DataFrameTable):
         fastareadsaction = menu.addAction('Sample Sequences')
         removeAction = menu.addAction("Remove Selected")
         exportAction = menu.addAction("Export Table")
+        #colorbyAction = menu.addAction("Color By Column")
         action = menu.exec_(self.mapToGlobal(event.pos()))
         # Map the logical row index to a real index for the source model
         #model = self.model
@@ -883,6 +899,8 @@ class SampleTable(DataFrameTable):
             self.deleteRows(rows)
         elif action == exportAction:
             self.exportTable()
+        #elif action == colorbyAction:
+        #    self.colorByColumn()
         return
 
     def edit(self, index, trigger, event):
@@ -987,7 +1005,7 @@ class SNPTableModel(DataFrameModel):
                     return QColor(colors[value])
         elif role == QtCore.Qt.TextAlignmentRole:
             return QtCore.Qt.AlignCenter
-            
+
     def flags(self, index):
             return Qt.ItemIsSelectable|Qt.ItemIsEnabled
 

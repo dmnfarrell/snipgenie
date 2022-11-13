@@ -209,6 +209,23 @@ def write_samples(df, path):
     df.to_csv(filename, index=False, header=False)
     return filename
 
+def get_samples_from_bam(filenames, sep='-', index=0):
+    """Samples from bam files"""
+
+    res = []
+    cols = ['name','sample','bam_file']
+    for filename in filenames:
+        name = os.path.basename(filename)
+        label = name.removesuffix('.bam').split(sep)[index]
+        x = [name, label, os.path.abspath(filename)]
+        res.append(x)
+
+    df = pd.DataFrame(res, columns=cols)
+    df = df.sort_values(['sample','bam_file'])
+    df['pair'] = df.groupby('sample').cumcount()+1
+    df = df.drop_duplicates('bam_file')
+    return df
+
 def check_samples_aligned(samples, outdir):
     """Check how many samples already aligned"""
 
@@ -351,11 +368,16 @@ def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform
 
     return df
 
-def mpileup(bam_file, out):
+def mpileup(bam_file, ref, out, overwrite=False):
     """Run bcftools for single file."""
 
     bcftoolscmd = tools.get_cmd('bcftools')
-    cmd = '{bc} mpileup -O b -o {o} -f {r} {b}'.format(r=ref, b=bam_file, o=out, bc=bcftoolscmd)
+    if os.path.exists(out):
+        return
+
+    cmd = '{bc} mpileup -a {a} -O b --min-MQ 60 -o {o} -f {r} {b}'\
+            .format(r=ref, b=bam_file, o=out, bc=bcftoolscmd, a=annotatestr)
+    #print (cmd)
     subprocess.check_output(cmd, shell=True)
     cmd = 'bcftools index {o}'.format(o=out)
     subprocess.check_output(cmd, shell=True)
@@ -373,12 +395,16 @@ def mpileup_region(region,out,bam_files,callback=None):
     subprocess.check_output(cmd, shell=True)
     return
 
+def worker(args):
+    mpileup(args[0], args[1], args[2])
+
 def mpileup_multiprocess(bam_files, ref, outpath, threads=4, callback=None):
     """Run mpileup in parallel over multiple files and make separate bcfs.
     Assumes alignment to a bacterial reference with a single chromosome."""
 
-    size = len(bam_files)
-    pool = mp.Pool(threads)
+    bcftoolscmd = tools.get_cmd('bcftools')
+    #size = len(bam_files)
+    #pool = mp.Pool(threads)
     outfiles = []
     st = time.time()
     bcfpath = os.path.join(outpath,'bcf')
@@ -389,16 +415,20 @@ def mpileup_multiprocess(bam_files, ref, outpath, threads=4, callback=None):
         out = '{o}/{f}.bcf'.format(o=bcfpath,f=name)
         outfiles.append(out)
 
-    data = list(zip(bam_files,outfiles))
+    refs = [ref] * len(outfiles)
+    data = list(zip(bam_files,refs,outfiles))
     #print (data)
 
     p = mp.Pool(threads)
-    p.map(worker, data)
+    p.map_async(worker, data)
+    p.close()
+    p.join()
+
     t=time.time()-st
     print ('took %s seconds' %str(round(t,3)))
     rawbcf = os.path.join(outpath,'raw.bcf')
     bcf_files = ' '.join(outfiles)
-    cmd = '{bc} merge -m all -o {r} {b}'.format(b=bcf_files,r=rawbcf, bc=bcftoolscmd)
+    cmd = '{bc} merge --threads {t} -o {r} {b}'.format(b=bcf_files,r=rawbcf, bc=bcftoolscmd,t=threads)
     print (cmd)
     subprocess.check_output(cmd, shell=True)
     return rawbcf
@@ -472,7 +502,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     bcftoolscmd = tools.get_cmd('bcftools')
     if not os.path.exists(rawbcf) or overwrite == True:
         print ('running mpileup..')
-        if threads == 1: 
+        '''if threads == 1:
             bam_files = ' '.join(bam_files)
             cmd = '{bc} mpileup -a {a} --max-depth 500 -O b --min-MQ 60 -o {o} -f {r} {b}'\
                 .format(bc=bcftoolscmd,r=ref, b=bam_files, o=rawbcf, a=annotatestr)
@@ -481,7 +511,11 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
         #or use mpileup in parallel to speed up
         else:
             rawbcf = mpileup_parallel(bam_files, ref, outpath, threads=threads,
-                                        tempdir=tempdir, callback=callback)
+                                        tempdir=tempdir, callback=callback)'''
+        #new method
+        rawbcf = mpileup_multiprocess(bam_files, ref, outpath, threads=threads,
+                                         callback=callback)
+
     else:
         print ('%s already exists' %rawbcf)
         #check existing file samples here
@@ -695,28 +729,29 @@ def get_aa_snp_matrix(df):
     x = x.fillna(0)
     return x
 
-def run_bamfiles(bam_files, ref, gff_file=None, outdir='.', threads=4,
-                sep='_', labelindex=0,
-                **kwargs):
+def run_bamfiles(bam_files, ref, gff_file=None, mask=None, outdir='.', threads=4,
+                    sep='_', labelindex=0, samples=None, **kwargs):
     """
     Run workflow with bam files from a previous sets of alignments.
     We can arbitrarily combine results from multiple other runs this way.
     kwargs are passed to variant_calling method.
     Should write a samples.txt file in the outdir if vcf header is to be
     relabelled.
+    Args:
+        samples: dataframe of sample names, if not provided try to get from bam files
     """
 
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
 
-    #get sample names if not provided
-    #if get_labels is True:
-        #df = get_samples(bam_files, sep=sep, index=labelindex)
-        #print (df)
-        #write_samples(df[['sample']], outdir)
+    #write sample names if not provided
+    if samples is None:
+        samples = get_samples_from_bam(bam_files, sep=sep)
+    write_samples(samples[['sample']], outdir)
+
     print ('%s samples were loaded:' %len(bam_files))
     vcf_file = variant_calling(bam_files, ref, outdir, threads=threads,
-                                   relabel=True, gff_file=gff_file,
+                                   relabel=True, gff_file=gff_file, mask=mask,
                                    **kwargs)
 
     snprecs, smat = tools.core_alignment_from_vcf(vcf_file)

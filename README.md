@@ -209,7 +209,7 @@ W.run()
 
 The package includes a desktop application with additional features like a fastq quality analysis, the ability to view alignments and tree viewing. It requires the installation of either PyQt5 or PySide2 if using the pip install. A windows installer for this application will be available separately.
 
-<img src=img/scr1.png width=600px>
+<img src=doc/source/scr1.png width=600px>
 
 You can view a short video on using the GUI [here](https://www.youtube.com/watch?v=ieljx3NiTqE).
 

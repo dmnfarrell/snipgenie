@@ -635,8 +635,11 @@ class DataFrameTable(QTableView):
     def colorByColumn(self, col):
         """Set colorby column"""
 
+        #cmap = 'Set1'
         df = self.model.df
-        colors,colormap = plotting.get_color_mapping(df,col,seed=10)
+
+        colors,colormap = plotting.get_color_mapping(df,col,seed=10, cmap=cmap)
+        print (colors)
         self.model.rowcolors = colors
         return
 
@@ -1026,6 +1029,7 @@ class SNPTable(DataFrameTable):
         self.setHorizontalHeader(headerview)
         hh = self.horizontalHeader()
         hh.setDefaultSectionSize(18)
+        #hh.customContextMenuRequested.connect(self.columnHeaderMenu)
         self.transposed = False
         return
 
@@ -1045,14 +1049,19 @@ class SNPTable(DataFrameTable):
         #uniquepositionsAction = menu.addAction("View unique positions")
         gotoPositionAction = menu.addAction("Go to position")
         transposeAction = menu.addAction("Transpose")
+        orderbyPhyloAction = menu.addAction("Order By Phylogeny")
         loadAction = menu.addAction("Load SNP table")
         zoominAction = menu.addAction("Zoom in")
         zoomoutAction = menu.addAction("Zoom out")
+
         action = menu.exec_(event.globalPos())
         if action == transposeAction:
-            self.model.df = self.model.df.T
-            self.refresh()
+            df = self.model.df.T
+            self.setDataFrame(df)
+            #self.refresh()
             self.transposed = not self.transposed
+        elif action == orderbyPhyloAction:
+            self.orderByPhylogeny()
         elif action == gotoPositionAction:
             pos,ok = QInputDialog.getInt(self,"Move to position","Enter position")
             if not ok:
@@ -1076,6 +1085,39 @@ class SNPTable(DataFrameTable):
             self.zoomIn()
         #elif action == uniquepositionsAction:
         #    self.app.show_unique_positions(row)
+        return
+
+    def columnHeaderMenu(self, pos):
+        """Custom column header menu"""
+
+        hheader = self.horizontalHeader()
+        idx = hheader.logicalIndexAt(pos)
+        column = self.model.df.columns[idx]
+        menu = QMenu(self)
+        sortAction = menu.addAction("Sort \u2193")
+        sortDescAction = menu.addAction("Sort \u2191")
+        action = menu.exec_(self.mapToGlobal(pos))
+        if action == sortAction:
+            self.sort(idx)
+        elif action == sortDescAction:
+            self.sort(idx, ascending=False)
+        return
+
+    def orderByPhylogeny(self):
+        """Cluster labels by phylogeny tip order"""
+
+        treefile = self.app.treefile
+        from Bio import Phylo
+        tree = Phylo.read(treefile, "newick")
+        #get order of tips and use to order dataframe
+        df = self.model.df
+        tips = [leaf.name for leaf in tree.get_terminals()]
+        tips.remove('ref')
+        if self.transposed == True:
+            df = df.reindex(tips, axis=1)
+        else:
+            df = df.reindex(tips)
+        self.setDataFrame(df)
         return
 
 class DistMatrixTableModel(DataFrameModel):

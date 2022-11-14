@@ -1153,19 +1153,24 @@ class App(QMainWindow):
         self.fastq_table.refresh()
         return
 
-    def snp_viewer(self):
-        """Show SNP table"""
+    def get_tab_indices(self, tab_widget, tab_name):
+        return [index for index in range(tab_widget.count())
+            if tab_name == tab_widget.tabText(index)]
 
-        if not hasattr(self, 'snpviewer'):
-            self.snpviewer = widgets.SNPViewer(self)
+    def snp_viewer(self):
+        """Show SNP table - output of core.txt"""
+
         file = os.path.join(self.outputdir, 'core.txt')
         mat = pd.read_csv(file, sep=' ',index_col=0).sort_index()
-        mat = mat.T
-        self.snpviewer.load_snps(mat)
-        if not 'SNP' in self.get_tabs():
-            idx = self.tabs.addTab(self.snpviewer, 'SNP')
-            self.tabs.setCurrentIndex(idx)
-        self.opentables['SNP'] = self.snpviewer.table
+        mat = mat.T        
+        if 'SNP' in self.get_tabs():
+            index = self.get_tab_indices(self.tabs, 'SNP')
+            print (index)
+            self.tabs.removeTab(index[0])
+        table = tables.SNPTable(self.tabs, app=self, dataframe=mat)
+        idx = self.tabs.addTab(table, 'SNP')
+        self.tabs.setCurrentIndex(idx)
+        self.opentables['SNP'] = table
         return
 
     def csq_viewer(self):
@@ -1174,12 +1179,11 @@ class App(QMainWindow):
         if not os.path.exists(self.csq_matrix):
             return
         mat = pd.read_csv(self.csq_matrix)
-        #print (mat)
         if 'CSQ' in self.get_tabs():
             self.tabs.removeTab(0)
         table = tables.CSQTable(self.tabs, app=self, dataframe=mat)
-        i = self.tabs.addTab(table, 'CSQ')
-        self.tabs.setCurrentIndex(i)
+        idx = self.tabs.addTab(table, 'CSQ')
+        self.tabs.setCurrentIndex(idx)
         self.opentables['CSQ'] = table
         return
 
@@ -1232,7 +1236,7 @@ class App(QMainWindow):
         from . import phylo
         if not hasattr(self, 'treeviewer'):
             self.treeviewer = phylo.TreeViewer(self)
-        if not 'phylogeny' in self.get_tabs():
+        if not 'phylogeny' in self.get_right_tabs():
             idx = self.right_tabs.addTab(self.treeviewer, 'phylogeny')
             self.right_tabs.setCurrentIndex(idx)
         return
@@ -1242,12 +1246,19 @@ class App(QMainWindow):
         from . import gis
         if not hasattr(self, 'gisviewer'):
             self.gisviewer = gis.GISViewer()
-        if not 'map' in self.get_tabs():
+        if not 'map' in self.get_right_tabs():
             idx = self.right_tabs.addTab(self.gisviewer, 'map')
             self.right_tabs.setCurrentIndex(idx)
         return
 
     def get_tabs(self):
+
+        n=[]
+        for i in range(self.tabs.count()):
+            n.append(self.tabs.tabText(i))
+        return n
+
+    def get_right_tabs(self):
 
         n=[]
         for i in range(self.right_tabs.count()):

@@ -1433,39 +1433,3 @@ class GraphicalBamViewer(QDialog):
         self.view_range = xend-xstart
         self.loclbl.setText(str(xstart)+'-'+str(xend))
         return
-
-class SNPViewer(QDialog):
-    """View SNPs for set of samples"""
-    def __init__(self, parent=None, filename=None):
-
-        super(SNPViewer, self).__init__(parent)
-        self.setWindowTitle('SNP View')
-        self.setGeometry(QtCore.QRect(200, 200, 1000, 300))
-        self.setMinimumHeight(150)
-        self.fontsize = 8
-        self.add_widgets()
-        return
-
-    def add_widgets(self):
-        """Add widgets"""
-
-        l = QVBoxLayout(self)
-        self.setLayout(l)
-        val=0
-        self.table = tables.SNPTable(self, app=self, dataframe=pd.DataFrame())
-        l.addWidget(self.table)
-
-        return
-
-    def load_snps(self, df):
-        """load a dataframe of snps"""
-
-        self.table.setDataFrame(df)
-        self.df = df
-        return
-
-    def show_unique_positions(self, rows):
-
-        df = self.df.iloc[rows]
-
-        return

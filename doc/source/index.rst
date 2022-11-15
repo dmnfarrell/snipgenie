@@ -9,6 +9,7 @@ Contents:
    description
    usage
    gui
+   mbovis
    faq
    modules
 

@@ -31,7 +31,7 @@ class ExamplePlugin(Plugin):
     """Template plugin for SNiPgenie"""
 
     #uncomment capabilities list to appear in menu
-    capabilities = []
+    capabilities = ['gui','docked']
     requires = ['']
     menuentry = 'Example Plugin'
     name = 'Example Plugin'

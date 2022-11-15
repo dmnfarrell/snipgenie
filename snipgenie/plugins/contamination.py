@@ -38,7 +38,7 @@ class ContaminationCheckerPlugin(Plugin):
     """Contam checker plugin for SNiPgenie"""
 
     #uncomment capabilities list to appear in menu
-    capabilities = ['gui']
+    capabilities = ['gui','docked']
     requires = ['']
     menuentry = 'Contamination Check'
     name = 'Contamination Check'

@@ -60,14 +60,6 @@ snipgenie\.trees module
     :undoc-members:
     :show-inheritance:
 
-snipgenie\.phylo module
---------------------------
-
-.. automodule:: snipgenie.phylo
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 snipgenie\.simulate module
 --------------------------
 

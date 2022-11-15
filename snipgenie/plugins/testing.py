@@ -35,7 +35,7 @@ class TestingPlugin(Plugin):
     """Testing plugin for SNiPgenie"""
 
     #uncomment capabilities list to appear in menu
-    capabilities = ['gui']
+    capabilities = ['gui','docked']
     requires = ['']
     menuentry = 'Testing'
     name = 'Testing'

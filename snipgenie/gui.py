@@ -109,7 +109,8 @@ class App(QMainWindow):
         self.recent_files = ['']
         self.opentables = {}
         self.openplugins = {}
-
+        self.plugindata = {}
+        
         self.main.setFocus()
         self.setCentralWidget(self.main)
 
@@ -489,8 +490,8 @@ class App(QMainWindow):
         self.tools_menu.addAction('Check Heterozygosity', self.check_heterozygosity)
         self.tools_menu.addAction('RD Analysis (MTBC)',
             lambda: self.run_threaded_process(self.rd_analysis, self.rd_analysis_completed))
-        self.tools_menu.addAction('M.bovis Spoligotyping',
-            lambda: self.run_threaded_process(self.spoligotyping, self.spotyping_completed))
+        #self.tools_menu.addAction('M.bovis Spoligotyping',
+        #    lambda: self.run_threaded_process(self.spoligotyping, self.spotyping_completed))
         #self.tools_menu.addAction('M.bovis SNP typing',
         #    lambda: self.run_threaded_process(self.snp_typing, self.processing_completed))
 
@@ -1162,7 +1163,7 @@ class App(QMainWindow):
 
         file = os.path.join(self.outputdir, 'core.txt')
         mat = pd.read_csv(file, sep=' ',index_col=0).sort_index()
-        mat = mat.T        
+        mat = mat.T
         if 'SNP' in self.get_tabs():
             index = self.get_tab_indices(self.tabs, 'SNP')
             print (index)
@@ -1651,7 +1652,7 @@ class App(QMainWindow):
         print (res)
         return
 
-    def spoligotyping(self, progress_callback):
+    '''def spoligotyping(self, progress_callback):
         """Mbovis spo typing tool"""
 
         self.running == True
@@ -1679,7 +1680,7 @@ class App(QMainWindow):
         self.progressbar.setRange(0,1)
         self.fastq_table.refresh()
         self.running = False
-        return
+        return'''
 
     def rd_analysis(self, progress_callback):
         """Run RD analysis for MTBC species"""
@@ -1817,18 +1818,19 @@ class App(QMainWindow):
         return
 
     def load_plugin(self, plugin):
-        """Instantiate the plugin and call it's main method"""
+        """Instantiate the plugin and show widget or run it"""
 
         index = self.tabs.currentIndex()
         name = self.tabs.tabText(index)
         if not hasattr(self, 'openplugins'):
             self.openplugins = {}
         openplugins = self.openplugins
+        c = plugin.capabilities
 
         if plugin.name in openplugins:
             p = openplugins[plugin.name]
             self.docks[plugin.name].show()
-        else:
+        elif 'gui' in plugin.capabilities:
             try:
                 p = plugin(parent=self)
                 #track which plugin is running
@@ -1843,9 +1845,25 @@ class App(QMainWindow):
                 return
             #plugin should be added as a dock widget
             self.show_plugin(p)
+        else:
+            #no widgets, just run the plugins run method
+            p = plugin(parent=self)
+            p.run()
         return
 
     def show_plugin(self, plugin):
+        """Show plugin in dock or as window"""
+
+        c = plugin.capabilities
+        if 'docked' in c:
+            self.add_plugin_dock(plugin)
+        else:
+            plugin.main.show()
+            plugin.main.setWindowTitle(plugin.name)
+        self.comms.newproj.connect(plugin.project_closed)
+        return
+
+    def add_plugin_dock(self, plugin):
         """Add plugin as dock widget"""
 
         dockstyle = '''
@@ -1867,7 +1885,6 @@ class App(QMainWindow):
             dock.setFloating(True)
             #dock.setGeometry(100, 0, 200, 30)
         self.docks[plugin.name] = dock
-        self.comms.newproj.connect(plugin.project_closed)
         return
 
     def update_plugin_menu(self):
@@ -1875,7 +1892,8 @@ class App(QMainWindow):
 
         from . import plugin
         plgmenu = self.plugin_menu
-        for plg in plugin.get_plugins_classes('gui'):
+        #for plg in plugin.get_plugins_classes('gui'):
+        for plg in plugin.Plugin.__subclasses__():
             #print (plg)
             def func(p, **kwargs):
                 def new():
@@ -1893,11 +1911,11 @@ class App(QMainWindow):
 
         data = {}
         for p in self.openplugins:
-            plugin = self.openplugins[p]
-            print (plugin)
-            d = plugin.save_data()
+            plg = self.openplugins[p]
+            print (plg)
+            d = plg.save_data()
             if d is not None:
-                data[plugin.name] = d
+                data[plg.name] = d
         print (data)
         return data
 
@@ -1905,11 +1923,11 @@ class App(QMainWindow):
         """remove all open plugins"""
 
         for p in self.openplugins.copy():
-            plugin = self.openplugins[p]
-            plugin.main.deleteLater()
-            del self.openplugins[plugin.name]
+            plg = self.openplugins[p]
+            plg.main.deleteLater()
+            del self.openplugins[plg.name]
             #self.docks[plugin.name].
-            del self.docks[plugin.name]
+            del self.docks[plg.name]
         return
 
     def preferences(self):

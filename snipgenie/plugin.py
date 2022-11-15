@@ -92,6 +92,11 @@ class Plugin(object):
 
         return
 
+    def run(self):
+        """Override this if you have no widgets and just want to run code"""
+        
+        return
+
     def quit(self, evt=None):
 
         return

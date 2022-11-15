@@ -48,6 +48,13 @@ This is a view of the SNPs in a table for all samples and each position. This is
 
 .. image:: snp_table.png
 
+SNP distance table
+++++++++++++++++++
+
+This shows the distance matrix of samples derived from the core SNP alignment above. The samples can be sorted by their order in the phylogeny stored in the project.
+
+.. image:: snp_dist_table.png
+
 VCF table
 +++++++++
 
@@ -55,10 +62,15 @@ This lets you view the content of vcf files that are the product of variant call
 
 .. image:: vcf_table.png
 
+CSQ table
++++++++++
+
+This is a table showing the contents of the csq.tsv file that is calculated as from the *consequence calling* step. This is only present if we have provided a genbank annotation file when running the variant calling. This shows the effects of each identified SNP in terms of their amino acid changes in the annotated proteins along the genome.
+
 Plotting from the tables
 ------------------------
 
-Some tables will allow you to make simple plots
+Some tables will allow you to make simple plots from numerical data.
 
 Adding sample metadata
 ----------------------
@@ -81,7 +93,9 @@ Results are displayed as a separate table in the plugin dialog. This will show t
 Create test data
 ----------------
 
-This plugin allows you to simulate a set of read data based on a pre-defined phylogeny and reference genome. The purpose of this is to test the workflow against known data. 
+This plugin allows you to simulate a set of read data based on a pre-defined phylogeny and reference genome. The purpose of this is to test the workflow against known data. It also provides a useful dataset to practice with.
+
+
 
 File renaming
 -------------

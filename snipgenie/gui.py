@@ -81,6 +81,9 @@ widgetstyle = '''
         min-width: 300px;}
 '''
 
+#fix to QtWebEngine display on linux
+os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--no-sandbox"
+
 class Communicate(QObject):
     newproj = Signal()
 
@@ -110,7 +113,7 @@ class App(QMainWindow):
         self.opentables = {}
         self.openplugins = {}
         self.plugindata = {}
-        
+
         self.main.setFocus()
         self.setCentralWidget(self.main)
 
@@ -488,10 +491,8 @@ class App(QMainWindow):
         self.tools_menu.addAction('Tree Viewer', self.tree_viewer)
         self.tools_menu.addSeparator()
         self.tools_menu.addAction('Check Heterozygosity', self.check_heterozygosity)
-        self.tools_menu.addAction('RD Analysis (MTBC)',
-            lambda: self.run_threaded_process(self.rd_analysis, self.rd_analysis_completed))
-        #self.tools_menu.addAction('M.bovis Spoligotyping',
-        #    lambda: self.run_threaded_process(self.spoligotyping, self.spotyping_completed))
+        #self.tools_menu.addAction('RD Analysis (MTBC)',
+        #    lambda: self.run_threaded_process(self.rd_analysis, self.rd_analysis_completed))
         #self.tools_menu.addAction('M.bovis SNP typing',
         #    lambda: self.run_threaded_process(self.snp_typing, self.processing_completed))
 
@@ -1634,7 +1635,7 @@ class App(QMainWindow):
         #fig.savefig(os.path.join(self.outputdir, 'hetero.png'))
         return
 
-    def snp_typing(self, progress_callback):
+    '''def snp_typing(self, progress_callback):
         """SNP typing for M.bovis"""
 
         from . import snp_typing
@@ -1650,36 +1651,6 @@ class App(QMainWindow):
         snptable = snp_typing.clade_snps
         res = snp_typing.type_samples(snpmat)
         print (res)
-        return
-
-    '''def spoligotyping(self, progress_callback):
-        """Mbovis spo typing tool"""
-
-        self.running == True
-        self.opts.applyOptions()
-        kwds = self.opts.kwds
-        df = self.fastq_table.model.df
-        data = self.get_selected()
-        if data is None or len(data) == 0:
-            return
-        res=[]
-        cols = ['sample','spotype','sb']
-        for i,r in data.iterrows():
-            name = r['sample']
-            s = tools.get_spoligotype(r.filename1, threads=kwds['threads'])
-            sb = tools.get_sb_number(s)
-            print (name, s, sb)
-            #set new values in place
-            df.loc[i,cols] = [name,s,sb]
-        return
-
-    def spotyping_completed(self):
-        """Typing completed"""
-
-        print("finished")
-        self.progressbar.setRange(0,1)
-        self.fastq_table.refresh()
-        self.running = False
         return'''
 
     def rd_analysis(self, progress_callback):

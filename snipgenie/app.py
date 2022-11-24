@@ -357,9 +357,9 @@ def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform
             cmd = '{s} index {o}'.format(o=out,s=samtoolscmd)
             subprocess.check_output(cmd,shell=True)
             print (cmd)
-        #index = df.index
-
+        #set bam file
         df.loc[i,'bam_file'] = os.path.abspath(out)
+
         #find mean depth/coverage
         if 'meandepth' not in df.columns or pd.isnull(df.loc[i,'meandepth']):
             cols = ['coverage','meandepth']
@@ -502,7 +502,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     bcftoolscmd = tools.get_cmd('bcftools')
     if not os.path.exists(rawbcf) or overwrite == True:
         print ('running mpileup..')
-        '''if threads == 1:
+        if threads == 1:
             bam_files = ' '.join(bam_files)
             cmd = '{bc} mpileup -a {a} --max-depth 500 -O b --min-MQ 60 -o {o} -f {r} {b}'\
                 .format(bc=bcftoolscmd,r=ref, b=bam_files, o=rawbcf, a=annotatestr)
@@ -511,10 +511,10 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
         #or use mpileup in parallel to speed up
         else:
             rawbcf = mpileup_parallel(bam_files, ref, outpath, threads=threads,
-                                        tempdir=tempdir, callback=callback)'''
+                                        tempdir=tempdir, callback=callback)
         #new method
-        rawbcf = mpileup_multiprocess(bam_files, ref, outpath, threads=threads,
-                                         callback=callback)
+        #rawbcf = mpileup_multiprocess(bam_files, ref, outpath, threads=threads,
+        #                                 callback=callback)
 
     else:
         print ('%s already exists' %rawbcf)
@@ -935,9 +935,9 @@ class WorkFlow(object):
                         unmapped=unmapped,
                         threads=self.threads, overwrite=self.overwrite)
 
-        lowdepth = samples[samples.meandepth<15]
-        if len(lowdepth)>0:
-            print ('%s samples have mean depth <15' %len(lowdepth))
+        #lowdepth = samples[samples.meandepth<15]
+        #if len(lowdepth)>0:
+        #    print ('%s samples have mean depth <15' %len(lowdepth))
 
         #mapping stats
         #if 'mapped' not in samples.columns and self.get_stats == True:

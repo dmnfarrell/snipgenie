@@ -147,6 +147,7 @@ class GISViewer(QWidget):
         self.splitter.setStretchFactor(1,0)
         vbox.addWidget(self.splitter)
         self.setLayout(layout)
+        #self.plotview = QWebEngineView() 
         pframe = QWidget()
         self.splitter.addWidget(pframe)
         self.addPlotWidget(pframe)
@@ -389,6 +390,63 @@ class GISViewer(QWidget):
         self.canvas.draw()
         return
 
+    def plot_folium_points(self, gdf):
+        """Plot points with folium"""
+
+        m = self.m
+        gdf = gdf.set_crs('EPSG:29902').to_crs('EPSG:4632')
+        #colors = tools.random_colors(n=len(labels),seed=20)
+
+        print (gdf)
+        for i,r in gdf.iterrows():
+            x=r.geometry.x
+            y=r.geometry.y
+            w=0.005
+            pts = ((y-w/1.5,x-w),(y+w/1.5,x+w))
+            folium.Circle(location=(y,x), radius=400,
+                          color=False,fill=True,fill_opacity=0.6,
+                          fill_color='blue',tooltip=r.label).add_to(m)
+
+
+    def plot_folium(self):
+        """Plot with folium"""
+
+        order = self.getLayerOrder()
+        checked = self.getChecked()
+        column = None
+        i=1
+
+        fig = Figure(width=900, height=900)
+        m = folium.Map(location=[54.1, -7.0], crs='EPSG3857',tiles='Stamen Terrain',
+                              width=1250, height=900)#, min_zoom=12)
+        style1 = {'fillColor': 'blue', 'color': 'black','weight':2}
+
+        data = io.BytesIO()
+        m.save(data, close_file=False)
+        self.plotview.setHtml(data.getvalue().decode())
+        self.m = m
+        layer = self.layers['centroids.shp']
+        #self.plot_points(layer.gdf)
+        #layer = self.layers['lpis_merged.shp']
+        #print (layer.gdf.crs)
+        #p = folium.GeoJson(layer.gdf.to_crs('EPSG:3857'),style_function=lambda x:style1)
+        #print (p)
+        #m.add_child(p)
+        return
+
+    def plot_leaflet(self):
+        """ipyleaflet plot"""
+
+        from ipyleaflet import Map, basemaps, basemap_to_tiles
+
+        m = Map(basemap=basemaps.CartoDB.Positron, center=(54.1, -7.0), zoom=9, height=800)
+
+        m.save('temp.html')
+        with open('temp.html', 'r') as f:
+            html = f.read()
+            self.plotview.setHtml(html)
+        return
+
     def getPlotLimits(self):
 
         axes = self.fig.axes
@@ -461,7 +519,7 @@ class GISViewer(QWidget):
 
         name = item.text(0)
         layer = self.layers[name]
-        
+
         from . import tables
         table = tables.DataFrameTable(self)
         table.model.df = layer.gdf

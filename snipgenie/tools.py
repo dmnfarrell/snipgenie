@@ -627,7 +627,7 @@ def get_vcf_samples(filename):
 
 def vcf_to_dataframe(vcf_file):
     """
-    Convert a multi sample vcf to dataframe. Records each samples FORMAT fields.
+    Convert a multi sample bcf/vcf to dataframe. Records each samples FORMAT fields.
     Args:
         vcf_file: input multi sample vcf
     Returns: pandas DataFrame
@@ -668,6 +668,27 @@ def vcf_to_dataframe(vcf_file):
     res['pos'] = res.pos.astype(int)
     #res['end'] = res.end.astype(int)
     return res
+
+def bcftools_query(bcf_file, positions=[], field='AD'):
+    """Query a vcf/bcf file for specific field over given positions.
+        Args:
+            positions: list of sites you want to query
+            field: FORMAT field e.g. DP, AD
+    """
+
+    bcftoolscmd = get_cmd('bcftools')
+    pstr = ''
+    for p in positions:
+        pstr+='POS=%s|' %p
+    pstr =pstr[:-1]
+    cmd = "{bc} query -f '%CHROM %POS %REF %ALT [%{f} ]\\n' -i '{p}' {b}".format(b=bcf_file,
+            bc=bcftoolscmd, f=field,p=pstr)
+    tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
+    #print (tmp[:100])
+    from io import StringIO
+    cols = ['chrom','pos','ref','alt']
+    df = pd.read_csv(StringIO(tmp),sep=' ',header=None)
+    return df
 
 def get_snp_matrix(df):
     """SNP matrix from multi sample vcf dataframe"""

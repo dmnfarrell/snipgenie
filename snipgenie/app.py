@@ -209,8 +209,8 @@ def write_samples(df, path):
     df.to_csv(filename, index=False, header=False)
     return filename
 
-def get_samples_from_bam(filenames, sep='-', index=0):
-    """Samples from bam files"""
+def get_samples_from_bams(filenames, sep='-', index=0):
+    """Samples names from a list of bam files"""
 
     res = []
     cols = ['name','sample','bam_file']
@@ -221,8 +221,6 @@ def get_samples_from_bam(filenames, sep='-', index=0):
         res.append(x)
 
     df = pd.DataFrame(res, columns=cols)
-    df = df.sort_values(['sample','bam_file'])
-    df['pair'] = df.groupby('sample').cumcount()+1
     df = df.drop_duplicates('bam_file')
     return df
 
@@ -738,7 +736,11 @@ def run_bamfiles(bam_files, ref, gff_file=None, mask=None, outdir='.', threads=4
     Should write a samples.txt file in the outdir if vcf header is to be
     relabelled.
     Args:
+        bam_files: list of bam files
+        ref: reference genome
         samples: dataframe of sample names, if not provided try to get from bam files
+        sep: separator for getting sample names, will write out a sample.txt file
+         in the output folder for bcftools to usef for relabelling the vcf
     """
 
     if not os.path.exists(outdir):
@@ -746,7 +748,7 @@ def run_bamfiles(bam_files, ref, gff_file=None, mask=None, outdir='.', threads=4
 
     #write sample names if not provided
     if samples is None:
-        samples = get_samples_from_bam(bam_files, sep=sep)
+        samples = get_samples_from_bams(bam_files, sep=sep)
     write_samples(samples[['sample']], outdir)
 
     print ('%s samples were loaded:' %len(bam_files))

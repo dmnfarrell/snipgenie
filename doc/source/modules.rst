@@ -1,5 +1,5 @@
-snipgenie
-==========
+API
+===
 
 .. toctree::
    :maxdepth: 4

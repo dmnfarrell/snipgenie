@@ -1,6 +1,2 @@
-numpy
-matplotlib
-pandas
-biopython
-pyside2
-future
+sphinx
+pydata_sphinx_theme

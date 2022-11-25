@@ -123,10 +123,13 @@ These files will be saved to the output folder when the workflow is finished::
 Use from Python
 ---------------
 
+Run the workflow
+++++++++++++++++
+
 You can run a workflow from within Python by importing the snipgenie package and invoking the WorkFlow class. You need to provide the options in a dictionary with the same keywords as the command line. Notice in this example we are loading files from two folders.
 ::
 
-  from sngenie import app
+  from snipgenie import app
   args = {'threads':8, 'outdir': 'results', 'labelsep':'-',
           'input':['/my/folder/',
                    '/my/other/folder'],
@@ -134,3 +137,14 @@ You can run a workflow from within Python by importing the snipgenie package and
   W = app.WorkFlow(**args)
   st = W.setup()
   W.run()
+
+Run previously aligned files
+++++++++++++++++++++++++++++
+
+This will run the remainder of the variant calling from sets of bam files. This is useful if you want to put together a set of precious runs without aligning them all again::
+
+  from snipgenie import app
+  #get a list of bam files
+  bams = glob.glob('/my/folder/*.bam')
+  ref = app.mbovis_genome # use your own reference here
+  app.run_bamfiles(bams, ref)

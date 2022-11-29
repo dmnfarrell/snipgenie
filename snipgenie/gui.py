@@ -177,6 +177,18 @@ class App(QMainWindow):
             print (e)
         return
 
+    def apply_settings(self):
+        """Apply settings to GUI when changed"""
+
+        self.setIconSize(QtCore.QSize(core.ICONSIZE, core.ICONSIZE))
+        for i in self.opentables:
+            table = self.opentables[i]
+            #table.toolbar.setIconSize(QtCore.QSize(core.ICONSIZE, core.ICONSIZE))
+        import matplotlib as mpl
+        mpl.rcParams['savefig.dpi'] = core.DPI
+        #self.setTheme(self.theme)
+        return
+
     def save_settings(self):
         """Save GUI settings"""
 
@@ -238,6 +250,9 @@ class App(QMainWindow):
                  'Call Variants': {
                     'action': lambda: self.run_threaded_process(self.variant_calling, self.calling_completed),
                     'file':'call-variants'},
+                 'SNP Dist Matrix': {
+                    'action':  self.show_snpdist,
+                    'file':'snp-dist'},
                  'SNP Viewer': {
                     'action':  self.snp_viewer,
                     'file':'snp-viewer'},
@@ -251,7 +266,7 @@ class App(QMainWindow):
         self.addToolBar(toolbar)
         for i in items:
             if 'file' in items[i]:
-                iconfile = os.path.join(iconpath,items[i]['file']+'.png')
+                iconfile = os.path.join(iconpath,items[i]['file'])
                 icon = QIcon(iconfile)
             else:
                 icon = QIcon.fromTheme(items[i]['icon'])
@@ -483,7 +498,7 @@ class App(QMainWindow):
         self.tools_menu.addAction('Fastq Qualities Report', self.fastq_quality_report)
 
         self.tools_menu.addAction('Show Annotation', self.show_ref_annotation)
-        #self.tools_menu.addAction('Plot SNP Matrix', self.plot_dist_matrix)
+        self.tools_menu.addAction('SNP Dist Matrix', self.show_snpdist)
         self.tools_menu.addAction('SNP Viewer', self.snp_viewer)
         self.tools_menu.addAction('CSQ Viewer', self.csq_viewer)
         self.tools_menu.addAction('VCF Viewer', self.vcf_viewer)
@@ -551,6 +566,16 @@ class App(QMainWindow):
             func = self.load_preset_genome
             receiver = lambda seqname=seqname, gb=gbfile, mask=mask, ask=ask: func(seqname, gb, mask, ask)
             self.presets_menu.addAction('%s' %name, receiver)
+        return
+
+    def refresh(self):
+        """Refresh all tables"""
+
+        for i in self.opentables:
+            w = self.opentables[i]
+            w.font = core.FONT
+            w.fontsize = core.FONTSIZE
+            w.refresh()
         return
 
     def load_preset_genome(self, seqname, gbfile, mask, ask):
@@ -703,7 +728,7 @@ class App(QMainWindow):
         self.proj_file = filename
         self.update_labels()
         self.setup_paths()
-        self.show_snpdist()
+        #self.show_snpdist()
 
         #if 'opentables' in data:
             #for key in data['opentables']:
@@ -1113,8 +1138,10 @@ class App(QMainWindow):
         mat = pd.read_csv(self.dist_matrix,index_col=0)
         if 'SNP dist' in self.get_tabs():
             self.tabs.removeTab(0)
-        table = tables.DistMatrixTable(self.tabs, app=self, dataframe=mat)
-        i = self.tabs.addTab(table, 'SNP dist')
+        table = tables.DistMatrixTable(self, app=self, dataframe=mat)
+        w = tables.DataFrameWidget(self.tabs, table=table,
+                            toolbar=True)
+        i = self.tabs.addTab(w, 'SNP dist')
         self.tabs.setCurrentIndex(i)
         self.opentables['SNP dist'] = table
         return
@@ -1434,10 +1461,13 @@ class App(QMainWindow):
                 print ('no bam file')
                 continue
             s = get_stats(r.bam_file)
-            df.loc[i,'mapped'] = s['mapped']
+            df.loc[i,'mapped'] = s['primary']
             total = df.loc[i,'reads']
-            df.loc[i,'perc_mapped'] = round(s['mapped']/total*100,2)
-            print (s['mapped'],total)
+            if pd.isna(total):
+                total = tools.get_fastq_size(r.filename1)
+                df.loc[i,'reads'] = total
+            df.loc[i,'perc_mapped'] = round(s['primary']/(total*2)*100,2)
+            #print (s['mapped'],total)
         #self.fastq_table.setDataFrame(df)
         return
 
@@ -2014,7 +2044,7 @@ class StdoutRedirect(QObject):
         self.printOccur.emit(s, color)
 
 class AppOptions(widgets.BaseOptions):
-    """Class to provide a dialog for global plot options"""
+    """Class to provide a dialog for global options"""
 
     def __init__(self, parent=None):
         """Setup variables"""

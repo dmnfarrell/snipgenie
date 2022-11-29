@@ -4,22 +4,6 @@ snipgenie package
 Submodules
 ----------
 
-snipgenie\.gui module
----------------------
-
-.. automodule:: snipgenie.gui
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-snipgenie\.widgets module
--------------------------
-
-.. automodule:: snipgenie.widgets
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 snipgenie\.tools module
 -----------------------
 
@@ -53,7 +37,7 @@ snipgenie\.plotting module
     :show-inheritance:
 
 snipgenie\.trees module
---------------------------
+-----------------------
 
 .. automodule:: snipgenie.trees
     :members:
@@ -64,6 +48,22 @@ snipgenie\.simulate module
 --------------------------
 
 .. automodule:: snipgenie.simulate
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+snipgenie\.gui module
+---------------------
+
+.. automodule:: snipgenie.gui
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+snipgenie\.widgets module
+-------------------------
+
+.. automodule:: snipgenie.widgets
     :members:
     :undoc-members:
     :show-inheritance:

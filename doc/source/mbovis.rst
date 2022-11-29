@@ -1,5 +1,5 @@
 *M.bovis* analysis
-================
+==================
 
 This tool was initially written for analysis of M.bovis isolates. It can however be used for any other bacterial or viral species for which this kind of workflow is appropriate.
 The tools documented here are specific to M.bovis.

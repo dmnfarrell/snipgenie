@@ -32,9 +32,9 @@ else:
     defaultfont = 'Monospace'
 defaults = {
             'FONT' :defaultfont,
-            'FONTSIZE' : 12,
+            'FONTSIZE' : 10,
             'TIMEFORMAT' :'%m/%d/%Y',
-            'PLOTSTYLE' : 'default',
+            'PLOTSTYLE' : 'bmh',
             'ICONSIZE' : 20,
             'DPI' : 100,
             'BGCOLOR' : '#F4F4F3',

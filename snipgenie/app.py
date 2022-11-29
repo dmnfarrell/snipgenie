@@ -209,7 +209,7 @@ def write_samples(df, path):
     df.to_csv(filename, index=False, header=False)
     return filename
 
-def get_samples_from_bams(filenames, sep='-', index=0):
+def get_samples_from_bams(filenames, sep='_', index=0):
     """Samples names from a list of bam files"""
 
     res = []
@@ -241,12 +241,13 @@ def mapping_stats(samples):
 
     for i,r in samples.iterrows():
         s = get_stats(r.bam_file)
-        samples.loc[i,'mapped'] = s['mapped']
+
+        samples.loc[i,'mapped'] = s['primary']
         total = tools.get_fastq_size(r.filename1)
         #if 'filename2' in samples.columns:
         #    total += tools.get_fastq_size(r.filename1)
         samples.loc[i,'reads'] = total
-        samples.loc[i,'perc_mapped'] = round(s['mapped']/total*100,2)
+        samples.loc[i,'perc_mapped'] = round(s['primary']/(total*2)*100,2)
     return samples
 
 def clean_bam_files(samples, path, remove=False):

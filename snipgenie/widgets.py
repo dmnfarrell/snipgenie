@@ -20,10 +20,12 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 
-import sys, os, io
+import sys, os, io, platform
 import numpy as np
 import pandas as pd
 import string
+import pylab as plt
+import matplotlib as mpl
 from .qt import *
 from . import tables
 
@@ -55,8 +57,8 @@ def dialogFromOptions(parent, opts, sections=None,
 
     if style == None:
         style = '''
-        QLabel {
-            font-size: 14px;
+        QWidget {
+            font-size: 12px;
         }
         QPlainTextEdit {
             max-height: 80px;
@@ -196,6 +198,28 @@ def dialogFromOptions(parent, opts, sections=None,
             scol+=1
     return dialog, widgets
 
+def getWidgetValue(w):
+    """Get value from any kind of widget"""
+
+    val = None
+    if type(w) is QLineEdit:
+        val = w.text()
+    elif type(w) is QPlainTextEdit:
+        val = w.toPlainText()
+    elif type(w) is QComboBox or type(w) is QFontComboBox:
+        val = w.currentText()
+    elif type(w) is QListWidget:
+        val = [i.text() for i in w.selectedItems()]
+    elif type(w) is QCheckBox:
+        val = w.isChecked()
+    elif type(w) is QSlider:
+        val = w.value()
+    elif type(w) in [QSpinBox,QDoubleSpinBox]:
+        val = w.value()
+    elif type(w) is ColorButton:
+        val = w.color()
+    return val
+
 def getWidgetValues(widgets):
     """Get values back from a set of widgets"""
 
@@ -204,21 +228,7 @@ def getWidgetValues(widgets):
         val = None
         if i in widgets:
             w = widgets[i]
-            if type(w) is QLineEdit:
-                try:
-                    val = float(w.text())
-                except:
-                    val = w.text()
-            elif type(w) is QPlainTextEdit:
-                val = w.toPlainText()
-            elif type(w) is QComboBox or type(w) is QFontComboBox:
-                val = w.currentText()
-            elif type(w) is QCheckBox:
-                val = w.isChecked()
-            elif type(w) is QSlider:
-                val = w.value()
-            elif type(w) in [QSpinBox,QDoubleSpinBox]:
-                val = w.value()
+            val = getWidgetValue(w)
             if val != None:
                 kwds[i] = val
     kwds = kwds
@@ -264,6 +274,19 @@ def addToolBarItems(toolbar, parent, items):
         #btn.setCheckable(True)
         toolbar.addAction(btn)
     return toolbar
+
+def get_fonts():
+     """Get the current list of system fonts"""
+
+     import matplotlib.font_manager
+     l = matplotlib.font_manager.findSystemFonts(fontext='ttf')
+     fonts = []
+     for fname in l:
+        try: fonts.append(matplotlib.font_manager.FontProperties(fname=fname).get_name())
+        except RuntimeError: pass
+     fonts = list(set(fonts))
+     fonts.sort()
+     return fonts
 
 class MultipleInputDialog(QDialog):
     """Qdialog with multiple inputs"""
@@ -632,16 +655,14 @@ class PreferencesDialog(QDialog):
         kwds = getWidgetValues(self.widgets)
         core.FONT = kwds['FONT']
         core.FONTSIZE = kwds['FONTSIZE']
-        core.BGCOLOR = kwds['BGCOLOR']
         core.TIMEFORMAT = kwds['TIMEFORMAT']
-        core.PRECISION = kwds['PRECISION']
-        core.SHOWPLOTTER = kwds['SHOWPLOTTER']
+        core.BGCOLOR = kwds['BGCOLOR']
         core.PLOTSTYLE = kwds['PLOTSTYLE']
         core.DPI = kwds['DPI']
         core.ICONSIZE = kwds['ICONSIZE']
         self.parent.theme = kwds['THEME']
         self.parent.refresh()
-        self.parent.applySettings()
+        self.parent.apply_settings()
         return
 
     def updateWidgets(self, kwds=None):
@@ -890,15 +911,60 @@ class TableViewer(QDialog):
         self.table.model.df = dataframe
         return
 
+class PlotOptions(BaseOptions):
+    """Class to provide a dialog for plot options"""
+
+    def __init__(self, parent=None):
+        """Setup variables"""
+
+        self.parent = parent
+        self.kwds = {}
+        kinds = ['','bar','barh','hist','scatter','line','heatmap','pie','box']
+        scales = ['linear','log']
+        style_list = ['default', 'classic', 'fivethirtyeight',
+                     'seaborn-pastel','seaborn-whitegrid', 'ggplot','bmh',
+                     'grayscale','dark_background']
+        markers = ['','o','.','^','v','>','<','s','+','x','p','d','h','*']
+        linestyles = ['-','--','-.',':']
+        fonts = get_fonts()
+        if 'Windows' in platform.platform():
+            defaultfont = 'Arial'
+        else:
+            defaultfont = 'FreeSans'
+        colormaps = sorted(m for m in plt.cm.datad if not m.endswith("_r"))
+        self.groups = {'general':['kind','grid','bins','linewidth','linestyle',
+                       'marker','ms','alpha','colormap'],
+                       'format' :['title','xlabel','style','font','fontsize']
+                       }
+        self.opts = {
+                    'kind':{'type':'combobox','default':'','items':kinds},
+                    'grid':{'type':'checkbox','default':0,'label':'show grid'},
+                    'bins':{'type':'spinbox','default':20,'width':5},
+                    'marker':{'type':'combobox','default':'o','items': markers},
+                    'linestyle':{'type':'combobox','default':'-','items': linestyles},
+                    'linewidth':{'type':'doublespinbox','default':1.0,'range':(0,20),'interval':.2,'label':'line width'},
+                    'ms':{'type':'spinbox','default':5,'range':(1,80),'interval':1,'label':'marker size'},
+                    'colormap':{'type':'combobox','default':'Spectral','items':colormaps},
+                    'alpha':{'type':'doublespinbox','default':0.9,'range':(.1,1),'interval':.1,'label':'alpha'},
+                    'style':{'type':'combobox','default':core.PLOTSTYLE,'items': style_list},
+                    'title':{'type':'entry','default':''},
+                    'xlabel':{'type':'entry','default':''},
+                    'font':{'type':'font','default':defaultfont,'items':fonts},
+                    'fontsize':{'type':'spinbox','default':10,'range':(4,50),'label':'font size'},
+                    }
+        return
+
 class PlotViewer(QWidget):
     """matplotlib plots widget"""
     def __init__(self, parent=None):
 
         super(PlotViewer, self).__init__(parent)
-        self.setGeometry(QtCore.QRect(200, 200, 600, 600))
-        self.grid = QGridLayout()
-        self.setLayout(self.grid)
+        self.setGeometry(QtCore.QRect(200, 200, 900, 600))
+        self.main = QSplitter()
+        self.setLayout(QVBoxLayout())
+        self.layout().addWidget(self.main)
         self.create_figure()
+        self.create_controls()
         self.setWindowTitle('plots')
         return
 
@@ -915,24 +981,174 @@ class PlotViewer(QWidget):
         if hasattr(self, 'canvas'):
             self.layout().removeWidget(self.canvas)
         canvas = FigureCanvas(fig)
-        self.grid.addWidget(canvas)
+        left = QWidget()
+        self.main.addWidget(left)
+        l = QVBoxLayout()
+        left.setLayout(l)
+        l.addWidget(canvas)
         self.toolbar = NavigationToolbar(canvas, self)
-        self.grid.addWidget(self.toolbar)
+        l.addWidget(self.toolbar)
         self.fig = fig
         self.canvas = canvas
-
-        iconfile = os.path.join(iconpath,'reduce.png')
+        iconfile = os.path.join(iconpath,'reduce')
         a = QAction(QIcon(iconfile), "Reduce elements",  self)
         a.triggered.connect(lambda: self.zoom(zoomin=False))
         self.toolbar.addAction(a)
-        iconfile = os.path.join(iconpath,'enlarge.png')
+        iconfile = os.path.join(iconpath,'enlarge')
         a = QAction(QIcon(iconfile), "Enlarge elements",  self)
         a.triggered.connect(lambda: self.zoom(zoomin=True))
         self.toolbar.addAction(a)
         return
 
+    def create_controls(self):
+        """Make widgets for options"""
+
+        self.opts = PlotOptions()
+        right = QWidget()
+        self.main.addWidget(right)
+        w = self.opts.showDialog(self, style=None, section_wrap=1)
+        right.setMaximumWidth(220)
+        l = QVBoxLayout()
+        right.setLayout(l)
+        l.addWidget(w)
+        btn = QPushButton('Refresh')
+        btn.clicked.connect(self.replot)
+        l.addWidget(btn)
+        self.main.addWidget(right)
+        return
+
+    def plot(self, data, kind=None):
+        """Do plot"""
+
+        self.opts.applyOptions()
+        kwds = self.opts.kwds
+        if kind == None and kwds['kind'] != '':
+            #overrides kind argument
+            kind = kwds['kind']
+        else:
+            #set widget to current plot kind
+            self.opts.setWidgetValue('kind', kind)
+            pass
+        title = kwds['title']
+        xlabel = kwds['xlabel']
+        font = kwds['font']
+        fontsize = kwds['fontsize']
+        alpha = kwds['alpha']
+        cmap = kwds['colormap']
+        grid = kwds['grid']
+        marker = kwds['marker']
+        ms = kwds['ms']
+        ls = kwds['linestyle']
+        lw = kwds['linewidth']
+        self.style = kwds['style']
+        self.set_style()
+        self.data = data
+        #self.kind = kind
+
+        d = data._get_numeric_data()
+        xcol = d.columns[0]
+        ycols = d.columns[1:]
+
+        nrows = int(round(np.sqrt(len(data.columns)),0))
+        layout = (nrows,-1)
+        self.clear()
+        fig = self.fig
+        ax = self.ax
+        plt.rc("font", family=kwds['font'], size=fontsize)
+        if kind == 'bar':
+            d.plot(kind='bar',ax=ax, cmap=cmap, grid=grid, alpha=alpha, linewidth=lw,
+                    fontsize=fontsize)
+        elif kind == 'barh':
+            d.plot(kind='barh',ax=ax, cmap=cmap, grid=grid, alpha=alpha, linewidth=lw,
+                    fontsize=fontsize)
+        elif kind == 'hist':
+            d.plot(kind='hist',subplots=True,ax=ax,bins=kwds['bins'], linewidth=lw,
+                    cmap=cmap, grid=grid, alpha=alpha, fontsize=fontsize)
+        elif kind == 'scatter':
+            d=d.dropna()
+            d.plot(x=xcol,y=ycols,kind='scatter',ax=ax,s=ms,marker=marker,
+                    grid=grid, alpha=alpha, fontsize=fontsize)
+        elif kind == 'line':
+            d.plot(kind='line',ax=ax, cmap=cmap, grid=grid, alpha=alpha, linewidth=lw,
+                    fontsize=fontsize)
+        elif kind == 'heatmap':
+            #ax.imshow(d, cmap=cmap)
+            self.heatmap(d, ax, cmap=cmap, alpha=alpha)
+        elif kind == 'pie':
+            d.plot(kind='pie',subplots=True,legend=False,layout=layout,ax=ax)
+        elif kind == 'box':
+            d.boxplot(ax=ax, grid=grid)
+
+        if xlabel != '':
+            ax.set_xlabel(xlabel)
+        fig.suptitle(title, font=font)
+        plt.tight_layout()
+        self.redraw()
+        return
+
+    def replot(self):
+        """Update current plot"""
+
+        self.plot(self.data, kind=None)
+        return
+
+    def refresh(self):
+        """Update current plot"""
+
+        self.plot(self.data, kind=None)
+        return
+
+    def heatmap(self, df, ax, cmap='Blues', alpha=0.9, lw=1,
+                colorbar=True, cscale='log'):
+        """Plot heatmap"""
+
+        X = df._get_numeric_data()
+        clr='black'
+        if lw==0:
+            clr=None
+            lw=None
+        if cscale == 'log':
+            norm=mpl.colors.LogNorm()
+        else:
+            norm=None
+        hm = ax.pcolor(X, cmap=cmap,linewidth=lw,alpha=alpha,norm=norm)
+        if colorbar == True:
+            self.fig.colorbar(hm, ax=ax)
+        ax.set_xticks(np.arange(0.5, len(X.columns)))
+        ax.set_yticks(np.arange(0.5, len(X.index)))
+        ax.set_xticklabels(X.columns, minor=False)
+        ax.set_yticklabels(X.index, minor=False)
+        ax.set_ylim(0, len(X.index))
+        return
+
+    def violinplot(self, df, ax, kwds):
+        """violin plot"""
+
+        data=[]
+        clrs=[]
+        df = df._get_numeric_data()
+        cols = len(df.columns)
+        cmap = plt.cm.get_cmap(kwds['colormap'])
+        for i,d in enumerate(df):
+            clrs.append(cmap(float(i)/cols))
+            data.append(df[d].values)
+        lw = kwds['linewidth']
+        alpha = kwds['alpha']
+        parts = ax.violinplot(data, showextrema=False, showmeans=True)
+        i=0
+        for pc in parts['bodies']:
+            pc.set_facecolor(clrs[i])
+            pc.set_edgecolor('black')
+            pc.set_alpha(alpha)
+            pc.set_linewidth(lw)
+            i+=1
+        labels = df.columns
+        ax.set_xticks(np.arange(1, len(labels) + 1))
+        ax.set_xticklabels(labels)
+        return
+
     def set_figure(self, fig):
-        """Set the figure"""
+        """Set the figure if we have plotted elsewhere"""
 
         self.clear()
         self.create_figure(fig)
@@ -948,6 +1164,15 @@ class PlotViewer(QWidget):
         self.canvas.draw()
         return
 
+    def set_style(self):
+        """Apply style"""
+
+        if self.style == None or self.style == '':
+            mpl.rcParams.update(mpl.rcParamsDefault)
+        else:
+            plt.style.use(self.style)
+        return
+
     def redraw(self):
         self.canvas.draw()
 
@@ -958,14 +1183,12 @@ class PlotViewer(QWidget):
             val=-1.0
         else:
             val=1.0
-
-        if len(self.opts['general'].kwds) == 0:
+        if len(self.opts.kwds) == 0:
             return
-
-        self.opts['format'].increment('linewidth',val/5)
-        self.opts['format'].increment('ms',val)
-        self.opts['labels'].increment('fontsize',val)
-        self.refraw()
+        self.opts.increment('linewidth',val/5)
+        self.opts.increment('ms',val*2)
+        self.opts.increment('fontsize',val)
+        self.replot()
         return
 
 class BrowserViewer(QDialog):

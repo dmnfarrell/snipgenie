@@ -70,7 +70,7 @@ def get_attributes(obj):
         if type(item) in allowed:
             d[key] = item
         elif type(item) is dict:
-            if checkDict(item) == 1:
+            if check_dict(item) == 1:
                 d[key] = item
     return d
 
@@ -94,13 +94,13 @@ def gunzip(infile, outfile):
             shutil.copyfileobj(f_in, f_out)
     return
 
-def checkDict(d):
+def check_dict(d):
     """Check a dict recursively for non serializable types"""
 
     allowed = [str,int,float,list,tuple,bool]
     for k, v in d.items():
         if isinstance(v, dict):
-            checkDict(v)
+            check_dict(v)
         else:
             if type(v) not in allowed:
                 return 0
@@ -144,8 +144,11 @@ def diffseqs(seq1,seq2):
 
 def snp_dist_matrix(aln):
     """Get pairwise snps distances from biopython
-       Multiple Sequence Alignment object.
-       returns: pandas dataframe
+       Args:
+        aln:
+            Biopython multiple sequence alignment object.
+        returns:
+            a matrix as pandas dataframe
     """
 
     names=[s.id for s in aln]
@@ -166,6 +169,8 @@ def get_unique_snps(names, df, present=True):
         name: name of sample(s)
         df: snp matrix from app.get_aa_snp_matrix(csq)
         present: whether snp should be present/absent
+    returns:
+        dataframe
     """
 
     if type(names) is str:
@@ -218,7 +223,15 @@ def get_fastq_size(filename):
     return l
 
 def clustal_alignment(filename=None, seqs=None, command="clustalw"):
-    """Align 2 sequences with clustal"""
+    """
+    Align 2 sequences with clustal.
+    Args:
+        filename: fasta file with sequences to align
+        seqs: sequences as list if no filename
+        command: name of command, default clustalw
+    Returns:
+        alignment object
+    """
 
     if filename == None:
         filename = 'temp.faa'

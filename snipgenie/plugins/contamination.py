@@ -123,7 +123,11 @@ class ContaminationCheckerPlugin(Plugin):
         self.readsentry = w = QLineEdit()
         w.setText(str(self.numreads))
         vbox.addWidget(w)
-
+        w = QLabel('Use percentage:')
+        vbox.addWidget(w)
+        self.percbox = w = QCheckBox()
+        w.setChecked(0)
+        vbox.addWidget(w)
         button = QPushButton("Set Folder")
         button.clicked.connect(self.set_folder)
         vbox.addWidget(button)
@@ -472,14 +476,20 @@ class ContaminationCheckerPlugin(Plugin):
             d = tools.samtools_flagstat(f)
             #total = tools.get_fastq_size(r.filename1)
             mapped = d['primary']
-            perc = round(mapped/self.numreads*2*100,2) #assumes numreads unchanged since alignment!
+            perc = round(mapped/(self.numreads*2)*100,2) #assumes numreads unchanged since alignment!
             results.append([sample,idx,r.species,mapped,perc])
             #print (sample, idx)
             #print (d)
 
         df = self.results = pd.DataFrame(results, columns=['sample','ref','species','total','perc'])
         df = df[df.ref.isin(checked)]
-        p = pd.pivot_table(df, index='sample',columns='species',values='total')
+        #use percentage mapped or not
+        useperc = self.percbox.isChecked()
+        if useperc == 1:
+            valcol = 'perc'
+        else:
+            valcol = 'total'
+        p = pd.pivot_table(df, index='sample',columns='species',values=valcol)
         self.result_table.setDataFrame(p)
         return
 

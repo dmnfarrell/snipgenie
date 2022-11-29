@@ -50,6 +50,7 @@ class DataFrameWidget(QWidget):
             self.table = DataFrameTable(self, dataframe=pd.DataFrame())#, **kwargs)
         else:
             self.table = table
+            table.parent = self
         l.addWidget(self.table, 1, 1)
         if toolbar == True:
             self.createToolbar()
@@ -94,12 +95,13 @@ class DataFrameWidget(QWidget):
 
         self.setLayout(self.layout)
         items = {
-                 'copy': {'action':self.copy,'file':'copy','shortcut':'Ctrl+C'},
-                 'bar': {'action':self.plot_bar,'file':'plot_bar'},
-                 'barh': {'action':self.plot_barh,'file':'plot_barh'},
-                 'hist': {'action':self.plot_hist,'file':'plot_hist'},
-                 'scatter': {'action':self.plot_scatter,'file':'plot_scatter'},
-                 'pie': {'action':self.plot_pie,'file':'plot_pie'},
+                 'copy': {'action': self.copy,'file':'copy','shortcut':'Ctrl+C'},
+                 'bar': {'action': lambda: self.table.plot(kind='bar'),'file':'plot_bar'},
+                 'barh': {'action': lambda: self.table.plot(kind='barh'),'file':'plot_barh'},
+                 'hist': {'action': lambda: self.table.plot(kind='hist'),'file':'plot_hist'},
+                 'scatter': {'action': lambda: self.table.plot(kind='scatter'),'file':'plot_scatter'},
+                 'heatmap': {'action': lambda: self.table.plot(kind='heatmap'), 'file':'plot_heatmap'},
+                 'pie': {'action': lambda: self.table.plot(kind='pie'),'file':'plot_pie'},
                  #'filter':{'action':sel-f.filter,'file':'table-filter'}
                  }
 
@@ -127,36 +129,6 @@ class DataFrameWidget(QWidget):
                 return
         df = self.table.getSelectedDataFrame()
         df.to_clipboard()
-        return
-
-    def plot_bar(self):
-        """Plot from selection"""
-
-        self.table.plot(kind='bar')
-        return
-
-    def plot_barh(self):
-        """Plot from selection"""
-
-        self.table.plot(kind='barh')
-        return
-
-    def plot_hist(self):
-        """Plot from selection"""
-
-        self.table.plot(kind='hist')
-        return
-
-    def plot_scatter(self):
-        self.table.plot(kind='scatter')
-        return
-
-    def plot_line(self):
-        self.table.plot(kind='line')
-        return
-
-    def plot_pie(self):
-        self.table.plot(kind='pie')
         return
 
     def filter(self):
@@ -603,31 +575,8 @@ class DataFrameTable(QTableView):
         """Plot table selection"""
 
         df = self.model.df
-        #idx = self.getSelectedColumns()
-        #cols = df.columns[idx]
-        #d = df[cols]
         data = self.getSelectedDataFrame()
-        d = data._get_numeric_data()
-        #print (d)
-        xcol = d.columns[0]
-        ycols = d.columns[1:]
-
-        self.plotview.clear()
-        ax = self.plotview.ax
-        if kind == 'bar':
-            d.plot(kind='bar',ax=ax)
-        elif kind == 'barh':
-            d.plot(kind='barh',ax=ax)
-        elif kind == 'hist':
-            d.plot(kind='hist',subplots=True,ax=ax)
-        elif kind == 'scatter':
-            d=d.dropna()
-            d.plot(x=xcol,y=ycols,kind='scatter',ax=ax)
-        elif kind == 'pie':
-            d.plot(kind='pie',subplots=True,legend=False,ax=ax)
-        #ax.set_title(col)
-        plt.tight_layout()
-        self.plotview.redraw()
+        self.plotview.plot(data, kind=kind)
         self.plotview.show()
         self.plotview.activateWindow()
         return

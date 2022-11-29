@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="512mm"
+   height="512mm"
+   viewBox="0 0 512 512"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   sodipodi:docname="enlarge.svg"
+   inkscape:export-filename="/home/farrell/gitprojects/snipgenie/svg/bar.png"
+   inkscape:export-xdpi="25.4"
+   inkscape:export-ydpi="25.4"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#999999"
+     borderopacity="1"
+     inkscape:pageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="mm"
+     showgrid="false"
+     width="209mm"
+     inkscape:zoom="0.22897889"
+     inkscape:cx="205.2591"
+     inkscape:cy="873.44296"
+     inkscape:window-width="2560"
+     inkscape:window-height="1300"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs2">
+    <rect
+       x="65.508222"
+       y="61.141007"
+       width="1729.4171"
+       height="1768.722"
+       id="rect2579" />
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <text
+       xml:space="preserve"
+       transform="scale(0.26458333)"
+       id="text2577"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect2579);fill:#000000;fill-opacity:1;stroke:none" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:669.292px;line-height:1.25;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none;stroke-width:16.7323"
+       x="8.5631399"
+       y="489.66983"
+       id="text3619"
+       transform="scale(1.0004634,0.99953681)"><tspan
+         sodipodi:role="line"
+         id="tspan3617"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:669.292px;font-family:FreeSerif;-inkscape-font-specification:'FreeSerif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:16.7323"
+         x="8.5631399"
+         y="489.66983">A</tspan></text>
+    <path
+       sodipodi:type="star"
+       style="fill:#cd4600;fill-opacity:1;stroke:#e2bb30;stroke-width:0;stroke-linecap:round;stroke-linejoin:bevel"
+       id="path16079"
+       inkscape:flatsided="true"
+       sodipodi:sides="3"
+       sodipodi:cx="-1288.3284"
+       sodipodi:cy="-672.55109"
+       sodipodi:r1="1365.5353"
+       sodipodi:r2="682.76764"
+       sodipodi:arg1="0.68572951"
+       sodipodi:arg2="1.7329271"
+       inkscape:rounded="0"
+       inkscape:randomized="0"
+       d="M -231.46237,192.15745 -2565.6209,-189.63256 -1067.9018,-2020.1782 Z"
+       transform="matrix(-0.04493425,-0.05002047,0.0551264,-0.04077234,398.87211,10.116865)"
+       inkscape:transform-center-x="0.089388902"
+       inkscape:transform-center-y="-21.960026" />
+  </g>
+</svg>

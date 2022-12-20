@@ -26,6 +26,8 @@ import subprocess
 import numpy as np
 import pandas as pd
 from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 from . import tools, app
 
 home = os.path.expanduser("~")
@@ -41,12 +43,16 @@ ref_proteins = os.path.join(datadir,'Mbovis_AF212297_proteins.fa')
 schemes = {'Mbovis-AF212297': mbovis_scheme}
 
 def get_samples_vcf(vcf_file):
+    """Get all samples in a vcf file. Returns a list."""
+
     cmd = 'bcftools query -l %s' %vcf_file
     tmp = subprocess.check_output(cmd, shell=True)
-    return tmp.decode().split('\n')
+    names = tmp.decode().split('\n')[:-1]
+    #print (names)
+    return names
 
 def get_nucleotide_sequences(gb_file,out_file,idkey='locus_tag'):
-    """protein nucleotide seqs from genbank"""
+    """Extract nucleotide sequences for all features in genbank file"""
 
     recs = SeqIO.to_dict(SeqIO.parse(gb_file,'genbank'))
     chroms = list(recs.keys())
@@ -67,8 +73,8 @@ def get_nucleotide_sequences(gb_file,out_file,idkey='locus_tag'):
     SeqIO.write(result,out_file,format='fasta')
     return result
 
-def get_consensus(vcf_file, sample, out_file='consensus.fa'):
-    """Get consensus sequence from vcf"""
+def bcftools_consensus(vcf_file, sample, out_file='consensus.fa'):
+    """Get consensus sequence from a vcf file"""
 
     cmd='bcftools index -f %s' %vcf_file
     subprocess.check_output(cmd, shell=True)
@@ -78,11 +84,36 @@ def get_consensus(vcf_file, sample, out_file='consensus.fa'):
     subprocess.check_output(cmd, shell=True)
     return
 
-def diff_profiles(s1, s2):
-    return sum(1 for a, b in zip(s1, s2) if a != b)
+def spades(file1, file2, path, outfile=None, threads=4):
+    """Run spades on paired end reads"""
+
+    cmd = 'spades -t %s --pe1-1 %s --pe1-2 %s --careful -o %s' %(threads,file1,file2,path)
+    if not os.path.exists(path):
+        print (cmd)
+        subprocess.check_output(cmd, shell=True)
+    if outfile != None:
+        shutil.copy(os.path.join(path,'scaffolds.fasta'),outfile)
+    return outfile
+
+def make_reference_proteins():
+    """Make reference protein sequences from m.bovis
+       used for initial setup of proteins file which is used as
+      'trusted source' in annotation process
+     """
+
+    prots = pg.tools.genbank_to_dataframe(app.mbovis_gb,cds=True)
+    prots = prots.fillna('')
+    prots = prots.dropna(subset=['locus_tag'])
+    ref_proteins = 'Mbovis_AF212297_proteins.fa'
+    #get prokka type header for using in annotation
+    prots['header'] = prots.apply(lambda x: '~~~'.join([x.locus_tag,x.gene,x['product'],'none']),1)
+    pg.tools.dataframe_to_fasta(prots,idkey='header',outfile=ref_proteins)
+    print (len(prots))
+    return prots
 
 def find_alleles(fastafile):
-    """Find allele by simple matches to the reference table of known sequences.
+    """Find alleles by simple matches to the reference table of known sequences.
+    Checks if an allele already exists and if not assigns a new number.
     Returns:
         dataframe with allele number for each gene
         dataframe with new alleles to add to db
@@ -125,42 +156,54 @@ def update_mlst_db(new):
     """Update the database of MLST profiles"""
 
     db = pd.read_csv(mbovis_db)
-    db = pd.concat([db,new])
+    #check if any new alleles to be added first
+    found = new[new.sequence.isin(db.sequence)]
+    if len(found) > 0:
+        db = pd.concat([db,new])
     db.to_csv(mbovis_db, index=False, compression='gzip')
     print ('added %s new alleles' %len(new))
     return
 
-def type_sample(fastafile, outfile, threads=4, overwrite=False):
+def type_sample(fastafile, annotfile, outfile, threads=4, overwrite=False, update=True):
     """Type a single sample using wgMLST method. Requires pathogenie for
     annotation steps.
     Args:
         fastafile: fasta file to type from assembly or other
         outfile: output file for annotations
+        update: whether to update DB, default True
     Returns:
         dataframe containing the MLST profile
     """
 
     import pathogenie
-    if overwrite == True or not os.path.exists(outfile):
+    if overwrite == True or not os.path.exists(annotfile):
         #annotate
         featdf,recs = pathogenie.run_annotation(fastafile, threads=threads,
                                         kingdom='bacteria', trusted=ref_proteins)
         #get nucl sequences from annotation
-        SeqIO.write(recs,'temp.gb','genbank')
-        get_nucleotide_sequences('temp.gb',outfile,idkey='protein_id')
+        SeqIO.write(recs,annotfile,'genbank')
+    if overwrite == True or not os.path.exists(outfile):
+        get_nucleotide_sequences(annotfile, outfile, idkey='protein_id')
 
     #find alleles
-    res,new = find_alleles(outfile)
+    profile,new = find_alleles(outfile)
     #update db
-    update_mlst_db(new)
-    return res
+    if update == True:
+        update_mlst_db(new)
+    return profile
+
+def diff_profiles(s1, s2):
+    return sum(1 for a, b in zip(s1, s2) if a != b)
+
+def get_profile_string(df):
+    return ';'.join(df.allele.astype(str))
 
 def dist_matrix(profiles):
     """Distance matrix of a set of profiles"""
 
     dist=[]
     for s in profiles:
-        x=profiles[s]
+        x = profiles[s]
         row=[]
         for s in profiles:
             d = diff_profiles(x,profiles[s])
@@ -181,7 +224,7 @@ def tree_from_distmatrix(D):
     return tree
 
 def run_samples(vcf_file, outdir, names=None, omit=[], **kwargs):
-    """Run samples in a vcf file.
+    """Run all the samples in a vcf file.
     Args:
         vcf_file: multi sample variant file from previous calling
         outdir: folder for writing intermediate files
@@ -192,17 +235,23 @@ def run_samples(vcf_file, outdir, names=None, omit=[], **kwargs):
     profs = {}
     if names == None:
         names = get_samples_vcf(vcf_file)
+
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
-    for s in names:
-        print (s)
-        if s in omit:
+    for sample in names:
+        print (sample)
+        if sample in omit:
             continue
         #get consensus sequences
-        get_consensus(vcf_file, s)
-        outfile = os.path.join(outdir, '%s.fa' %s)
-        profile = type_sample('consensus.fa', outfile, **kwargs)
-        profs[s] = list(profile.allele)
+        consfile = os.path.join(outdir, '%s_consensus.fa' %sample)
+        if not os.path.exists(consfile):
+            bcftools_consensus(vcf_file, sample, consfile)
+        #seq = SeqIO.read('consensus.fa','fasta')
+        #print (len(seq))
+        annotfile = os.path.join(outdir, '%s.gb' %sample)
+        outfile = os.path.join(outdir, '%s.fa' %sample)
+        profile = type_sample(consfile, annotfile, outfile, **kwargs)
+        profs[sample] = list(profile.allele)
     return profs
 
 def test():

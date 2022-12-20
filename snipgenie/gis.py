@@ -147,7 +147,7 @@ class GISViewer(QWidget):
         self.splitter.setStretchFactor(1,0)
         vbox.addWidget(self.splitter)
         self.setLayout(layout)
-        #self.plotview = QWebEngineView() 
+        #self.plotview = QWebEngineView()
         pframe = QWidget()
         self.splitter.addWidget(pframe)
         self.addPlotWidget(pframe)

@@ -36,7 +36,7 @@ class ColumnHeader(QHeaderView):
 
 class DataFrameWidget(QWidget):
     """Widget containing a tableview and statusbar"""
-    def __init__(self, parent=None, table=None, statusbar=True, toolbar=False, **kwargs):
+    def __init__(self, parent=None, table=None, statusbar=True, toolbar=False, app=None, **kwargs):
         """
         Widget containing a dataframetable - allows us to pass any table subclass
         """
@@ -47,7 +47,7 @@ class DataFrameWidget(QWidget):
         self.setLayout(self.layout)
         #self.plotview = widgets.PlotViewer()
         if table == None:
-            self.table = DataFrameTable(self, dataframe=pd.DataFrame())#, **kwargs)
+            self.table = DataFrameTable(self, dataframe=pd.DataFrame(), app=app)
         else:
             self.table = table
             table.parent = self
@@ -181,15 +181,11 @@ class DataFrameTable(QTableView):
     """
     QTableView with pandas DataFrame as model.
     """
-    def __init__(self, parent=None, dataframe=None, plotter=None, fontsize=10):
+    def __init__(self, parent=None, app=None, dataframe=None, plotter=None, fontsize=10):
 
         QTableView.__init__(self)
         self.parent = parent
         self.clicked.connect(self.showSelection)
-        #self.doubleClicked.connect(self.handleDoubleClick)
-        #self.setSelectionBehavior(QTableView.SelectRows)
-        #self.setSelectionBehavior(QTableView.SelectColumns)
-        #self.horizontalHeader = ColumnHeader()
 
         vh = self.verticalHeader()
         vh.setVisible(True)
@@ -227,7 +223,7 @@ class DataFrameTable(QTableView):
             self.plotview = widgets.PlotViewer()
         else:
             self.plotview = plotter
-
+        self.plotview.app = app
         return
 
     def updateFont(self):
@@ -801,6 +797,7 @@ class SampleTable(DataFrameTable):
         self.setWordWrap(False)
         tm = SampleTableModel(dataframe)
         self.setModel(tm)
+        self.plotview.app = app
         return
 
     def setDataFrame(self, df):
@@ -871,14 +868,22 @@ class SampleTable(DataFrameTable):
         return
 
     def deleteRows(self, rows):
+        """Remove the sample and it's bam file"""
 
         answer = QMessageBox.question(self, 'Delete Entry?',
                              'Are you sure? This will not remove the sample file.',
                              QMessageBox.Yes, QMessageBox.No)
         if answer == QMessageBox.No:
             return
-        idx = self.model.df.index[rows]
-        self.model.df = self.model.df.drop(idx)
+        df = self.model.df
+        idx = df.index[rows]
+        #remove nay bam files first
+        for file in df.loc[idx].bam_file:
+            if os.path.exists(file):
+                os.remove(file)
+                print ('removed %s' %file)
+
+        self.model.df = df.drop(idx)
         self.refresh()
         return
 

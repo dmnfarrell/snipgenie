@@ -20,12 +20,16 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 
-import sys, os, io, platform
+import sys, os, io, platform, time
+import pickle
 import numpy as np
 import pandas as pd
 import string
 import pylab as plt
 import matplotlib as mpl
+from matplotlib.backends.backend_qt5agg import FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.figure import Figure
 from .qt import *
 from . import tables
 
@@ -895,21 +899,18 @@ class FileViewer(QDialog):
         recnames = list(recs.keys())
         return
 
-class TableViewer(QDialog):
-    """View row of data in table"""
-    def __init__(self, parent=None, dataframe=None, **kwargs):
-        super(TableViewer, self).__init__(parent)
-        self.setGeometry(QtCore.QRect(200, 200, 600, 600))
-        self.grid = QGridLayout()
-        self.setLayout(self.grid)
-        self.table = tables.DataFrameTable(self, dataframe, **kwargs)
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.grid.addWidget(self.table)
-        return
+class PlotWidget(FigureCanvas):
+    """Basic mpl plot view"""
 
-    def setDataFrame(self, dataframe):
-        self.table.model.df = dataframe
-        return
+    def __init__(self, parent=None, figure=None, dpi=100, hold=False):
+
+        if figure == None:
+            figure = Figure()
+        super(PlotWidget, self).__init__(figure)
+        self.setParent(parent)
+        self.figure = Figure(dpi=dpi)
+        self.canvas = FigureCanvas(self.figure)
+        self.ax = self.figure.add_subplot(111)
 
 class PlotOptions(BaseOptions):
     """Class to provide a dialog for plot options"""
@@ -943,7 +944,7 @@ class PlotOptions(BaseOptions):
                     'marker':{'type':'combobox','default':'o','items': markers},
                     'linestyle':{'type':'combobox','default':'-','items': linestyles},
                     'linewidth':{'type':'doublespinbox','default':1.0,'range':(0,20),'interval':.2,'label':'line width'},
-                    'ms':{'type':'spinbox','default':5,'range':(1,80),'interval':1,'label':'marker size'},
+                    'ms':{'type':'spinbox','default':30,'range':(1,120),'interval':1,'label':'marker size'},
                     'colormap':{'type':'combobox','default':'Spectral','items':colormaps},
                     'alpha':{'type':'doublespinbox','default':0.9,'range':(.1,1),'interval':.1,'label':'alpha'},
                     'style':{'type':'combobox','default':core.PLOTSTYLE,'items': style_list},
@@ -1014,6 +1015,11 @@ class PlotViewer(QWidget):
         btn = QPushButton('Refresh')
         btn.clicked.connect(self.replot)
         l.addWidget(btn)
+        btn = QPushButton('Scratchpad')
+        iconfile = os.path.join(iconpath,'scratchpad')
+        btn.setIcon(QIcon(iconfile))
+        btn.clicked.connect(self.save_to_scratchpad)
+        l.addWidget(btn)
         self.main.addWidget(right)
         return
 
@@ -1066,7 +1072,10 @@ class PlotViewer(QWidget):
                     cmap=cmap, grid=grid, alpha=alpha, fontsize=fontsize)
         elif kind == 'scatter':
             d=d.dropna()
-            d.plot(x=xcol,y=ycols,kind='scatter',ax=ax,s=ms,marker=marker,
+            if len(d.columns)==1:
+                xcol = d.index
+                ycol = d.columns[1]
+            d.plot(x=xcol,y=ycol,kind='scatter',ax=ax,s=ms,marker=marker,
                     grid=grid, alpha=alpha, fontsize=fontsize)
         elif kind == 'line':
             d.plot(kind='line',ax=ax, cmap=cmap, grid=grid, alpha=alpha, linewidth=lw,
@@ -1099,7 +1108,7 @@ class PlotViewer(QWidget):
         return
 
     def heatmap(self, df, ax, cmap='Blues', alpha=0.9, lw=1,
-                colorbar=True, cscale='log'):
+                colorbar=True, cscale=None):
         """Plot heatmap"""
 
         X = df._get_numeric_data()
@@ -1118,6 +1127,7 @@ class PlotViewer(QWidget):
         ax.set_yticks(np.arange(0.5, len(X.index)))
         ax.set_xticklabels(X.columns, minor=False)
         ax.set_yticklabels(X.index, minor=False)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
         ax.set_ylim(0, len(X.index))
         return
 
@@ -1189,6 +1199,25 @@ class PlotViewer(QWidget):
         self.opts.increment('ms',val*2)
         self.opts.increment('fontsize',val)
         self.replot()
+        return
+
+    def save_to_scratchpad(self, label=None):
+        """Send fig to app scratchpad"""
+
+        print (self.app)
+        if not hasattr(self, 'app') or self.app == None:
+            return
+        name = 'plot'
+        if label == None or label is False:
+            t = time.strftime("%H:%M:%S")
+            label = name+'-'+t
+        #get the current figure and make a copy of it by using pickle
+        p = pickle.dumps(self.fig)
+        fig = pickle.loads(p)
+        items = self.app.scratch_items
+        items[label] = fig
+        if hasattr(self.app, 'scratchpad'):
+            self.app.scratchpad.update(items)
         return
 
 class BrowserViewer(QDialog):
@@ -1655,4 +1684,134 @@ class GraphicalBamViewer(QDialog):
         self.canvas.draw()
         self.view_range = xend-xstart
         self.loclbl.setText(str(xstart)+'-'+str(xend))
+        return
+
+class ScratchPad(QWidget):
+    """Temporary storage widget for plots and other items.
+    Currently supports storing text, mpl figures and dataframes"""
+    def __init__(self, parent=None):
+        super(ScratchPad, self).__init__(parent)
+        self.parent = parent
+        self.setMinimumSize(400,300)
+        self.setGeometry(QtCore.QRect(300, 200, 800, 600))
+        self.setWindowTitle("Scratchpad")
+        self.createWidgets()
+        sizepolicy = QSizePolicy()
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+        #dict to store objects, these should be serialisable
+        self.items = {}
+        return
+
+    def createWidgets(self):
+        """Create widgets. Plot on left and dock for tools on right."""
+
+        self.main = QTabWidget(self)
+        self.main.setTabsClosable(True)
+        self.main.tabCloseRequested.connect(lambda index: self.remove(index))
+        layout = QVBoxLayout(self)
+        toolbar = QToolBar("toolbar")
+        layout.addWidget(toolbar)
+        items = { 'new text':{'action':self.newText,'file':'document-new'},
+                  'save': {'action':self.save,'file':'save'},
+                  'save all': {'action':self.saveAll,'file':'save-all'},
+                  'clear': {'action':self.clear,'file':'clear'}
+                    }
+        for i in items:
+            if 'file' in items[i]:
+                iconfile = os.path.join(iconpath,items[i]['file']+'.png')
+                icon = QIcon(iconfile)
+            else:
+                icon = QIcon.fromTheme(items[i]['icon'])
+            btn = QAction(icon, i, self)
+            btn.triggered.connect(items[i]['action'])
+            toolbar.addAction(btn)
+        layout.addWidget(self.main)
+        return
+
+    def update(self, items):
+        """Display a dict of stored objects"""
+
+        self.main.clear()
+        for name in items:
+            obj = items[name]
+            #print (name,type(obj))
+            if type(obj) is str:
+                te = dialogs.PlainTextEditor()
+                te.setPlainText(obj)
+                self.main.addTab(te, name)
+            elif type(obj) is pd.DataFrame:
+                tw = core.DataFrameTable(self.main, dataframe=obj)
+                self.main.addTab(tw, name)
+            else:
+                pw = PlotWidget(self.main)
+                self.main.addTab(pw, name)
+                pw.figure = obj
+                pw.draw()
+                plt.tight_layout()
+        self.items = items
+        return
+
+    def remove(self, idx):
+        """Remove selected tab and item widget"""
+
+        index = self.main.currentIndex()
+        name = self.main.tabText(index)
+        del self.items[name]
+        self.main.removeTab(index)
+        return
+
+    def save(self):
+        """Save selected item"""
+
+        index = self.main.currentIndex()
+        name = self.main.tabText(index)
+        suff = "PNG files (*.png);;JPG files (*.jpg);;PDF files (*.pdf);;All files (*.*)"
+        filename, _ = QFileDialog.getSaveFileName(self, "Save Figure", name, suff)
+        if not filename:
+            return
+
+        fig = self.items[name]
+        fig.savefig(filename+'.png', dpi=core.DPI)
+        return
+
+    def saveAll(self):
+        """Save all figures in a folder"""
+
+        dir =  QFileDialog.getExistingDirectory(self, "Save Folder",
+                                             homepath, QFileDialog.ShowDirsOnly)
+        if not dir:
+            return
+        for name in self.items:
+            fig = self.items[name]
+            fig.savefig(os.path.join(dir,name+'.png'), dpi=core.DPI)
+        return
+
+    def clear(self):
+        """Clear plots"""
+
+        self.items.clear()
+        self.main.clear()
+        return
+
+    def newText(self):
+        """Add a text editor"""
+
+        name, ok = QInputDialog.getText(self, 'Name', 'Name:',
+                    QLineEdit.Normal, '')
+        if ok:
+            tw = dialogs.PlainTextEditor()
+            self.main.addTab(tw, name)
+            self.items[name] = tw.toPlainText()
+        return
+
+    def closeEvent(self, event):
+        """Close"""
+
+        for idx in range(self.main.count()):
+            name = self.main.tabText(idx)
+            #print (name)
+            w = self.main.widget(idx)
+            #print (w)
+            if type(w) == PlainTextEditor:
+                self.items[name] = w.toPlainText()
         return

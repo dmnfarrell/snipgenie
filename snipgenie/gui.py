@@ -110,6 +110,7 @@ class App(QMainWindow):
 
         self.running = False
         self.recent_files = ['']
+        self.scratch_items = {}
         self.opentables = {}
         self.openplugins = {}
         self.plugindata = {}
@@ -259,6 +260,7 @@ class App(QMainWindow):
                  'Show Phylogeny': {
                     'action': self.show_phylogeny,
                     'file':'phylogeny'},
+                 'Scratchpad': {'action':self.show_scratchpad,'file':'scratchpad'},
                  'Quit': {'action':self.quit,'file':'application-exit'}
                 }
 
@@ -496,6 +498,7 @@ class App(QMainWindow):
         self.tools_menu.addAction('Mean GC content',
             lambda: self.run_threaded_process(self.add_gc_mean, self.processing_completed))
         self.tools_menu.addAction('Fastq Qualities Report', self.fastq_quality_report)
+        self.tools_menu.addAction('Consensus Sequences', self.get_consensus_sequences)
 
         self.tools_menu.addAction('Show Annotation', self.show_ref_annotation)
         self.tools_menu.addAction('SNP Dist Matrix', self.show_snpdist)
@@ -504,8 +507,8 @@ class App(QMainWindow):
         self.tools_menu.addAction('VCF Viewer', self.vcf_viewer)
         #self.tools_menu.addAction('Map View', self.show_map)
         self.tools_menu.addAction('Tree Viewer', self.tree_viewer)
-        self.tools_menu.addSeparator()
-        self.tools_menu.addAction('Check Heterozygosity', self.check_heterozygosity)
+        #self.tools_menu.addSeparator()
+        #self.tools_menu.addAction('Check Heterozygosity', self.check_heterozygosity)
         #self.tools_menu.addAction('RD Analysis (MTBC)',
         #    lambda: self.run_threaded_process(self.rd_analysis, self.rd_analysis_completed))
         #self.tools_menu.addAction('M.bovis SNP typing',
@@ -635,6 +638,7 @@ class App(QMainWindow):
         data['opentables'] = list(self.opentables.keys())
         self.opts.applyOptions()
         data['options'] = self.opts.kwds
+        data['scratch_items'] = self.scratch_items
         self.projectlabel.setText(filename)
         data['plugins'] = self.save_plugin_data()
         pickle.dump(data, open(filename,'wb'))
@@ -729,7 +733,8 @@ class App(QMainWindow):
         self.update_labels()
         self.setup_paths()
         #self.show_snpdist()
-
+        if 'scratch_items' in data:
+            self.scratch_items = data['scratch_items']
         #if 'opentables' in data:
             #for key in data['opentables']:
                 #print (key)
@@ -1175,9 +1180,10 @@ class App(QMainWindow):
         smat.to_csv(os.path.join(self.outputdir,'core_missing.txt'), sep=' ')
         missing = smat[smat=='N'].count().sort_values()
 
-        #merge with samples table
+        #merge with samples table - bad!
         df = self.fastq_table.model.df
-        df = df.merge(missing.rename('missing_sites'),right_index=True,left_on='sample')
+        df = df.merge(missing.rename('missing_sites'),how='left',
+                        right_index=True,left_on='sample')
         self.fastq_table.model.df = df
         self.fastq_table.refresh()
         return
@@ -1508,6 +1514,14 @@ class App(QMainWindow):
             df.loc[i,cols] = c[cols]
         return
 
+    def get_consensus_sequences(self):
+        """Consensus sequences for all samples"""
+
+        vcf_file = os.path.join(self.outputdir, 'snps.vcf.gz')
+        outfile = os.path.join(self.outputdir, 'consensus.fa')
+        tools.bcftools_consensus(vcf_file, self.ref_genome, outfile)
+        return
+
     def show_bam_viewer(self, row):
         """Show simple alignment view for a bam file"""
 
@@ -1614,6 +1628,19 @@ class App(QMainWindow):
         self.right_tabs.setCurrentIndex(idx)
         return
 
+    def show_scratchpad(self):
+
+        if not hasattr(self, 'scratchpad'):
+            self.scratchpad = widgets.ScratchPad()
+            try:
+                self.scratchpad.resize(self.settings.value('scratchpad_size'))
+            except:
+                pass
+        self.scratchpad.update(self.scratch_items)
+        self.scratchpad.show()
+        self.scratchpad.activateWindow()
+        return
+
     def show_browser_tab(self, link, name):
         """Show web page in a tab"""
 
@@ -1627,7 +1654,7 @@ class App(QMainWindow):
         self.right_tabs.setCurrentIndex(idx)
         return
 
-    def check_heterozygosity(self):
+    '''def check_heterozygosity(self):
         """Plot heterozygosity for each sample"""
 
         df = self.fastq_table.model.df
@@ -1642,6 +1669,7 @@ class App(QMainWindow):
                 return
             return min(x.AD)/sum(x.AD)
         l = int(np.sqrt(len(samples)))
+
         fig,ax = plt.subplots(l,l,figsize=(10,6))
         if l==1:
             axs=[ax]
@@ -1660,10 +1688,10 @@ class App(QMainWindow):
 
         plt.tight_layout()
         w = widgets.PlotViewer(self)
-        w.show_figure(fig)
+        w.set_figure(fig)
         i = self.tabs.addTab(w, 'hetero')
         #fig.savefig(os.path.join(self.outputdir, 'hetero.png'))
-        return
+        return'''
 
     '''def snp_typing(self, progress_callback):
         """SNP typing for M.bovis"""

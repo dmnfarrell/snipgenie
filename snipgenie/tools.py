@@ -382,7 +382,7 @@ def fasta_to_dataframe(infile, header_sep=None, key='name', seqkey='sequence'):
     #fix bad names
     if header_sep not in ['',None]:
         df[key] = df[key].apply(lambda x: x.split(header_sep)[0],1)
-    df[key] = df[key].str.replace('|','_')
+    df[key] = df[key].str.replace('|','_',regex=False)
     return df
 
 def fastq_random_seqs(filename, size=50):
@@ -702,6 +702,20 @@ def bcftools_query(bcf_file, positions=[], field='AD'):
     cols = ['chrom','pos','ref','alt']
     df = pd.read_csv(StringIO(tmp),sep=' ',header=None)
     return df
+
+def bcftools_consensus(vcf_file, ref, out):
+    """Get consensus sequences from output of mpileup
+    see https://samtools.github.io/bcftools/howtos/consensus-sequence.html
+     """
+
+    bcftoolscmd = get_cmd('bcftools')
+    cmd = '{bc} index {f}'.format(bc=bcftoolscmd,f=vcf_file)
+    tmp = subprocess.check_output(cmd,shell=True)
+    cmd = 'cat {r} | {bc} consensus {f} > {o}'.format(bc=bcftoolscmd,r=ref,o=out,f=vcf_file)
+    print (cmd)
+    tmp = subprocess.check_output(cmd,shell=True)
+    print ('consensus sequences saved to %s' %out)
+    return
 
 def get_snp_matrix(df):
     """SNP matrix from multi sample vcf dataframe"""
@@ -1025,7 +1039,12 @@ def gff_bcftools_format(in_file, out_file):
         return
 
 def get_spoligotype(filename, reads_limit=3000000, threshold=2, threads=4):
-    """Get mtb spoligotype from WGS reads"""
+    """
+    Get spoligotype from WGS reads. Blasts to known DR spacers.
+    Args:
+        reads_limit: limit of subset of reads to blast
+        threshold: minimum number of hits to spacer
+    """
 
     ref = os.path.join(datadir, 'dr_spacers.fa')
     #convert reads to fasta

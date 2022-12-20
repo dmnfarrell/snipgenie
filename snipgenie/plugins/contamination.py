@@ -83,7 +83,7 @@ class ContaminationCheckerPlugin(Plugin):
         layout.addWidget(self.tree)
 
         #t = self.result_table = tables.DataFrameTable(self.main)
-        t = self.table_widget = tables.DataFrameWidget(self.main, toolbar=True)
+        t = self.table_widget = tables.DataFrameWidget(self.main, app=self.parent, toolbar=True)
         self.result_table = self.table_widget.table
         layout.addWidget(t)
         bw = self.create_buttons(self.main)
@@ -134,14 +134,14 @@ class ContaminationCheckerPlugin(Plugin):
         button = QPushButton("Clean Files")
         button.clicked.connect(self.clean_files)
         vbox.addWidget(button)
-        #button = QPushButton("Find NCBI Sequence")
-        #button.clicked.connect(self.find_sequence_ncbi)
-        #vbox.addWidget(button)
         button = QPushButton("Add sequence")
         button.clicked.connect(self.add_sequence)
         vbox.addWidget(button)
         button = QPushButton("Fetch NCBI Sequence")
         button.clicked.connect(self.fetch_sequence)
+        vbox.addWidget(button)
+        button = QPushButton("Save unmapped reads")
+        button.clicked.connect(self.save_unmapped_reads)
         vbox.addWidget(button)
         button = QPushButton("Run")
         button.setStyleSheet("background-color: red")
@@ -411,7 +411,33 @@ class ContaminationCheckerPlugin(Plugin):
     def save_unmapped_reads(self):
         """Save unmapped reads to new files"""
 
-        #cmd =
+        #get outdir
+        outdir = QFileDialog.getExistingDirectory()
+        if not outdir:
+            return
+        #outdir = '/storage/bvd/unmapped'
+        tempdir = tempfile.tempdir
+        #print (self.refs)
+        g = self.refs.loc['cow']
+        idx = g.filename
+        def func(progress_callback):
+            table = self.parent.fastq_table
+            df = table.model.df.copy()
+            rows = table.getSelectedRows()
+            new = df.iloc[rows]
+            self.parent.opts.applyOptions()
+            kwds = self.parent.opts.kwds
+            threads = kwds['threads']
+
+            aligners.build_bwa_index(idx, show_cmd=False, overwrite=False)
+            for i,r in new.iterrows():
+                label = r['sample']
+                out = os.path.join(tempdir,label+'.bam')
+                aligners.bwa_align(r.filename1, r.filename2, idx=idx, out=out, unmapped=outdir,
+                                    threads=threads, overwrite=False)
+                #remove temp bam
+                os.remove(out)
+        self.parent.run_threaded_process(func, self.run_completed)
         return
 
     def run(self):

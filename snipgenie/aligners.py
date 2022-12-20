@@ -56,7 +56,7 @@ def bwa_align(file1, file2, idx, out, threads=4, overwrite=False,
         idx: bwa index name
         out: output bam file name
         options: extra command line options e.g. -k INT for seed length
-        unmapped: path to file for unmapped reads if required
+        unmapped: path to folder for unmapped reads if required
     """
 
     bwacmd = tools.get_cmd('bwa')
@@ -83,7 +83,7 @@ def bwa_align(file1, file2, idx, out, threads=4, overwrite=False,
             f1 = os.path.join(unmapped,os.path.basename(file1))
             f2 = os.path.join(unmapped,os.path.basename(file2))
             cmd = '{s} view -b -f12 {o} | {s} fastq -1 {f1} -2 {f2}'.format(
-                    s=samtoolscmd,o=out,u=unmapped,f1=f1,f2=f2)
+                    s=samtoolscmd,o=out,f1=f1,f2=f2)
             print (cmd)
             tmp = subprocess.check_output(cmd, shell=True)
     return

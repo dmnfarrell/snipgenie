@@ -97,7 +97,9 @@ ggplottree <- function(tree, meta, cols=NULL, cmaps=NULL, layout="rectangular",
     p2 <- p2 + theme_tree2(legend.text = element_text(size=20), legend.key.size = unit(1, 'cm'), 
                         legend.position="left", plot.title = element_text(size=40))     
             guides(color = guide_legend(override.aes = list(size=10))) 
-    
+    if (tiplabel){
+        p2 <- p2 + geom_tiplab() 
+        }    
     return(p2)
 }
 

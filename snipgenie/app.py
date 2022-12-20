@@ -808,18 +808,6 @@ class Logger(object):
             self.file.close()
             self.file = None
 
-class Logger(object):
-    def __init__(self, logfile='log.dat'):
-        self.terminal = sys.stdout
-        self.log = open(logfile, "a")
-
-    def write(self, message):
-        self.terminal.write(message)
-        self.log.write(message)
-
-    def flush(self):
-        return
-
 class WorkFlow(object):
     """Class for implementing a prediction workflow from a set of options"""
     def __init__(self, **kwargs):

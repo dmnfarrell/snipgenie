@@ -677,6 +677,7 @@ class App(QMainWindow):
         self.outputdir = None
         self.sheets = {}
         self.results = {}
+        self.scratch_items = {}
         self.proj_file = None
         self.fastq_table.setDataFrame(pd.DataFrame({'name':[]}))
         self.fastq_table.refresh()
@@ -1941,11 +1942,11 @@ class App(QMainWindow):
         data = {}
         for p in self.openplugins:
             plg = self.openplugins[p]
-            print (plg)
+            #print (plg)
             d = plg.save_data()
             if d is not None:
                 data[plg.name] = d
-        print (data)
+        #print (data)
         return data
 
     def clear_plugins(self):

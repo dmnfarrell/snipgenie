@@ -519,11 +519,13 @@ def records_to_dataframe(records, cds=False, nucl_seq=False):
         if 'translation' in df.keys():
             df['length'] = df.translation.astype('str').str.len()
         res.append(df)
-
+    res = pd.concat(res)
+    if cds == True:
+        res = res[res.feat_type=='CDS']
     if len(df) == 0:
-        print ('ERROR: genbank file return empty data, check that the file contains protein sequences '\
+        print ('ERROR: returned empty data, check that the file contains protein sequences '\
                'in the translation qualifier of each protein feature.' )
-    return pd.concat(res)
+    return res
 
 def genbank_to_dataframe(infile, cds=False):
     """Get genome records from a genbank file into a dataframe

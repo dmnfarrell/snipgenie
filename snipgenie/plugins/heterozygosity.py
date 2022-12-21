@@ -77,6 +77,16 @@ class HeteroCheckerPlugin(Plugin):
         bw = QWidget(parent)
         vbox = QVBoxLayout(bw)
 
+        w = QLabel('Pivot result:')
+        vbox.addWidget(w)
+        self.pivotbox = w = QCheckBox()
+        w.setChecked(1)
+        vbox.addWidget(w)
+        w = QLabel('Value column:')
+        vbox.addWidget(w)
+        self.valuecolw = w = QComboBox()
+        w.addItems(['het','DP','AD','ADF','ADR','QUAL','ALT','mut'])
+        vbox.addWidget(w)
         button = QPushButton("Run")
         button.setStyleSheet("background-color: red")
         button.clicked.connect(self.run)
@@ -109,7 +119,8 @@ class HeteroCheckerPlugin(Plugin):
         def het(x):
             if sum(x.AD) == 0:
                 return
-            return min(x.AD)/sum(x.AD)
+            return round(min(x.AD)/sum(x.AD),3)
+
         result = []
         def func(progress_callback):
             table = self.parent.fastq_table
@@ -144,8 +155,12 @@ class HeteroCheckerPlugin(Plugin):
 
         print ('getting results..')
         df = self.results
-        #print (df[:30])
-        p = pd.pivot_table(df, index='pos',columns='sample',values='het')
+        #print (df[:10])
+        if self.pivotbox.isChecked():
+            valuecol = self.valuecolw.currentText()
+            p = pd.pivot_table(df, index='pos',columns='sample',values=valuecol,aggfunc='first')
+        else:
+            p = df
         self.result_table.setDataFrame(p)
         return
 
@@ -156,12 +171,15 @@ class HeteroCheckerPlugin(Plugin):
         """Return save data"""
 
         data = {}
+        data['result'] = self.result_table.model.df
         return data
 
     def load_data(self, data):
         """Load any saved data from project.
         Run when plugin is initially launched."""
 
+        if 'result' in data:
+            self.result_table.setDataFrame(data['result'])
         return
 
     def project_closed(self):

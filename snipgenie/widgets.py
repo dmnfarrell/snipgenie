@@ -912,6 +912,7 @@ class PlotWidget(FigureCanvas):
         self.canvas = FigureCanvas(self.figure)
         self.ax = self.figure.add_subplot(111)
 
+
 class PlotOptions(BaseOptions):
     """Class to provide a dialog for plot options"""
 
@@ -935,7 +936,8 @@ class PlotOptions(BaseOptions):
         colormaps = sorted(m for m in plt.cm.datad if not m.endswith("_r"))
         self.groups = {'general':['kind','grid','bins','linewidth','linestyle',
                        'marker','ms','alpha','colormap'],
-                       'format' :['title','xlabel','style','font','fontsize']
+                       'format' :['title','xlabel','ylabel','showxlabels','showylabels',
+                       'style','font','fontsize']
                        }
         self.opts = {
                     'kind':{'type':'combobox','default':'','items':kinds},
@@ -950,6 +952,9 @@ class PlotOptions(BaseOptions):
                     'style':{'type':'combobox','default':core.PLOTSTYLE,'items': style_list},
                     'title':{'type':'entry','default':''},
                     'xlabel':{'type':'entry','default':''},
+                    'ylabel':{'type':'entry','default':''},
+                    'showxlabels':{'type':'checkbox','default':1,'label':'x tick labels'},
+                    'showylabels':{'type':'checkbox','default':1,'label':'y tick labels'},
                     'font':{'type':'font','default':defaultfont,'items':fonts},
                     'fontsize':{'type':'spinbox','default':10,'range':(4,50),'label':'font size'},
                     }
@@ -972,8 +977,6 @@ class PlotViewer(QWidget):
     def create_figure(self, fig=None):
         """Create canvas and figure"""
 
-        from matplotlib.backends.backend_qt5agg import FigureCanvas
-        from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
         import matplotlib.pyplot as plt
         #ax.plot(range(10))
         if fig == None:
@@ -1036,7 +1039,7 @@ class PlotViewer(QWidget):
             self.opts.setWidgetValue('kind', kind)
             pass
         title = kwds['title']
-        xlabel = kwds['xlabel']
+        #xlabel = kwds['xlabel']
         font = kwds['font']
         fontsize = kwds['fontsize']
         alpha = kwds['alpha']
@@ -1074,8 +1077,8 @@ class PlotViewer(QWidget):
             d=d.dropna()
             if len(d.columns)==1:
                 xcol = d.index
-                ycol = d.columns[1]
-            d.plot(x=xcol,y=ycol,kind='scatter',ax=ax,s=ms,marker=marker,
+                ycols = d.columns[0]
+            d.plot(x=xcol,y=ycols,kind='scatter',ax=ax,s=ms,marker=marker,
                     grid=grid, alpha=alpha, fontsize=fontsize)
         elif kind == 'line':
             d.plot(kind='line',ax=ax, cmap=cmap, grid=grid, alpha=alpha, linewidth=lw,
@@ -1088,9 +1091,8 @@ class PlotViewer(QWidget):
         elif kind == 'box':
             d.boxplot(ax=ax, grid=grid)
 
-        if xlabel != '':
-            ax.set_xlabel(xlabel)
         fig.suptitle(title, font=font)
+        self.set_axis_labels(ax, kwds)
         plt.tight_layout()
         self.redraw()
         return
@@ -1105,6 +1107,22 @@ class PlotViewer(QWidget):
         """Update current plot"""
 
         self.plot(self.data, kind=None)
+        return
+
+    def set_axis_labels(self, ax, kwds):
+        """Set a plots axis labels"""
+
+        if kwds['xlabel'] != '':
+            ax.set_xlabel(kwds['xlabel'])
+        if kwds['ylabel'] != '':
+            ax.set_ylabel(kwds['ylabel'])
+        if kwds['showxlabels'] == False:
+            ax.set_xticklabels([])
+        if kwds['showylabels'] == False:
+            ax.set_yticklabels([])
+        #if kwds['rotx'] != 0:
+        #    for tick in ax.get_xticklabels():
+        #        tick.set_rotation(kwds['rotx'])
         return
 
     def heatmap(self, df, ax, cmap='Blues', alpha=0.9, lw=1,
@@ -1156,6 +1174,106 @@ class PlotViewer(QWidget):
         ax.set_xticks(np.arange(1, len(labels) + 1))
         ax.set_xticklabels(labels)
         return
+
+    def scatter(self, df, ax, axes_layout='single', alpha=0.8, marker='o', color=None, **kwds):
+        """A custom scatter plot rather than the pandas one. By default this
+        plots the first column selected versus the others"""
+
+        if len(df.columns)<2:
+            return
+        data = df
+        df = df.copy()._get_numeric_data()
+        cols = list(df.columns)
+        x = df[cols[0]]
+        s=1
+        cmap = plt.cm.get_cmap(kwds['colormap'])
+        lw = kwds['linewidth']
+        grid = kwds['grid']
+        bw = kwds['bw']
+
+        if cscale == 'log':
+            norm = mpl.colors.LogNorm()
+        else:
+            norm = None
+
+        plots = len(cols)
+        if marker == '':
+            marker = 'o'
+        if axes_layout == 'multiple':
+            size = plots-1
+            nrows = int(round(np.sqrt(size),0))
+            ncols = int(np.ceil(size/nrows))
+            self.fig.clear()
+        if c is not None:
+            colormap = kwds['colormap']
+        else:
+            colormap = None
+            c=None
+
+        #print (kwds)
+        labelcol = kwds['labelcol']
+        pointsizes = kwds['pointsizes']
+        handles = []
+        for i in range(s,plots):
+            y = df[cols[i]]
+            ec = 'black'
+            if bw == True:
+                clr = 'white'
+                colormap = None
+            else:
+                clr = cmap(float(i)/(plots))
+            if colormap != None:
+                clr=None
+            if marker in ['x','+'] and bw == False:
+                ec = clr
+
+            if axes_layout == 'multiple':
+                ax = self.fig.add_subplot(nrows,ncols,i)
+            if pointsizes != '' and pointsizes in df.columns:
+                ms = df[pointsizes]
+                s=kwds['ms']
+                getsizes = lambda x : (((x-x.min())/float(x.max()-x.min())+1)*s)**2.3
+                ms = getsizes(ms)
+                #print (ms)
+            else:
+                ms = kwds['ms'] * 12
+            sc = ax.scatter(x, y, marker=marker, alpha=alpha, linewidth=lw, c=c,
+                       s=ms, edgecolors=ec, facecolor=clr, cmap=colormap,
+                       norm=norm, label=cols[i], picker=True)
+
+            if kwds['logx'] == 1:
+                ax.set_xscale('log')
+            if kwds['logy'] == 1:
+                ax.set_yscale('log')
+
+            #create proxy artist for markers so we can return these handles if needed
+            mkr = Line2D([0], [0], marker=marker, alpha=alpha, ms=10, markerfacecolor=c,
+                        markeredgewidth=lw, markeredgecolor=ec, linewidth=0)
+            handles.append(mkr)
+            ax.set_xlabel(cols[0])
+            if grid == 1:
+                ax.grid(True, linestyle='--')
+            if axes_layout == 'multiple':
+                ax.set_title(cols[i])
+            if colormap is not None and kwds['colorbar'] == True:
+                self.fig.colorbar(scplt, ax=ax)
+
+            if labelcol != '':
+                if not labelcol in data.columns:
+                    self.showWarning('label column %s not in selected data' %labelcol)
+                elif len(data)<1500:
+                    for i, r in data.iterrows():
+                        txt = r[labelcol]
+                        if pd.isnull(txt) is True:
+                            continue
+                        ax.annotate(txt, (x[i],y[i]), xycoords='data',
+                                    xytext=(5, 5), textcoords='offset points',)
+
+        if kwds['legend'] == 1 and axes_layout == 'single':
+            leg = ax.legend(cols[1:])
+            #leg.set_draggable(state=True)
+
+        return ax, handles
 
     def set_figure(self, fig):
         """Set the figure if we have plotted elsewhere"""

@@ -665,7 +665,7 @@ class App(QMainWindow):
         if self.running == True:
             QMessageBox.information(self, "Process is Running",
                             'Wait until process is finished.')
-            return
+            return False
         reply=None
         if ask == True:
             reply = QMessageBox.question(self, 'Confirm',
@@ -694,7 +694,7 @@ class App(QMainWindow):
         self.update_mask()
         self.clear_plugins()
         self.comms.newproj.emit()
-        return
+        return True
 
     def setup_paths(self):
         """Set paths to important files in proj folder"""
@@ -709,7 +709,9 @@ class App(QMainWindow):
     def load_project(self, filename=None):
         """Load project"""
 
-        self.new_project()
+        closed = self.new_project()
+        if closed == False:
+            return
         data = pickle.load(open(filename,'rb'))
         keys = ['sheets','outputdir','results','ref_genome','ref_gb','mask_file']
         for k in keys:
@@ -1950,13 +1952,14 @@ class App(QMainWindow):
         return data
 
     def clear_plugins(self):
-        """remove all open plugins"""
+        """Remove all open plugins"""
 
-        for p in self.openplugins.copy():
+        keys = list(self.openplugins.keys())
+        for p in keys:
             plg = self.openplugins[p]
             plg.main.deleteLater()
             del self.openplugins[plg.name]
-            #self.docks[plugin.name].
+            self.removeDockWidget(self.docks[plg.name])
             del self.docks[plg.name]
         return
 

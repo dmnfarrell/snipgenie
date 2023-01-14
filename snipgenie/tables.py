@@ -96,6 +96,7 @@ class DataFrameWidget(QWidget):
         self.setLayout(self.layout)
         items = {
                  'copy': {'action': self.copy,'file':'copy','shortcut':'Ctrl+C'},
+                 'line': {'action': lambda: self.table.plot(kind='line'),'file':'plot_line'},
                  'bar': {'action': lambda: self.table.plot(kind='bar'),'file':'plot_bar'},
                  'barh': {'action': lambda: self.table.plot(kind='barh'),'file':'plot_barh'},
                  'hist': {'action': lambda: self.table.plot(kind='hist'),'file':'plot_hist'},
@@ -822,6 +823,7 @@ class SampleTable(DataFrameTable):
         contamaction = menu.addAction('Check Contamination')
         fastareadsaction = menu.addAction('Sample Sequences')
         removeAction = menu.addAction("Remove Selected")
+        removebamAction = menu.addAction("Delete Bam Files")
         exportAction = menu.addAction("Export Table")
         #colorbyAction = menu.addAction("Color By Column")
         action = menu.exec_(self.mapToGlobal(event.pos()))
@@ -846,6 +848,8 @@ class SampleTable(DataFrameTable):
             self.app.show_bam_viewer(row)
         elif action == removeAction:
             self.deleteRows(rows)
+        elif action == removebamAction:
+            self.deleteBamFiles(rows)
         elif action == exportAction:
             self.exportTable()
         #elif action == colorbyAction:
@@ -877,13 +881,33 @@ class SampleTable(DataFrameTable):
             return
         df = self.model.df
         idx = df.index[rows]
-        #remove nay bam files first
-        for file in df.loc[idx].bam_file:
-            if os.path.exists(file):
-                os.remove(file)
-                print ('removed %s' %file)
+        #remove any bam files first
+        self.deleteBamFiles(rows, ask=False)
 
         self.model.df = df.drop(idx)
+        self.refresh()
+        return
+
+    def deleteBamFiles(self, rows, ask=True):
+        """Remove bam files for selected rows if present"""
+
+        if ask == True:
+            answer = QMessageBox.question(self, 'Delete Entry?',
+                                 'Are you sure? This removes bam files only.',
+                                 QMessageBox.Yes, QMessageBox.No)
+            if answer == QMessageBox.No:
+                return
+        df = self.model.df
+        idx = df.index[rows]
+        for file in df.loc[idx].bam_file:
+            if pd.isnull(file):
+                continue
+            if os.path.exists(file):
+                os.remove(file)
+            index=file+'.bai'
+            if os.path.exists(index):
+                os.remove(index)
+        df.loc[idx,['bam_file','coverage','meandepth']] = np.nan
         self.refresh()
         return
 
@@ -1125,6 +1149,7 @@ class DistMatrixTable(DataFrameTable):
         DataFrameTable.__init__(self, parent, dataframe)
         tm = DistMatrixTableModel(dataframe)
         self.setModel(tm)
+        self.model = tm
         self.app = app
         headerview = MyHeaderView()
         self.setHorizontalHeader(headerview)

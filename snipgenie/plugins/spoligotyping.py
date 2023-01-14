@@ -78,7 +78,7 @@ class SpoligotypingPlugin(Plugin):
                 df.loc[i,cols] = [name,s,sb]
             return
 
-        self.parent.run_threaded_process(func, self.run_completed)
+        self.parent.run_threaded_process(func, self.parent.processing_completed)
         return
 
     def run_completed(self):

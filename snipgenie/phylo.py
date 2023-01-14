@@ -214,6 +214,7 @@ class TreeViewer(QWidget):
             if not filename:
                 return
         self.set_tree(toytree.tree(filename))
+        self.height = 200+self.tree.ntips*10
         self.update()
         return
 

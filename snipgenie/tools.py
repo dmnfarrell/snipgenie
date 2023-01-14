@@ -20,6 +20,7 @@
 
 import sys,os,subprocess,glob,shutil,re,random,time
 import platform
+from io import StringIO
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
 from Bio import SeqIO
@@ -705,6 +706,26 @@ def bcftools_query(bcf_file, positions=[], field='AD'):
     df = pd.read_csv(StringIO(tmp),sep=' ',header=None)
     return df
 
+def bcftools_count_sites(vcf_file):
+    """Count no. of sites in vcf file"""
+
+    bcftoolscmd = get_cmd('bcftools')
+    cmd = "{bc} query -f 'x' {b}".format(b=vcf_file,bc=bcftoolscmd)
+    tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
+    return len(tmp)
+
+def bcftools_filter(vcf_file, out=None, filters=''):
+    """Count no. of sites in vcf file"""
+
+    bcftoolscmd = tools.get_cmd('bcftools')
+    if out == None:
+        cmd = '{bc} filter -i "{f}" {i}'.format(bc=bcftoolscmd,i=vcf_file,f=filters)
+    else:
+        cmd = '{bc} filter -i "{f}" -o {o} -O z {i}'.format(bc=bcftoolscmd,i=vcf_file,o=out,f=filters)
+    print (cmd)
+    tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
+    return
+
 def bcftools_consensus(vcf_file, ref, out):
     """Get consensus sequences from output of mpileup
     see https://samtools.github.io/bcftools/howtos/consensus-sequence.html
@@ -719,6 +740,17 @@ def bcftools_consensus(vcf_file, ref, out):
     print ('consensus sequences saved to %s' %out)
     return
 
+def spades(file1, file2, path, outfile=None, threads=4):
+    """Run spades on paired end reads"""
+
+    cmd = 'spades -t %s --pe1-1 %s --pe1-2 %s --careful -o %s' %(threads,file1,file2,path)
+    if not os.path.exists(path):
+        print (cmd)
+        subprocess.check_output(cmd, shell=True)
+    if outfile != None:
+        shutil.copy(os.path.join(path,'scaffolds.fasta'),outfile)
+    return outfile
+    
 def get_snp_matrix(df):
     """SNP matrix from multi sample vcf dataframe"""
 
@@ -893,8 +925,9 @@ def core_alignment_from_vcf(vcf_file, callback=None, uninformative=False, missin
         print ('%s uninformative sites' %len(uninf_sites))
     if len(sites)==0:
         print ('no sites found may mean:\n'
-         '- one sample is too different\n'
-         '- few reads aligned due to poor coverage')
+         '- samples are identical\n'
+         '- one sample is too different due to poor coverage/depth\n'
+         'this may be caused by contamination or low quality data')
     recs = []
     for sample in result:
         seq = ''.join(result[sample])
@@ -954,13 +987,15 @@ def samtools_depth(bam_file, chrom=None, start=None, end=None):
     """Get depth from bam file"""
 
     samtoolscmd = get_cmd('samtools')
-    if chrom != None and start != None:
+    if start != None and end != None:
+        if chrom == None:
+            #try to get chromosome name
+            chrom = get_chrom_names(bam_file)
         cmd = '{sc} depth -r {c}:{s}-{e} {b}'.format(b=bam_file,c=chrom,s=start,e=end,sc=samtoolscmd)
     else:
         cmd = '{sc} depth {b}'.format(b=bam_file,sc=samtoolscmd)
 
     tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
-    from io import StringIO
     c = pd.read_csv(StringIO(tmp),sep='\t',names=['chr','pos','depth'])
     return c
 
@@ -972,6 +1007,15 @@ def get_mean_depth(bam_file, chrom=None, start=None, end=None, how='mean'):
         return c.depth.mean().round(2)
     else:
         return c.depth.sum().round(2)
+
+def get_chrom_names(bam_file):
+    """Get chromosome names from bam file"""
+
+    samtoolscmd = get_cmd('samtools')
+    cmd = '{sc} idxstats {b}'.format(b=bam_file,sc=samtoolscmd)
+    tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
+    df = pd.read_csv(StringIO(tmp),sep='\t',names=['chrom','start','end','xx'])
+    return df.iloc[0].chrom
 
 def fetch_sra_reads(df,path):
     """Download a set of reads from SRA using dataframe with runs"""

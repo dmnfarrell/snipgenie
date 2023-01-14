@@ -84,17 +84,6 @@ def bcftools_consensus(vcf_file, sample, out_file='consensus.fa'):
     subprocess.check_output(cmd, shell=True)
     return
 
-def spades(file1, file2, path, outfile=None, threads=4):
-    """Run spades on paired end reads"""
-
-    cmd = 'spades -t %s --pe1-1 %s --pe1-2 %s --careful -o %s' %(threads,file1,file2,path)
-    if not os.path.exists(path):
-        print (cmd)
-        subprocess.check_output(cmd, shell=True)
-    if outfile != None:
-        shutil.copy(os.path.join(path,'scaffolds.fasta'),outfile)
-    return outfile
-
 def make_reference_proteins():
     """Make reference protein sequences from m.bovis
        used for initial setup of proteins file which is used as

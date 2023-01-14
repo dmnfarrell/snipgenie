@@ -934,7 +934,7 @@ class PlotOptions(BaseOptions):
         else:
             defaultfont = 'FreeSans'
         colormaps = sorted(m for m in plt.cm.datad if not m.endswith("_r"))
-        self.groups = {'general':['kind','grid','bins','linewidth','linestyle',
+        self.groups = {'general':['kind','subplots','grid','sharex','bins','linewidth','linestyle',
                        'marker','ms','alpha','colormap'],
                        'format' :['title','xlabel','ylabel','showxlabels','showylabels',
                        'style','font','fontsize']
@@ -942,6 +942,8 @@ class PlotOptions(BaseOptions):
         self.opts = {
                     'kind':{'type':'combobox','default':'','items':kinds},
                     'grid':{'type':'checkbox','default':0,'label':'show grid'},
+                    'subplots':{'type':'checkbox','default':0,'label':'subplots'},
+                    'sharex':{'type':'checkbox','default':0,'label':'share x'},
                     'bins':{'type':'spinbox','default':20,'width':5},
                     'marker':{'type':'combobox','default':'o','items': markers},
                     'linestyle':{'type':'combobox','default':'-','items': linestyles},
@@ -1049,6 +1051,8 @@ class PlotViewer(QWidget):
         ms = kwds['ms']
         ls = kwds['linestyle']
         lw = kwds['linewidth']
+        subplots = kwds['subplots']
+        sharex = kwds['sharex']
         self.style = kwds['style']
         self.set_style()
         self.data = data
@@ -1064,25 +1068,28 @@ class PlotViewer(QWidget):
         fig = self.fig
         ax = self.ax
         plt.rc("font", family=kwds['font'], size=fontsize)
-        if kind == 'bar':
+        if kind == 'line':
+            d.plot(kind='line',ax=ax, cmap=cmap, grid=grid, alpha=alpha, linewidth=lw,
+                    linestyle=ls, fontsize=fontsize, subplots=subplots)
+        elif kind == 'bar':
             d.plot(kind='bar',ax=ax, cmap=cmap, grid=grid, alpha=alpha, linewidth=lw,
-                    fontsize=fontsize)
+                    fontsize=fontsize, subplots=subplots, sharex=sharex)
         elif kind == 'barh':
             d.plot(kind='barh',ax=ax, cmap=cmap, grid=grid, alpha=alpha, linewidth=lw,
-                    fontsize=fontsize)
+                    fontsize=fontsize, subplots=subplots)
         elif kind == 'hist':
             d.plot(kind='hist',subplots=True,ax=ax,bins=kwds['bins'], linewidth=lw,
                     cmap=cmap, grid=grid, alpha=alpha, fontsize=fontsize)
         elif kind == 'scatter':
             d=d.dropna()
             if len(d.columns)==1:
-                xcol = d.index
-                ycols = d.columns[0]
-            d.plot(x=xcol,y=ycols,kind='scatter',ax=ax,s=ms,marker=marker,
-                    grid=grid, alpha=alpha, fontsize=fontsize)
-        elif kind == 'line':
-            d.plot(kind='line',ax=ax, cmap=cmap, grid=grid, alpha=alpha, linewidth=lw,
-                    fontsize=fontsize)
+                x = d.index
+                y = d[xcol]
+            else:
+                x = d[xcol]
+                y = d[ycols[0]]
+            ax.scatter(x, y, marker=marker, alpha=alpha, linewidth=lw, s=ms) # facecolor=clr,)
+
         elif kind == 'heatmap':
             #ax.imshow(d, cmap=cmap)
             self.heatmap(d, ax, cmap=cmap, alpha=alpha)

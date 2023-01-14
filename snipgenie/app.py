@@ -352,7 +352,7 @@ def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform
             aligners.minimap2_align(file1, file2, idx=idx, out=out, platform=platform, **kwargs)
         bamidx = out+'.bai'
         if not os.path.exists(bamidx) or kwargs['overwrite']==True:
-            print('aligning %s' %name)
+            print('indexing %s' %name)
             cmd = '{s} index {o}'.format(o=out,s=samtoolscmd)
             subprocess.check_output(cmd,shell=True)
             print (cmd)
@@ -489,12 +489,17 @@ def mpileup_parallel(bam_files, ref, outpath, threads=4, callback=None, tempdir=
 
 def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
                     callback=None, overwrite=False, filters=None, gff_file=None,
-                    mask=None, tempdir=None,
+                    mask=None, tempdir=None, sep='_',
                     custom_filters=False, **kwargs):
     """Call variants with bcftools"""
 
     st = time.time()
+    #always write out new samples.txt file for reheader step
+    samples = get_samples_from_bams(bam_files, sep=sep)
+    #print (samples)
+    write_samples(samples[['sample']], outpath)
     sample_file = os.path.join(outpath,'samples.txt')
+
     if filters == None:
         filters = default_filter
     rawbcf = os.path.join(outpath,'raw.bcf')
@@ -528,10 +533,10 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     print ('calling variants..')
     vcfout = os.path.join(outpath,'calls.vcf')
     cmd = '{bc} call --ploidy 1 -m -v -o {o} {raw}'.format(bc=bcftoolscmd,o=vcfout,raw=rawbcf)
-    #if callback != None:
-    #    callback(cmd)
     print (cmd)
     subprocess.check_output(cmd,shell=True)
+    sites = tools.bcftools_count_sites(vcfout)
+    print ('%s sites called as variants' %sites)
 
     #relabel samples in vcf header
     if relabel == True:
@@ -542,8 +547,6 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     cmd = '{bc} filter -i "{f}" -o {o} -O z {i}'.format(bc=bcftoolscmd,i=vcfout,o=filtered,f=filters)
     print (cmd)
     tmp = subprocess.check_output(cmd,shell=True)
-    if callback != None:
-        callback(cmd)
 
     #get only snps
     print ('splitting snps and indels..')
@@ -729,12 +732,12 @@ def get_aa_snp_matrix(df):
     return x
 
 def run_bamfiles(bam_files, ref, gff_file=None, mask=None, outdir='.', threads=4,
-                    sep='_', labelindex=0, samples=None, **kwargs):
+                    sep='_', labelindex=0, **kwargs):
     """
     Run workflow with bam files from a previous sets of alignments.
     We can arbitrarily combine results from multiple other runs this way.
     kwargs are passed to variant_calling method.
-    Should write a samples.txt file in the outdir if vcf header is to be
+    Should write a samples.txt file in the outdir in case vcf header is to be
     relabelled.
     Args:
         bam_files: list of bam files
@@ -747,14 +750,9 @@ def run_bamfiles(bam_files, ref, gff_file=None, mask=None, outdir='.', threads=4
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
 
-    #write sample names if not provided
-    if samples is None:
-        samples = get_samples_from_bams(bam_files, sep=sep)
-    write_samples(samples[['sample']], outdir)
-
     print ('%s samples were loaded:' %len(bam_files))
     vcf_file = variant_calling(bam_files, ref, outdir, threads=threads,
-                                   relabel=True, gff_file=gff_file, mask=mask,
+                                   relabel=True, gff_file=gff_file, mask=mask, sep=sep,
                                    **kwargs)
 
     snprecs, smat = tools.core_alignment_from_vcf(vcf_file)
@@ -900,7 +898,7 @@ class WorkFlow(object):
         samples = self.fastq_table
         if not os.path.exists(self.outdir):
             os.makedirs(self.outdir, exist_ok=True)
-        write_samples(samples[['sample']], self.outdir)
+        #write_samples(samples[['sample']], self.outdir)
         if len(samples)==0:
             print ('no samples found')
             return
@@ -947,6 +945,7 @@ class WorkFlow(object):
                                         filters=self.filters,
                                         mask=self.mask,
                                         custom_filters=self.custom_filters,
+                                        #sep='',
                                         overwrite=self.overwrite,
                                         tempdir=self.tempdir)
         print (self.vcf_file)

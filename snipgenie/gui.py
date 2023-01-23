@@ -445,8 +445,10 @@ class App(QMainWindow):
 
         self.edit_menu = QMenu('Edit', self)
         self.menuBar().addMenu(self.edit_menu)
+        self.edit_menu.addAction(icon, 'Undo', self.undo)
         #self.edit_menu.addAction(icon, 'Find/Replace', self.findReplace,
         #        QtCore.Qt.CTRL + QtCore.Qt.Key_F)
+
         icon = QIcon(os.path.join(iconpath,'preferences-system.png'))
         self.edit_menu.addAction(icon, 'Preferences', self.preferences)
 
@@ -916,7 +918,7 @@ class App(QMainWindow):
         if not filename:
             return
         self.ref_gb = filename
-        #put annotation in a dataframe
+        #put annotation in a dataframe    
         self.annot = tools.genbank_to_dataframe(self.ref_gb)
         self.update_ref_genome()
         return
@@ -1773,6 +1775,11 @@ class App(QMainWindow):
         data = df.iloc[rows]
         return data
 
+    def undo(self):
+        """Undo last change to samples"""
+
+        return
+
     def zoom_in(self):
 
         for i in self.opentables:
@@ -1869,14 +1876,15 @@ class App(QMainWindow):
                 openplugins[plugin.name] = p
                 #load data if any saved in project
                 #print (self.plugindata)
-                if plugin.name in self.plugindata:
-                    p.load_data(self.plugindata[plugin.name])
             except Exception as e:
                 QMessageBox.information(self, "Plugin error", str(e))
                 print(traceback.format_exc())
                 return
             #plugin should be added as a dock widget
             self.show_plugin(p)
+            #load saved data
+            if plugin.name in self.plugindata:
+                p.load_data(self.plugindata[plugin.name])
         else:
             #no widgets, just run the plugins run method
             p = plugin(parent=self)

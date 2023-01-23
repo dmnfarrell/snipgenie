@@ -55,8 +55,8 @@ class TreeViewer(QWidget):
         self.add_widgets()
         self.create_menu(self)
         self.tree = None
-        self.width = 400
-        self.height = 500
+        self.width = 500
+        self.height = 600
         self.ts = ''
         import toytree
         self.colors = {}
@@ -161,9 +161,9 @@ class TreeViewer(QWidget):
 
         toolswidget = QWidget()
         toolswidget.setMaximumHeight(200)
-
         vbox.addWidget(toolswidget)
         l = QVBoxLayout(toolswidget)
+
         self.zoomslider = w = QSlider(QtCore.Qt.Horizontal)
         w.setSingleStep(5)
         w.setMinimum(5)
@@ -171,6 +171,23 @@ class TreeViewer(QWidget):
         w.setValue(10)
         l.addWidget(w)
         w.valueChanged.connect(self.zoom)
+
+        self.widthslider = w = QSlider(QtCore.Qt.Horizontal)
+        w.setSingleStep(10)
+        w.setMinimum(20)
+        w.setMaximum(2000)
+        w.setValue(600)
+        l.addWidget(w)
+        w.valueChanged.connect(self.hscale)
+
+        self.heightslider = w = QSlider(QtCore.Qt.Horizontal)
+        w.setSingleStep(10)
+        w.setMinimum(20)
+        w.setMaximum(2000)
+        w.setValue(500)
+        l.addWidget(w)
+        w.valueChanged.connect(self.vscale)
+
         btn = QPushButton('Set Format')
         l.addWidget(btn)
         btn.clicked.connect(self.tree_style_options)
@@ -334,6 +351,16 @@ class TreeViewer(QWidget):
     def zoom(self):
         zoom = self.zoomslider.value()/10
         self.browser.setZoomFactor(zoom)
+
+    def hscale(self):
+        self.width = self.widthslider.value()
+        self.update()
+        return
+
+    def vscale(self):
+        self.height = self.heightslider.value()
+        self.update()
+        return
 
     def clustermap(self):
         #canvas = toyplot.Canvas(width=600, height=800)

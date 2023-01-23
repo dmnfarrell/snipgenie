@@ -492,7 +492,7 @@ class MergeDialog(BasicDialog):
         cols = self.df.columns
         cols2 = self.df2.columns
         ops = ['merge','concat']
-        how = ['inner','outer','left','right']
+        how = ['left','inner','right','outer']
         hbox = QHBoxLayout(self)
         main = QWidget(self)
         main.setMaximumWidth(300)

@@ -52,6 +52,8 @@ msmeg_genome = os.path.join(sequence_path, 'Msmeg-MC2.fa')
 msmeg_gb = os.path.join(datadir, 'Msmeg-MC2.gb')
 mbovis_mask =  os.path.join(datadir, 'Mbovis_AF212297_mask.bed')
 mtb_mask =  os.path.join(datadir, 'MTB-H37Rv_mask.bed')
+mycoplasmabovis_genome = os.path.join(sequence_path, 'Mpbovis-PG45.fa')
+mycoplasmabovis_gb = os.path.join(datadir, 'Mpbovis-PG45.gb')
 sarscov2_genome = os.path.join(sequence_path, 'Sars-Cov-2.fa')
 sarscov2_gb = os.path.join(datadir, 'Sars-Cov-2.gb')
 
@@ -60,6 +62,7 @@ preset_genomes = {
            'MTB-H37Rv':{'sequence':mtb_genome, 'gb':mtb_gb, 'mask':mtb_mask},
            'MAP-K10':{'sequence':map_genome, 'gb':map_gb},
            'M.smegmatis-MC2155':{'sequence':msmeg_genome, 'gb':msmeg_gb},
+           'Mycoplasmabovis-PG45':{'sequence':mycoplasmabovis_genome, 'gb':mycoplasmabovis_gb},
            'Sars-Cov-2':{'sequence':sarscov2_genome, 'gb':sarscov2_gb}
            }
 
@@ -182,6 +185,13 @@ def get_pivoted_samples(df):
     """Get pivoted samples by pair, returns a table with one sample per row and
        filenames in separate columns.
     """
+
+    #check pairs
+    c = df['sample'].value_counts()
+    c = c[c>2]
+    if len(c)>0:
+        print ('there seem to be duplicates:')
+        print (c)
 
     p = pd.pivot_table(df,index='sample',columns='pair',values=['filename','name'],
                         aggfunc='first')
@@ -306,7 +316,7 @@ def blast_contaminants(filename, limit=2000, random=False, pident=98, qcovs=90):
     return c
 
 def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform='illumina',
-                unmapped=None, **kwargs):
+                unmapped=None, stats=True, **kwargs):
     """
     Align multiple files. Requires a dataframe with a 'sample' column to indicate
     paired files grouping. If a trimmed column is present these files will align_reads
@@ -360,7 +370,7 @@ def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform
         df.loc[i,'bam_file'] = os.path.abspath(out)
 
         #find mean depth/coverage
-        if 'meandepth' not in df.columns or pd.isnull(df.loc[i,'meandepth']):
+        if stats==True and ('meandepth' not in df.columns or pd.isnull(df.loc[i,'meandepth'])):
             cols = ['coverage','meandepth']
             c = tools.samtools_coverage(out)
             df.loc[i,cols] = c[cols]
@@ -921,7 +931,7 @@ class WorkFlow(object):
         check_samples_aligned(samples, path)
         samples = align_reads(samples, idx=self.reference, outdir=path,
                         aligner=self.aligner, platform=self.platform,
-                        unmapped=unmapped,
+                        unmapped=unmapped, stats=self.get_stats,
                         threads=self.threads, overwrite=self.overwrite)
 
         #lowdepth = samples[samples.meandepth<15]
@@ -929,9 +939,9 @@ class WorkFlow(object):
         #    print ('%s samples have mean depth <15' %len(lowdepth))
 
         #mapping stats
-        #if 'mapped' not in samples.columns and self.get_stats == True:
-            #print ('getting mapping stats..')
-            #samples = mapping_stats(samples)
+        #if self.get_stats == True:
+        #    print ('getting mapping stats..')
+        #    samples = mapping_stats(samples)
         #save sample table
         samples.to_csv(os.path.join(self.outdir,'samples.csv'),index=False)
 
@@ -1024,7 +1034,8 @@ def main():
     parser.add_argument("-r", "--reference", dest="reference", default=None,
                         help="reference genome filename", metavar="FILE")
     parser.add_argument("-S", "--species", dest="species", default=None,
-                        help="set the species reference genome, overrides -r")
+                        help="set the species reference genome, overrides -r.\
+                         possible values are %s" %', '.join(preset_genomes.keys()))
     parser.add_argument("-g", "--genbank_file", dest="gb_file", default=None,
                         help="annotation file, optional", metavar="FILE")
     parser.add_argument("-t", "--threads", dest="threads", default=4,

@@ -63,8 +63,6 @@ class ContaminationCheckerPlugin(Plugin):
         if not os.path.exists(self.ref_table):
             self.find_files()
         self.load_table()
-        #get previous results if present
-        self.get_results()
         return
 
     def create_widgets(self):
@@ -187,7 +185,7 @@ class ContaminationCheckerPlugin(Plugin):
             species = ' '.join(d.split()[1:3])
             self.refs.loc[rec.id] = [rec.id, rec.description, f, species]
 
-        self.update_treelist()
+        #self.update_treelist()
         self.refs.to_csv(self.ref_table)
         return
 
@@ -366,16 +364,21 @@ class ContaminationCheckerPlugin(Plugin):
     def update_treelist(self):
         """Refresh entries in tree"""
 
+        checked = self.get_checked()
         self.tree.clear()
         for i,r in self.refs.iterrows():
             #print (i,r)
             item = QTreeWidgetItem(self.tree)
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
-            item.setCheckState(0, QtCore.Qt.Checked)
             item.setText(0, r.name)
             item.setText(1, r.species)
             item.setText(2, r.description)
             item.setText(3, r.filename)
+            #restore previous state
+            if item.text(0) in checked:
+                item.setCheckState(0, QtCore.Qt.Checked)
+            else:
+                item.setCheckState(0, QtCore.Qt.Unchecked)
         return
 
     def build_indexes(self):
@@ -491,7 +494,6 @@ class ContaminationCheckerPlugin(Plugin):
 
         print ('getting results..')
         bamfiles = glob.glob(os.path.join(self.outpath,'*.bam'))
-        #print (bamfiles)
         results = []
         checked = self.get_checked()
         for f in bamfiles:
@@ -534,10 +536,13 @@ class ContaminationCheckerPlugin(Plugin):
         self.numreads = data['numreads']
         self.readsentry.setText(str(self.numreads))
         checked = data['checked']
+        #print (checked)
         for i in range(self.tree.topLevelItemCount()):
             item = self.tree.topLevelItem(i)
-            if item.text(0) not in checked:
-                item.setCheckState(0, QtCore.Qt.Unchecked)
+            if item.text(0) in checked:
+                item.setCheckState(0, QtCore.Qt.Checked)
+        #get previous results if present
+        self.get_results()
         return
 
     def project_closed(self):

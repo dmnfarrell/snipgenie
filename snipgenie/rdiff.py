@@ -210,7 +210,13 @@ def show_coverage(samples, chr, start, end, ref_fasta, ref_gb, minq=10, clip=Non
                     grid=False):
     """
     Plot read coverage in specific regions for multiple samples. Useful for
-    RD region comparison.
+    RD region comparison. Uses dna_features_viewer.
+    Args:
+        samples: dataframe of samples with bam_file column
+        chr: chromosome name
+        start, end: start/end location of region
+        ref_fasta: reference genome
+        ref_gb: reference genbank annotation
     """
 
     from dna_features_viewer import GraphicFeature, GraphicRecord

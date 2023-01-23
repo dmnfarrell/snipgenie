@@ -750,7 +750,7 @@ def spades(file1, file2, path, outfile=None, threads=4):
     if outfile != None:
         shutil.copy(os.path.join(path,'scaffolds.fasta'),outfile)
     return outfile
-    
+
 def get_snp_matrix(df):
     """SNP matrix from multi sample vcf dataframe"""
 
@@ -813,10 +813,11 @@ def normpdf(x, mean, sd):
     return num/denom
 
 def get_gc(filename, limit=1e4):
+    """Find gc content across sequence file"""
 
-    from Bio.SeqUtils import GC
+    from Bio.SeqUtils import gc_fraction
     df = fastq_to_dataframe(filename, size=limit)
-    gc = df.seq.apply(lambda x: GC(x))
+    gc = df.seq.apply(lambda x: gc_fraction(x)*100)
     return gc
 
 def plot_fastq_gc_content(filename, ax=None, limit=50000):

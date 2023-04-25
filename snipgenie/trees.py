@@ -106,7 +106,7 @@ def run_fasttree(infile, outpath, bootstraps=100):
     fc = tools.get_cmd('fasttree')
     out = os.path.join(outpath,'tree.newick')
     cmd = '{fc} -nt {i} > {o}'.format(fc=fc,b=bootstraps,i=infile,o=out)
-    tmp = subprocess.check_output(cmd, shell=True)
+    tmp = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
     return out
 
 def run_RAXML(infile, name='variants', threads=8, bootstraps=100, outpath='.'):
@@ -227,7 +227,7 @@ def run_treecluster(f, threshold, method='max_clade'):
 
     import io
     cmd = 'TreeCluster.py  -i {f} -t {t} -m {m}'.format(f=f,t=threshold,m=method)
-    print (cmd)
+    #print (cmd)
     cl=subprocess.check_output(cmd, shell=True)
     cl=pd.read_csv(io.BytesIO(cl),sep='\t')
     return cl

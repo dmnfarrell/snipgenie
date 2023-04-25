@@ -20,6 +20,7 @@
 
 import sys,os,subprocess,glob,shutil,re,random,time
 import platform
+import hashlib
 from io import StringIO
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
@@ -348,7 +349,8 @@ def kraken(file1, file2='', dbname='STANDARD16', threads=4):
     """Run kraken2 on single/paired end fastq files"""
 
     os.environ['KRAKEN2_DB_PATH'] = '/local/kraken2'
-    cmd = 'kraken2 -db {db} --report krakenreport.txt --threads {t} --paired {f1} {f2} > kraken.out'.format(f1=file1,f2=file2,t=threads,db=dbname)
+    cmd = 'kraken2 -db {db} --report krakenreport.txt --threads {t} --paired {f1} {f2} > kraken.out'\
+            .format(f1=file1,f2=file2,t=threads,db=dbname)
     print (cmd)
     subprocess.check_output(cmd, shell=True)
     rep=pd.read_csv('krakenreport.txt',sep='\t',names=['perc_frag','n_frags_root','n_frags','rank_code','taxid','name'])
@@ -740,10 +742,10 @@ def bcftools_consensus(vcf_file, ref, out):
     print ('consensus sequences saved to %s' %out)
     return
 
-def spades(file1, file2, path, outfile=None, threads=4):
+def spades(file1, file2, path, outfile=None, threads=4, trusted='', cmd='spades'):
     """Run spades on paired end reads"""
 
-    cmd = 'spades -t %s --pe1-1 %s --pe1-2 %s --careful -o %s' %(threads,file1,file2,path)
+    cmd = '%s --careful -t %s --trusted-contigs %s --pe1-1 %s --pe1-2 %s --careful -o %s' %(cmd,threads,trusted,file1,file2,path)
     if not os.path.exists(path):
         print (cmd)
         subprocess.check_output(cmd, shell=True)
@@ -1043,7 +1045,8 @@ def gff_bcftools_format(in_file, out_file):
     from Bio.SeqFeature import FeatureLocation
     from copy import copy
 
-    #recs = GFF.parse(in_handle)
+    prefix = create_locus_tag(in_file)
+    l=1
     recs = SeqIO.parse(in_file,format='gb')
     for record in recs:
         #make a copy of the record as we will be changing it during the loop
@@ -1053,16 +1056,25 @@ def gff_bcftools_format(in_file, out_file):
         for i in range(0,len(record.features)):
             feat = record.features[i]
             q = feat.qualifiers
-            if not 'locus_tag' in q:
-                continue
+            #handle missing locus_tags - hack
+            #if not 'locus_tag' in q and 'gene' in q:
+            #    q['locus_tag'] = '{p}_{l:05d}'.format(p=prefix,l=l)
+            #    l+=1
             #print (q)
+
             #remove some unecessary qualifiers
             for label in ['note','translation','product','experiment']:
                 if label in q:
                     del q[label]
             if(feat.type == "CDS"):
                 #use the CDS feature to create the new lines
-                tag = q['locus_tag'][0]
+                if 'locus_tag' in q:
+                    tag = q['locus_tag'][0]
+                elif 'gene' in q:
+                    tag = prefix+'_'+q['gene'][0]
+                    q['locus_tag'] = tag
+                else:
+                    tag = q['locus_tag'] = i
                 q['ID'] = 'CDS:%s' %tag
                 q['Parent'] = 'transcript:%s' %tag
                 q['biotype'] = 'protein_coding'
@@ -1076,7 +1088,12 @@ def gff_bcftools_format(in_file, out_file):
             elif(record.features[i].type == "gene"):
                 #edit the gene feature
                 q=feat.qualifiers
-                q['ID'] = 'gene:%s' %q['locus_tag'][0]
+                if 'locus_tag' in q:
+                    tag = q['locus_tag'][0]
+                else:
+                    tag = prefix+'_'+q['gene'][0]
+                    q['locus_tag'] = tag
+                q['ID'] = 'gene:%s' %tag
                 q['biotype'] = 'protein_coding'
                 if 'gene' in q:
                     q['Name'] = q['gene']
@@ -1084,6 +1101,15 @@ def gff_bcftools_format(in_file, out_file):
         #write the new features to a GFF
         GFF.write([new], out_handle)
         return
+
+def create_locus_tag(filename):
+    """Create a genbank style locus tag"""
+
+    name = os.path.basename(filename)
+    x = hashlib.md5(name.encode('utf-8')).hexdigest()
+    x = ''.join(i for i in x if not i.isdigit())
+    x = x.upper()[:7]
+    return x
 
 def get_spoligotype(filename, reads_limit=3000000, threshold=2, threads=4):
     """

@@ -412,15 +412,17 @@ class ContaminationCheckerPlugin(Plugin):
         return new
 
     def save_unmapped_reads(self):
-        """Save unmapped reads to new files"""
+        """Save unmapped reads to new files - needs to be finished"""
 
         #get outdir
-        outdir = QFileDialog.getExistingDirectory()
+        #outdir = QFileDialog.getExistingDirectory()
+        outdir = os.path.join(self.parent.outputdir,'contam_unmapped')
+        if not os.path.exists(outdir):
+            os.makedirs(outdir, exist_ok=True)
+        tempdir = tempfile.tempdir
         if not outdir:
             return
-        #outdir = '/storage/bvd/unmapped'
-        tempdir = tempfile.tempdir
-        #print (self.refs)
+
         g = self.refs.loc['cow']
         idx = g.filename
         def func(progress_callback):

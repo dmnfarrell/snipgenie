@@ -28,9 +28,10 @@ import numpy as np
 import pandas as pd
 from  . import tools
 
-snp200_cmap = {1:'coral',2:'dodgerblue',3:'lightgreen',4:'mediumpurple',
+snp200_cmap = {0:'darkgreen',1:'coral',2:'dodgerblue',3:'crimson',4:'mediumpurple',
                 5:'orange',6:'pink',7:'gold',8:'cyan',9:'beige',10:'red',
-                11:'brown',12:'yellow',13:'blue'}
+                11:'brown',12:'gray',13:'blue',14:'lightgreen',15:'Aquamarine',
+                16:'DarkCyan',17:'IndianRed'}
 
 def prep(tree, support, resolve_polytomies=True, suppress_unifurcations=True):
 
@@ -53,7 +54,6 @@ def prep(tree, support, resolve_polytomies=True, suppress_unifurcations=True):
             if node.confidence < support: # don't allow low-support edges
                 node.edge_length = float('inf')
     return leaves
-
 
 def cut(node):
     """cut out the current node's subtree (by setting all nodes' DELETED to True) 
@@ -205,62 +205,104 @@ def treecluster(filename):
     cl = get_treecluster_labels(clusters)
     return cl
 
-def dm_cluster(distance_matrix, t, prev_clusters=None):
+def hdbscan_cluster(distance_matrix, min_cluster_size=1, min_samples=None, alpha=1.0):
     """
-    Given a Pandas dataframe distance matrix and a distance threshold t, finds the minimum
-     number of clusters of the samples such that all members of a cluster are within t
-     of each other. If prev_clusters is given, updates the cluster labels accordingly.
-    
+    Clusters a distance matrix using HDBSCAN.
+
     Parameters:
         distance_matrix (pandas.DataFrame): N x N distance matrix where N is the number of samples
-        t (float): distance threshold
-        prev_clusters (dict): a dictionary of the clusters that each sample was in previously, if any
-        
+        min_cluster_size (int): the minimum size of clusters to be returned (default=5)
+        min_samples (int or None): the number of samples in a neighborhood for a point to be considered a core point.
+            If None, it will be set to min_cluster_size (default=None)
+        alpha (float): the relative importance of stability vs. size in clustering (default=1.0)
+
     Returns:
         list: a list of cluster labels for each sample
         dict: a dictionary of the clusters that each sample is in
     """
     
-    n = len(distance_matrix)
-    idx = list(distance_matrix.index)
-    labels = np.zeros(n).astype(int)
+    import hdbscan
+    if min_samples is None:
+        min_samples = min_cluster_size
+
+    clusterer = hdbscan.HDBSCAN(min_cluster_size=2,metric='precomputed',alpha=alpha)
+    cluster_labels = clusterer.fit_predict(distance_matrix.values)
+
+    # create dictionary of clusters
     clusters = {}
-    cluster_id = 1
-   
-    if prev_clusters is not None:
-        for k, v in prev_clusters.items():
-            #print (k,v)
-            clusters[k] = v.copy()
-            for name in v:
-                i = idx.index(name)
-                labels[i] = k
-            #cluster_id += 1            
-    #print (labels)
-    
-    for i in range(n):
-        if labels[i] == 0:            
-            labels[i] = cluster_id
-            cluster_samples = [idx[i]]
-            for j in range(i+1, n):
-                if distance_matrix.iloc[i,j] <= t:
-                    labels[j] = cluster_id
-                    name = idx[j]
-                    cluster_samples.append(name)
-            if cluster_id in clusters:
-                clusters[cluster_id].extend(cluster_samples)
+    for i, label in enumerate(cluster_labels):
+        if label != -1:
+            if label in clusters:
+                clusters[label].append(distance_matrix.index[i])
             else:
-                clusters[cluster_id] = cluster_samples
-            cluster_id += 1
+                clusters[label] = [distance_matrix.index[i]]
 
-    return list(labels), clusters
+    return list(cluster_labels), clusters
 
-def get_cluster_levels(S, levels=[200,50,12,3]):
-    """Clusters at different thresholds"""
+def dm_cluster(distance_matrix, t, prev_clusters=None):
+    """
+    Given a Pandas dataframe distance matrix and a distance threshold t, finds the clusters of the
+    samples such that all members of a cluster are within t of each other.
+    
+    Parameters:
+        distance_matrix (pandas.DataFrame): N x N distance matrix where N is the number of samples
+        t (float): distance threshold
+        previous_clusters (dataframe): previous cluster labels (optional)
+        
+    Returns:
+        list: a list of cluster labels for each sample
+        dataframe: a dataframe of the clusters that each sample is in
+    """
+    
+    from sklearn.cluster import AgglomerativeClustering
+    clustering = AgglomerativeClustering(distance_threshold=t, n_clusters=None, 
+                                         linkage='complete', metric='precomputed').fit(distance_matrix)
+    labels = clustering.labels_
+    clusters = pd.DataFrame(labels,columns=['cluster'],index=distance_matrix.index)
+    if prev_clusters is not None:
+        labels,clusters = reassign_clusters(clusters, labels, prev_clusters)
+    return labels, clusters
 
+def reassign_clusters(clusters, labels, prevclusters):
+    """Re-assign cluster names to match previous ones."""
+
+    new=[]
+    df=clusters.merge(prevclusters,left_index=True,right_index=True)
+    cnt = max(prevclusters.cluster)+1
+    for c,g in clusters.groupby('cluster'):
+        #print (c)       
+        f = df.loc[df.index.isin(g.index)]
+        #print (f)
+        if len(f)>0:
+            nc = f.iloc[0].cluster_y            
+        else:
+            nc = cnt
+            cnt+=1
+        g['cluster'] = nc
+        #print(g)
+        new.append(g)
+        
+    final = pd.concat(new)
+    final = final.loc[clusters.index]
+    #print('curr labels:',labels)
+    newlabels=list(final.cluster)
+    return newlabels, final
+
+def get_cluster_levels(S, cluster_members=None):
+    """Clusters at different thresholds.
+    S: snp distance matrix  
+    cluster_members (dataframe): previous sets of clusters at each level    
+    """
+
+    levels=[200,50,12,3]
     df=pd.DataFrame(index=S.index)
     clusts={}
     for t in levels:
-        labels,clusts[t] = dm_cluster(S, t)
+        if cluster_members is not None:
+            prev = cluster_members[t]            
+        else:
+            prev = None
+        labels,clusts[t] = dm_cluster(S, t, prev)
         df['snp'+str(t)] = labels
     return df, clusts
 
@@ -288,8 +330,11 @@ def generate_short_code(input_string):
     short_code = hex_dig[:8]  
     return short_code
 
-def generate_strain_names(cl):
-    """generate strain names from cluster levels"""
+def generate_strain_names(cl, snpdist):
+    """Generate strain names from cluster levels
+    Args:
+        cl (dataframe): cluster level labels        
+    """
 
     col = 'snp3'
     col2 = 'snp12'
@@ -299,7 +344,7 @@ def generate_strain_names(cl):
     new = []
     for cluster,df in cl.groupby(col): 
         # Find the reference sample for this clade
-        reference_sample = find_reference_sample(cluster, snpdist, cl)
+        #reference_sample = find_reference_sample(cluster, snpdist, cl)
         # Assign a strain name to each sample in the clade
         #df = meta[meta[col] == clade].copy()
         s=1
@@ -310,10 +355,9 @@ def generate_strain_names(cl):
             fs = f'{s:04d}'
             strain_name = f"ST-{sample[col3]}-{sample[col2]}-{sample[col]}-{fs}"
             code = generate_short_code(strain_name[:-5])
-            if id == reference_sample:
-                strain_name += "-0"+"ref"
-            else:
-                s+=1
+            #if id == reference_sample:
+            #    strain_name += "-ref"            
+            s+=1
             df.loc[id,'strain_name'] = strain_name
             df.loc[id,'code'] = code
         #cladecount+=1

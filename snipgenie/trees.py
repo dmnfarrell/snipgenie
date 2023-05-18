@@ -159,63 +159,33 @@ def biopython_draw_tree(filename):
     Phylo.draw(tree)
     return
 
-def toytree_draw(tre, meta, labelcol,colorcol):
-    """Draw colored tree with toytree"""
+def draw_tree(filename,df=None,col=None,cmap=None,width=500,height=500,**kwargs):
+    """Draw newick tree with toytree"""
 
-    tipnames = tre.get_tip_labels()
-    mapping = dict(zip(meta['sample'],meta[labelcol]))
-    mapping['ref'] = 'AF2122/97'
-    tiplabels = [mapping[i] if i in mapping else 'NA' for i in tipnames]
-    mapping = dict(zip(meta['sample'],meta[colorcol]))
-    colormap = colors_from_labels(meta,'sample',colorcol)
-    tip_colors = [colormap[mapping[i]] if i in mapping else 'Black' for i in tipnames]
-    node_sizes=[0 if i else 8 for i in tre.get_node_values(None, 1, 0)]
-    node_colors = [colormap[mapping[n]] if n in mapping else 'black' for n in tre.get_node_values('name', True, True)]
-
-    canvas,t,r=tre.draw(layout='r',width=600,height=800,tip_labels=tiplabels,node_markers="o",node_hover=True,edge_widths=1,
-             tip_labels_colors=tip_colors,node_sizes=node_sizes,scalebar=True,node_colors=node_colors)#tip_labels_align=True);
-    #canvas.legend(leg,corner=("top", 100, 100, 70));
-    return
-
-def create_tree(filename=None, tree=None, ref=None, labelmap=None, colormap=None, color_bg=False, format=1):
-    """Draw a tree """
-
-    from ete3 import Tree, PhyloTree, TreeStyle, TextFace
-    if filename != None:
-        t = Tree(filename, format=format)
+    import toytree
+    tre = toytree.tree(filename)   
+    idx = tre.get_tip_labels()
+    if df is not None:
+        labels = df[col].unique()
+        if cmap == None:
+            cmap = ({c:tools.random_hex_color() if c in labels else 'black' for c in labels})
+        #m = set(idx) - set(df.index)
+        #tre = tre.drop_tips(m)
+        #idx = tre.get_tip_labels()
+        df['color'] = df[col].apply(lambda x: cmap[x])        
+        df = df.loc[idx]
+        tip_colors = list(df.color)
+        node_sizes=[0 if i else 6 for i in tre.get_node_values(None, 1, 0)]
+        node_colors = [cmap[df.loc[n][col]] if n in df.index else 'black' for n in tre.get_node_values('name', True, True)]
     else:
-        t = tree
-    if ref != None:
-        t.set_outgroup(ref)
-    if colormap != None:
-        color_leaves(t, colormap, color_bg)
-    if labelmap != None:
-        set_tiplabels(t,labelmap)
+        tip_colors = None
+        node_colors = None
+        node_sizes = None
 
-    #format_nodes(t)
-    ts = TreeStyle()
-    return t, ts
-
-def colors_from_labels(df,name,group):
-    """Colors from dataframe columns for use with an ete3 tree drawing"""
-
-    labels = df[group].unique()
-    colors={}
-    i=0
-    for l in labels:
-        if i>=len(qcolors):
-            i=0
-        colors[l] = qcolors[i]
-        i+=1
-    df['color'] = df[group].apply(lambda x: colors[x],1)
-    #colormap = dict(zip(df[name],df.color))
-    return colors
-
-def remove_nodes(tree, names):
-
-    for n in names:
-        node = tree.search_nodes(name=n)[0]
-        node.delete()
+    canvas,axes,mark = tre.draw(scalebar=True,edge_widths=.5,height=height,width=width,
+                                tip_labels_colors=tip_colors,node_colors=node_colors,
+                                node_sizes=node_sizes,**kwargs)
+    return canvas
 
 def run_treecluster(f, threshold, method='max_clade'):
     """Run treecluster on a newick tree.

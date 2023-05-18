@@ -10,31 +10,31 @@ library(ggnewscale)
 
 
 plot_tree <- function(tree,samples,type='phylogram',title='',column='SB',cmap="Set1") {
-  labels <- samples[tree$tip.label,][[column]]
-  #print(labels)
-  #print (samples[mltree$tip.label,])
-  labels[is.na(labels)] <- "Other"  
-  leglabels <- levels(as.factor(labels))
-  n<-length(leglabels)
-  colors <- brewer.pal(n = n, name = cmap)
-  cols<-setNames(colors[1:length(leglabels)],leglabels)
-  print (cols)
-  l<-length(labels)
-  w<- max(dist.nodes(tree))*.8
-    
-  if (l<70){
+    labels <- samples[tree$tip.label,][[column]]
+    #print(labels)
+    #print (samples[mltree$tip.label,])
+    labels[is.na(labels)] <- "Other"  
+    leglabels <- levels(as.factor(labels))
+    n<-length(leglabels)
+    colors <- brewer.pal(n = n, name = cmap)
+    cols<-setNames(colors[1:length(leglabels)],leglabels)
+    #print (cols)
+    l<-length(labels)
+    w<- max(dist.nodes(tree))*.8
+
+    if (l<70){
       showtip=TRUE
       }
-  else {
+    else {
       showtip=FALSE
-  }
-  plot(tree,type=type,cex=.5,label.offset=10, edge.width=.6,show.tip.label=showtip)
-  title(title,cex.main= 2)
-  cex<-(.3/l*100)
-  tiplabels(pie=to.matrix(labels, levels(as.factor(labels))),cex=cex,size=2,piecol=cols)
-  add.scale.bar(x=100,lwd=2, cex=1)
-  legcolors <- cols[leglabels]
-  legend("topright", legend=names(cols), pch=22, pt.bg=cols, pt.cex=2.0, cex=1.2, 
+    }
+    plot(tree,type=type,cex=.5,label.offset=10, edge.width=.6,show.tip.label=showtip)
+    title(title,cex.main= 2)
+    cex<-(.3/l*100)
+    tiplabels(pie=to.matrix(labels, levels(as.factor(labels))),cex=cex,size=2,piecol=cols)
+    add.scale.bar(x=100,lwd=2, cex=1)
+    legcolors <- cols[leglabels]
+    legend("topright", legend=names(cols), pch=22, pt.bg=cols, pt.cex=2.0, cex=1.2, 
          bty="n",ncol=1,x.intersp=.3)
 }
 
@@ -61,7 +61,7 @@ get_color_mapping <- function(data, col, cmap){
 }
 
 ggplottree <- function(tree, meta, cols=NULL, cmaps=NULL, layout="rectangular",
-                       offset=10, tiplabel=FALSE, tipsize=3) {
+                       offset=10, tiplabel=FALSE, tipsize=3, tipalign=FALSE, labelsize=5) {
     
     y <- gettreedata(tree, meta)
     p <- ggtree(y, layout=layout)   
@@ -97,9 +97,14 @@ ggplottree <- function(tree, meta, cols=NULL, cmaps=NULL, layout="rectangular",
     p2 <- p2 + theme_tree2(legend.text = element_text(size=20), legend.key.size = unit(1, 'cm'), 
                         legend.position="left", plot.title = element_text(size=40))     
             guides(color = guide_legend(override.aes = list(size=10))) 
-    if (tiplabel){
-        p2 <- p2 + geom_tiplab() 
-        }    
+    if (tiplabel == TRUE){
+        p2 <- p2 + geom_tiplab(size=labelsize,align=tipalign,hjust=-.2) +
+                 scale_x_continuous(expand = expansion(mult = 0.1))
+        }
+    else if (is.character(tiplabel)){
+        p2 <- p2 + geom_tiplab(aes(label=.data[[tiplabel]]),align=tipalign,size=labelsize, hjust=-.2) +
+                 scale_x_continuous(expand = expansion(mult = 0.1))
+    }
     return(p2)
 }
 
@@ -119,7 +124,7 @@ highlightclades <- function(p){
 ggtreefruit <- function(tree, meta, layout='c', col1=NULL){
     y <- gettreedata(tree, meta)    
     p <- ggtree(y, layout=layout) +
-            geom_tippoint( mapping=aes( shape=NULL, color=.data[[col1]]),size=3) 
+            geom_tippoint( mapping=aes( shape=NULL, color=.data[[col1]])) 
     
     p <- p +
          geom_fruit(             

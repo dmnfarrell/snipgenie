@@ -479,10 +479,10 @@ def mpileup_parallel(bam_files, ref, outpath, threads=4, callback=None, tempdir=
 
     if platform.system() == 'Windows':
         rushcmd = tools.get_cmd('rush')
-        cmd = 'echo {reg} | {rc} -D " " "{bc} mpileup -r {{}} -f {r} -a {a} --min-MQ 60 {b} -o {p}/{{@[^:]*$}}.bcf"'\
+        cmd = 'echo {reg} | {rc} -D " " "{bc} mpileup -r {{}} -f {r} -a {a} --max-depth 500 --min-MQ 60 {b} -o {p}/{{@[^:]*$}}.bcf"'\
                 .format(rc=rushcmd,bc=bcftoolscmd,reg=regstr,r=ref,b=bam_files,a=annotatestr,p=tempdir)
     else:
-        cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b --min-MQ 60 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
+        cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b --max-depth 500 --min-MQ 60 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
                 .format(r=ref, reg=regstr, b=bam_files, o=filesstr, a=annotatestr)
     print (cmd)
     #if callback != None:
@@ -762,7 +762,7 @@ def run_bamfiles(bam_files, ref, gff_file=None, mask=None, outdir='.', threads=4
 
     print ('%s samples were loaded:' %len(bam_files))
     vcf_file = variant_calling(bam_files, ref, outdir, threads=threads,
-                                   relabel=True, gff_file=gff_file, mask=mask, sep=sep,
+                                   gff_file=gff_file, mask=mask, sep=sep,
                                    **kwargs)
 
     snprecs, smat = tools.core_alignment_from_vcf(vcf_file)

@@ -257,7 +257,7 @@ def dm_cluster(distance_matrix, t, prev_clusters=None):
     from sklearn.cluster import AgglomerativeClustering
     clustering = AgglomerativeClustering(distance_threshold=t, n_clusters=None, 
                                          linkage='complete', metric='precomputed').fit(distance_matrix)
-    labels = clustering.labels_
+    labels = clustering.labels_+1
     clusters = pd.DataFrame(labels,columns=['cluster'],index=distance_matrix.index)
     if prev_clusters is not None:
         labels,clusters = reassign_clusters(clusters, labels, prev_clusters)
@@ -322,7 +322,7 @@ def find_reference_sample(clade, snp_distances, cl):
     return reference_sample
 
 def generate_short_code(input_string):
-    """Hexadecimal short code"""
+    """Hexadecimal short code for input string"""
 
     import hashlib
     hash_object = hashlib.sha1(input_string.encode())
@@ -350,11 +350,10 @@ def generate_strain_names(cl, snpdist):
         s=1
         df=df.replace(-1,'X')
         for id, sample in df.iterrows():
-            #print (sample)
-            
-            fs = f'{s:04d}'
-            strain_name = f"ST-{sample[col3]}-{sample[col2]}-{sample[col]}-{fs}"
-            code = generate_short_code(strain_name[:-5])
+            #print (sample)            
+            #fs = f'{s:04d}'
+            strain_name = f"ST-{sample[col3]}-{sample[col2]}-{sample[col]}"
+            code = generate_short_code(strain_name)
             #if id == reference_sample:
             #    strain_name += "-ref"            
             s+=1

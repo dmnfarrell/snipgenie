@@ -478,8 +478,8 @@ class App(QMainWindow):
         icon = QIcon(os.path.join(iconpath,'call-variants.png'))
         self.analysis_menu.addAction(icon, 'Call Variants',
             lambda: self.run_threaded_process(self.variant_calling, self.processing_completed))
-        #self.analysis_menu.addAction('Create SNP alignment',
-        #    lambda: self.run_threaded_process(self.snp_alignment, self.snp_align_completed))
+        self.analysis_menu.addAction('Create SNP alignment',
+            lambda: self.run_threaded_process(self.snp_alignment, self.processing_completed))
         icon = QIcon(os.path.join(iconpath,'phylogeny.png'))
         self.analysis_menu.addAction(icon, 'Build Phylogeny',
             lambda: self.run_threaded_process(self.make_phylo_tree, self.phylogeny_completed))
@@ -992,6 +992,7 @@ class App(QMainWindow):
                 self.fastq_table.model.df = df
                 self.fastq_table.refresh()
         self.outdirLabel.setText(self.outputdir)
+        self.setup_paths()
         return
 
     def check_output_folder(self):
@@ -1112,7 +1113,6 @@ class App(QMainWindow):
                                     custom_filters=proximity,
                                     callback=progress_callback.emit)
         self.snp_alignment()
-
         return
 
     def calling_completed(self):
@@ -1161,7 +1161,7 @@ class App(QMainWindow):
 
         self.opts.applyOptions()
         kwds = self.opts.kwds
-        vcf_file = self.results['vcf_file']
+        vcf_file = os.path.join(self.outputdir, 'snps.vcf.gz')
         print('Making SNP alignment')
         result, smat = tools.core_alignment_from_vcf(vcf_file)
         #print (result)

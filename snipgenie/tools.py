@@ -135,6 +135,18 @@ def batch_iterator(iterator, batch_size):
         if batch:
             yield batch
 
+def random_hex_color():
+    """random hex color"""
+
+    r = lambda: np.random.randint(0,255)
+    c='#%02X%02X%02X' % (r(),r(),r())
+    return c
+
+def random_hex_colors(n=1,seed=None):
+    if seed != None:
+        np.random.seed(seed)
+    return [random_hex_color() for i in range(n)]
+
 def diffseqs(seq1,seq2):
     """Diff two sequences"""
 
@@ -144,7 +156,7 @@ def diffseqs(seq1,seq2):
             c+=1
     return c
 
-def snp_dist_matrix(aln):
+'''def snp_dist_matrix(aln):
     """Get pairwise snps distances from biopython
        Args:
         aln:
@@ -163,6 +175,33 @@ def snp_dist_matrix(aln):
         #print (x)
         m.append(x)
     m = pd.DataFrame(m,index=names,columns=names)
+    return m'''
+
+def snp_dist_matrix(aln):
+    """
+    Compute the number of Single Nucleotide Polymorphisms (SNPs) 
+    between sequences in a Biopython alignment.
+    Args:
+        aln:
+            Biopython multiple sequence alignment object.
+    returns:
+        a matrix as pandas dataframe
+    """
+
+    names=[s.id for s in aln]
+    num_sequences = len(aln)
+    matrix = np.zeros((num_sequences, num_sequences))
+
+    for i in range(num_sequences):
+        for j in range(i + 1, num_sequences):
+            seq1 = str(aln[i].seq)
+            seq2 = str(aln[j].seq)
+            # Calculate the number of SNPs
+            snp_count = sum(c1 != c2 for c1, c2 in zip(seq1, seq2))
+            matrix[i, j] = snp_count
+            matrix[j, i] = snp_count
+
+    m = pd.DataFrame(matrix,index=names,columns=names).astype(int)
     return m
 
 def get_unique_snps(names, df, present=True):
@@ -691,7 +730,7 @@ def bcftools_query(bcf_file, positions=[], field='AD'):
     """Query a vcf/bcf file for specific field over given positions.
         Args:
             positions: list of sites you want to query
-            field: FORMAT field e.g. DP, AD
+            field: FORMAT field to extract e.g. DP, AD
     """
 
     bcftoolscmd = get_cmd('bcftools')
@@ -700,12 +739,12 @@ def bcftools_query(bcf_file, positions=[], field='AD'):
         pstr+='POS=%s|' %p
     pstr =pstr[:-1]
     cmd = "{bc} query -f '%CHROM %POS %REF %ALT [%{f} ]\\n' -i '{p}' {b}".format(b=bcf_file,
-            bc=bcftoolscmd, f=field,p=pstr)
+            bc=bcftoolscmd,f=field,p=pstr)
     tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
-    #print (tmp[:100])
-    from io import StringIO
-    cols = ['chrom','pos','ref','alt']
+    print (cmd)
+    from io import StringIO  
     df = pd.read_csv(StringIO(tmp),sep=' ',header=None)
+    df = df.rename(columns={0:'chrom',1:'pos',2:'ref',3:'alt'})
     return df
 
 def bcftools_count_sites(vcf_file):
@@ -716,16 +755,34 @@ def bcftools_count_sites(vcf_file):
     tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
     return len(tmp)
 
+def bcftools_call(bcf_file, vcfout):
+    """Run bcftools call"""
+
+    bcftoolscmd = get_cmd('bcftools')
+    cmd = '{bc} call --ploidy 1 -m -o {o} {raw}'.format(bc=bcftoolscmd,o=vcfout,raw=bcf_file)
+    print (cmd)
+    tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
+    return
+
 def bcftools_filter(vcf_file, out=None, filters=''):
     """Count no. of sites in vcf file"""
 
-    bcftoolscmd = tools.get_cmd('bcftools')
+    bcftoolscmd = get_cmd('bcftools')
     if out == None:
         cmd = '{bc} filter -i "{f}" {i}'.format(bc=bcftoolscmd,i=vcf_file,f=filters)
     else:
         cmd = '{bc} filter -i "{f}" -o {o} -O z {i}'.format(bc=bcftoolscmd,i=vcf_file,o=out,f=filters)
     print (cmd)
     tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
+    return
+
+def bcftools_merge(bcf_files, out, threads=4):
+    """Merge bcf files"""
+
+    bcftoolscmd = get_cmd('bcftools')
+    cmd = '{bc} merge --threads {t} -m all -o {o} {b}'.format(b=bcf_files, o=out, bc=bcftoolscmd, t=threads)
+    print (cmd)
+    subprocess.check_output(cmd, shell=True)
     return
 
 def bcftools_consensus(vcf_file, ref, out):
@@ -742,10 +799,13 @@ def bcftools_consensus(vcf_file, ref, out):
     print ('consensus sequences saved to %s' %out)
     return
 
-def spades(file1, file2, path, outfile=None, threads=4, trusted='', cmd='spades'):
+def spades(file1, file2, path, outfile=None, threads=4, trusted=None, cmd='spades'):
     """Run spades on paired end reads"""
 
-    cmd = '%s --careful -t %s --trusted-contigs %s --pe1-1 %s --pe1-2 %s --careful -o %s' %(cmd,threads,trusted,file1,file2,path)
+    if trusted != None:
+        cmd = '%s --careful -t %s --trusted-contigs %s --pe1-1 %s --pe1-2 %s --careful -o %s' %(cmd,threads,trusted,file1,file2,path)
+    else:
+        cmd = '%s --careful -t %s --pe1-1 %s --pe1-2 %s --careful -o %s' %(cmd,threads,file1,file2,path)
     if not os.path.exists(path):
         print (cmd)
         subprocess.check_output(cmd, shell=True)

@@ -38,6 +38,7 @@ mlstdir = os.path.join(module_path, 'mlst')
 
 mbovis_scheme = pd.read_csv(os.path.join(mlstdir,'mbovis_scheme.csv'))
 mbovis_db = os.path.join(mlstdir,'mbovis_db.csv.gz')
+sample_profiles = os.path.join(mlstdir,'sample_profiles.csv')
 ref_proteins = os.path.join(datadir,'Mbovis_AF212297_proteins.fa')
 
 schemes = {'Mbovis-AF212297': mbovis_scheme}
@@ -78,9 +79,9 @@ def bcftools_consensus(vcf_file, sample, out_file='consensus.fa'):
 
     cmd='bcftools index -f %s' %vcf_file
     subprocess.check_output(cmd, shell=True)
-    cmd='cat {r} | bcftools consensus -s {s} {v} > {o}'.format(r=app.mbovis_genome,
+    cmd='bcftools consensus -f {r} -s {s} {v} > {o}'.format(r=app.mbovis_genome,
                                                 v=vcf_file,s=sample,o=out_file)
-    #print (cmd)
+    print (cmd)
     subprocess.check_output(cmd, shell=True)
     return
 
@@ -111,18 +112,20 @@ def find_alleles(fastafile):
     db = pd.read_csv(mbovis_db)
     names = db.name.unique()
     df = tools.fasta_to_dataframe(fastafile).reset_index()
-
+    print (len(df))
     result=[]
     new=[]
+    missed=0
     for name in names:
         #print (name)
         s = db[db.name==name]
         gene = df[df.name==name]
         #print (gene)
         if len(gene)==0:
-            #print (name)
+            print ('missing gene:',name)
             #missing gene in target
             result.append((name,0))
+            missed+=1
             continue
         target = gene.iloc[0].sequence
         found = s[s.sequence==target]
@@ -139,6 +142,7 @@ def find_alleles(fastafile):
     prof['allele'] = prof.allele.astype(int)
     #new additions
     new = pd.DataFrame(new,columns=['name','allele','sequence'])
+    print ('missed', missed)
     return prof, new
 
 def update_mlst_db(new):
@@ -154,10 +158,12 @@ def update_mlst_db(new):
     return
 
 def type_sample(fastafile, annotfile, outfile, threads=4, overwrite=False, update=True):
-    """Type a single sample using wgMLST method. Requires pathogenie for
+    """
+    Type a single sample using wgMLST method. Requires pathogenie for
     annotation steps.
     Args:
         fastafile: fasta file to type from assembly or other
+        annotfile: annotation file
         outfile: output file for annotations
         update: whether to update DB, default True
     Returns:
@@ -187,7 +193,7 @@ def diff_profiles(s1, s2):
 def get_profile_string(df):
     return ';'.join(df.allele.astype(str))
 
-def dist_matrix(profiles):
+'''def dist_matrix(profiles):
     """Distance matrix of a set of profiles"""
 
     dist=[]
@@ -199,6 +205,26 @@ def dist_matrix(profiles):
             row.append(d)
         dist.append(row)
     D = pd.DataFrame(dist,columns=profiles.keys(),index=profiles.keys())
+    return D'''
+
+def dist_matrix(profiles):
+    """
+    Distance matrix from a set of allele numbers.
+    profiles: dataframe of allele profiles
+    returns:
+        dataframe
+    """
+
+    dist=[]
+    for s,r in profiles.iterrows():
+        x = list(r)
+        row=[]
+        for i,r2 in profiles.iterrows():
+            d = diff_profiles(x,list(r2))
+            row.append(d)
+        dist.append(row)
+    
+    D = pd.DataFrame(dist,columns=profiles.index,index=profiles.index)
     return D
 
 def tree_from_distmatrix(D):
@@ -212,7 +238,7 @@ def tree_from_distmatrix(D):
     #print(tree.ascii_art())
     return tree
 
-def run_samples(vcf_file, outdir, names=None, omit=[], **kwargs):
+'''def run_samples(vcf_file, outdir, names=None, omit=[], **kwargs):
     """Run all the samples in a vcf file.
     Args:
         vcf_file: multi sample variant file from previous calling
@@ -241,11 +267,43 @@ def run_samples(vcf_file, outdir, names=None, omit=[], **kwargs):
         outfile = os.path.join(outdir, '%s.fa' %sample)
         profile = type_sample(consfile, annotfile, outfile, **kwargs)
         profs[sample] = list(profile.allele)
+    #convert to dataframe
+    profs = pd.DataFrame(profs).T
+    return profs'''
+
+def run_samples(samples, outdir, names=None, omit=[], threads=4, **kwargs):
+    """Run all the samples in a vcf file.
+    Args:
+        samples (dataframe): table of samples with fastq file names
+        outdir: folder for writing intermediate files
+    Returns:
+        dict of mst profiles
+    """
+
+    profs = {}
+
+    if not os.path.exists(outdir):
+        os.makedirs(outdir, exist_ok=True)
+    
+    if names!=None:
+        samples = samples[samples['sample'].isin(names)]
+    for i,r in samples.iterrows():    
+        name=r['sample']        
+        if name in omit:
+            continue
+        print (name)
+        #run assembly here       
+        assembly = os.path.join(outdir, '%s.fa' %name)
+        print (assembly)
+        tools.spades(r.filename1, r.filename2, os.path.join(outdir,name), outfile=assembly, threads=12)
+
+        annotfile = os.path.join(outdir, '%s.gb' %name)
+        outfile = os.path.join(outdir, '%s_proteins.fa' %name)
+        profile = type_sample(assembly, annotfile, outfile, **kwargs)
+        profs[name] = list(profile.allele)
+    #convert to dataframe
+    profs = pd.DataFrame(profs).T
     return profs
-
-def test():
-
-    return
 
 def main():
     "Run the application"

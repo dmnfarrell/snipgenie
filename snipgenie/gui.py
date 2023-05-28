@@ -119,6 +119,7 @@ class App(QMainWindow):
         self.setCentralWidget(self.main)
 
         self.create_tool_bar()
+        
         self.setup_gui()
         self.load_settings()
         self.show_recent_files()
@@ -133,6 +134,7 @@ class App(QMainWindow):
         self.threadpool = QtCore.QThreadPool()
         mpl.style.use('bmh')
         self.discover_plugins()
+        self.plugin_toolbar_items()
         self.redirect_stdout()
         return
 
@@ -264,7 +266,7 @@ class App(QMainWindow):
                  'Quit': {'action':self.quit,'file':'application-exit'}
                 }
 
-        toolbar = QToolBar("Main Toolbar")
+        self.toolbar = toolbar = QToolBar("Main Toolbar")
         self.addToolBar(toolbar)
         for i in items:
             if 'file' in items[i]:
@@ -277,7 +279,7 @@ class App(QMainWindow):
             #btn.setCheckable(True)
             toolbar.addAction(btn)
         return
-
+    
     def add_dock(self, widget, name):
         """Add a dock widget"""
 
@@ -1360,12 +1362,13 @@ class App(QMainWindow):
         return
 
     def sample_details(self, row):
+        """View a samples details"""
 
         df = self.fastq_table.model.df
         row = self.fastq_table.getSelectedRows()[0]
         data = df.iloc[row]
         pd.set_option('display.max_colwidth', None)
-        #print (data)
+        #print (pd.DataFrame(data))
         #print ()
         w = widgets.TableViewer(self, pd.DataFrame(data))
         i = self.right_tabs.addTab(w, data['sample'])
@@ -1931,8 +1934,7 @@ class App(QMainWindow):
         """Update plugins"""
 
         from . import plugin
-        plgmenu = self.plugin_menu
-        #for plg in plugin.get_plugins_classes('gui'):
+        plgmenu = self.plugin_menu      
         for plg in plugin.Plugin.__subclasses__():
             #print (plg)
             def func(p, **kwargs):
@@ -1946,6 +1948,26 @@ class App(QMainWindow):
                 plgmenu.addAction(plg.menuentry, func(plg))
         return
 
+    def plugin_toolbar_items(self):
+        """Add plugin toolbar items"""
+
+        from . import plugin       
+        self.toolbar.addSeparator()
+        for plg in plugin.Plugin.__subclasses__():           
+            def func(p, **kwargs):
+                def new():
+                   self.load_plugin(p)
+                return new        
+            if hasattr(plg,'iconfile'):
+                icon = QIcon(os.path.join(pluginiconpath,plg.iconfile))
+            else:
+                icon = None
+            btn = QAction(icon, plg.menuentry, self) 
+            btn.triggered.connect(func(plg))
+            self.toolbar.addAction(btn)
+
+        return
+    
     def save_plugin_data(self):
         """Save data for any plugins that need it"""
 

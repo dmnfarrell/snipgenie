@@ -294,16 +294,19 @@ def get_cluster_levels(S, cluster_members=None):
     cluster_members (dataframe): previous sets of clusters at each level    
     """
 
-    levels=[200,50,12,3]
+    levels=[500,200,50,12,3]
     df=pd.DataFrame(index=S.index)
-    clusts={}
+    clusts=[]
     for t in levels:
         if cluster_members is not None:
-            prev = cluster_members[t]            
+            prev = cluster_members[cluster_members.level==t]
         else:
             prev = None
-        labels,clusts[t] = dm_cluster(S, t, prev)
+        labels,cl = dm_cluster(S, t, prev)
         df['snp'+str(t)] = labels
+        cl['level'] = t
+        clusts.append(cl)
+    clusts = pd.concat(clusts)
     return df, clusts
 
 def find_reference_sample(clade, snp_distances, cl):
@@ -330,16 +333,19 @@ def generate_short_code(input_string):
     short_code = hex_dig[:8]  
     return short_code
 
-def generate_strain_names(cl, snpdist):
+def generate_strain_names(cl):
     """Generate strain names from cluster levels
     Args:
-        cl (dataframe): cluster level labels        
+        cl (dataframe): cluster level labels 
+    Returns:
+        new strain names in a dataframe
     """
 
     col = 'snp3'
     col2 = 'snp12'
     col2 = 'snp50'
     col3 = 'snp200'
+    col4 = 'snp500'
     # Iterate over each clade and assign a reference sample and strain names to each sample
     new = []
     for cluster,df in cl.groupby(col): 
@@ -352,7 +358,7 @@ def generate_strain_names(cl, snpdist):
         for id, sample in df.iterrows():
             #print (sample)            
             #fs = f'{s:04d}'
-            strain_name = f"ST-{sample[col3]}-{sample[col2]}-{sample[col]}"
+            strain_name = f"ST-{sample[col4]}-{sample[col3]}-{sample[col2]}-{sample[col]}"
             code = generate_short_code(strain_name)
             #if id == reference_sample:
             #    strain_name += "-ref"            

@@ -87,16 +87,16 @@ ggplottree <- function(tree, meta, cols=NULL, cmaps=NULL, layout="rectangular",
             df <- meta[tree$tip.label,][col]            
             colors <- get_color_mapping(df, col, cmap)       
             p2 <- p2 + new_scale_fill()
-            p2 <- gheatmap(p2, df, offset=i*offset, width=.08,
+            p2 <- gheatmap(p2, df, offset=i*offset, width=.05,
                       colnames_angle=0, colnames_offset_y = .05)  +
                   scale_fill_manual(values=colors, name=col)
           
         }
     }
     
-    p2 <- p2 + theme_tree2(legend.text = element_text(size=20), legend.key.size = unit(1, 'cm'), 
+    p2 <- p2 + theme_tree2(legend.text = element_text(size=18), legend.key.size = unit(1, 'cm'), 
                         legend.position="left", plot.title = element_text(size=40))     
-            guides(color = guide_legend(override.aes = list(size=10))) 
+            guides(color = guide_legend(override.aes = list(size=14))) 
     if (tiplabel == TRUE){
         p2 <- p2 + geom_tiplab(size=labelsize,align=tipalign,hjust=-.2) +
                  scale_x_continuous(expand = expansion(mult = 0.1))

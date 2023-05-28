@@ -25,7 +25,7 @@ from io import StringIO
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
 from Bio import SeqIO
-from Bio import Phylo, AlignIO
+from Bio import Phylo, AlignIO, Align
 import numpy as np
 import pandas as pd
 #import pylab as plt
@@ -156,27 +156,6 @@ def diffseqs(seq1,seq2):
             c+=1
     return c
 
-'''def snp_dist_matrix(aln):
-    """Get pairwise snps distances from biopython
-       Args:
-        aln:
-            Biopython multiple sequence alignment object.
-        returns:
-            a matrix as pandas dataframe
-    """
-
-    names=[s.id for s in aln]
-    m = []
-    for i in aln:
-        x=[]
-        for j in aln:
-            d = diffseqs(i,j)
-            x.append(d)
-        #print (x)
-        m.append(x)
-    m = pd.DataFrame(m,index=names,columns=names)
-    return m'''
-
 def snp_dist_matrix(aln):
     """
     Compute the number of Single Nucleotide Polymorphisms (SNPs) 
@@ -193,8 +172,8 @@ def snp_dist_matrix(aln):
     matrix = np.zeros((num_sequences, num_sequences))
 
     for i in range(num_sequences):
-        for j in range(i + 1, num_sequences):
-            seq1 = str(aln[i].seq)
+        seq1 = str(aln[i].seq)
+        for j in range(i + 1, num_sequences):            
             seq2 = str(aln[j].seq)
             # Calculate the number of SNPs
             snp_count = sum(c1 != c2 for c1, c2 in zip(seq1, seq2))
@@ -203,6 +182,111 @@ def snp_dist_matrix(aln):
 
     m = pd.DataFrame(matrix,index=names,columns=names).astype(int)
     return m
+
+def update_snp_dist_matrix(aln, snpdist=None):
+    """
+    Compute a new SNP distance matrix given an updated
+    alignment and previous matrix. The alignment should contain
+    ALL the samples in the previous matrix. Designed so we can add
+    one or few samples without recomputing all values.
+    Args:
+        aln: Biopython multiple sequence alignment object
+        snpdist: current snp distance matrix to be updated
+    returns:
+        a matrix as pandas dataframe
+    """
+    
+    present = snpdist.index
+    #print (present)
+    new_aln = [s for s in aln if s.id not in present]
+    #print (len(new_aln))
+    new=[s.id for s in new_aln]
+    print ('%s samples to be added' %len(new))
+    #create the new matrix
+    matrix = snpdist.copy()
+    new_index = snpdist.columns.tolist() + new    
+    matrix = snpdist.reindex(new_index)
+    matrix = matrix.reindex(new_index, axis=1)
+    
+    for s1 in aln:        
+        seq1 = str(s1.seq)
+        x=s1.id
+        #print (x)
+        for s2 in aln:
+            y=s2.id            
+            if not np.isnan(matrix.loc[x,y]):                
+                continue
+            else:
+                seq2 = str(s2.seq)
+                snp_count = sum(c1 != c2 for c1, c2 in zip(seq1, seq2))                
+                matrix.loc[x,y] = snp_count
+                matrix.loc[x,y] = snp_count
+        
+    print (matrix[matrix.ref.isnull()])
+    matrix = matrix.astype(int)   
+    return matrix
+
+def alignment_from_snps(df):
+    """MultipleSeqAlignment object from core snps"""
+
+    df = df.set_index('pos').T
+    seqs=[]
+    for i,r in df.iterrows():
+        #print (r)
+        s=''.join(r)
+        seqs.append(SeqRecord(s,id=i))
+
+    aln = Align.MultipleSeqAlignment(seqs)
+    return aln
+
+def combine_core_snps(core, new):
+    """Add new sample(s) to core snps by combining both tables."""
+    
+    #new=new.drop(columns='ref')
+    ncols = new.columns[1:]
+    #print (ncols)
+    df = core.merge(new,on='pos',how='outer')
+    for col in ncols:
+        df[col] = df[col].fillna(df['ref_x'])
+    currcols = core.columns
+    #fill remainder
+    df = df.apply(lambda x: x.fillna(df.ref_y))
+    print (len(core),len(df))
+    df['ref'] = df.ref_y.fillna(df.ref_x)
+    #print (df[df.ref.isnull()])
+    df=df.drop(columns=['ref_y','ref_x'])    
+    return df
+
+def get_closest_samples(distance_matrix, row_index, n):
+    """
+    Get the closest N samples for a given row in a distance matrix DataFrame.
+    """
+    row = distance_matrix.loc[row_index]
+    closest = row.nsmallest(n + 1)[1:]
+    return closest
+
+def dist_matrix_to_mst(distance_matrix, ax):
+    
+    import networkx as nx
+    import pylab as plt
+    G = nx.Graph()
+
+    for i, row in distance_matrix.iterrows():
+        for j, weight in row.items():
+            G.add_edge(i, j, weight=weight)
+
+    T = nx.minimum_spanning_tree(G)
+    # Compute edge lengths based on distances
+    edge_lengths = [T[u][v]['weight'] for u, v in T.edges()]
+    # Plot the minimum spanning tree with edge lengths proportional to distances
+    pos = nx.spring_layout(T)#, weight='weight', scale=10, seed=42)    
+    labels = nx.get_edge_attributes(T, 'weight')  
+
+    nx.draw_networkx(T, pos, node_color='lightblue', ax=ax)
+    nx.draw_networkx_edge_labels(T, pos, edge_labels=labels, font_size=8, ax=ax)
+    #nx.draw_networkx_edges(T, pos, width=edge_lengths)
+    ax.axis('off')
+    return
 
 def get_unique_snps(names, df, present=True):
     """Get snps unique to one or more samples from a SNP matrix.
@@ -956,7 +1040,7 @@ def core_alignment_from_vcf(vcf_file, callback=None, uninformative=False, missin
     missing_sites = []
     uninf_sites = []
     for record in vcf_reader:
-        S = {sample.sample: sample.gt_bases for sample in record.samples}
+        S = {sample.sample: sample.gt_bases for sample in record.samples}        
         if omit != None:
             for o in omit:
                 del S[o]
@@ -967,7 +1051,7 @@ def core_alignment_from_vcf(vcf_file, callback=None, uninformative=False, missin
             if missing == False:
                 continue
         #ignore uninformative sites
-        if uninformative == False:
+        if uninformative == False and len(S)>1:
             u = set(S.values())
             if len(u) == 1:
                 uninf_sites.append(record.POS)

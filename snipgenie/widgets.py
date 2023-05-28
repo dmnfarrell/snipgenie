@@ -1439,7 +1439,18 @@ class BrowserViewer(QDialog):
         zoom = self.zoomslider.value()/10
         self.browser.setZoomFactor(zoom)
 
-
+class TableViewer(QDialog):
+    """View row of data in table"""
+    def __init__(self, parent=None, dataframe=None, **kwargs):
+        super(TableViewer, self).__init__(parent)
+        self.setGeometry(QtCore.QRect(200, 200, 600, 600))
+        self.grid = QGridLayout()
+        self.setLayout(self.grid)
+        self.table = tables.DataFrameTable(self, dataframe=dataframe, **kwargs)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.grid.addWidget(self.table)
+        return
+    
 class SimpleBamViewer(QDialog):
     """Sequence records features viewer using dna_features_viewer"""
     def __init__(self, parent=None, filename=None):

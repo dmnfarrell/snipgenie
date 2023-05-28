@@ -764,7 +764,7 @@ def run_bamfiles(bam_files, ref, gff_file=None, mask=None, outdir='.', threads=4
     vcf_file = variant_calling(bam_files, ref, outdir, threads=threads,
                                    gff_file=gff_file, mask=mask, sep=sep,
                                    **kwargs)
-
+    print ('getting core alignment..')
     snprecs, smat = tools.core_alignment_from_vcf(vcf_file)
     outfasta = os.path.join(outdir, 'core.fa')
     SeqIO.write(snprecs, outfasta, 'fasta')

@@ -619,7 +619,7 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         return len(self.df.index)
 
     def columnCount(self, parent=QtCore.QModelIndex()):
-        return len(self.df.columns.values)
+        return len(self.df.columns)
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         """Edit or display roles. Handles what happens when the Cells

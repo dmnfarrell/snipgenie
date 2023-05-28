@@ -40,54 +40,10 @@ def set_tiplabels(t, labelmap):
             l.name = labelmap[l.name]
     return
 
-def delete_nodes(t, names):
-    for l in t.iter_leaves():
-        if l.name in names:
-            l.delete()
-
-def format_nodes(t):
-    from ete3 import NodeStyle
-    for n in t.traverse():
-        ns = NodeStyle()
-        ns["size"] = 0
-        n.set_style(ns)
-
 def remove_tiplabels(t):
 
     for l in t.iter_leaves():
         l.name = None
-
-def set_nodesize(t, size=12):
-    """Change the node size"""
-
-    from ete3 import NodeStyle
-    for l in t.iter_leaves():
-        clr = l._img_style['fgcolor']
-        ns = NodeStyle()
-        ns["size"] = size
-        #keep color
-        ns["fgcolor"] = clr
-        l.set_style(ns)
-
-def color_leaves(t, colors, color_bg=False):
-    from ete3 import NodeStyle
-
-    for l in t.iter_leaves():
-        if l.name in colors:
-            #print (l.name, colors[l.name])
-            clr = colors[l.name]
-        else:
-            clr='black'
-        #print (clr)
-        # create a new label with a color attribute
-        #N = AttrFace("name", fgcolor=clr)
-        #l.add_face(N, 1, position='aligned')
-        ns = NodeStyle()
-        ns["size"] = 12
-        ns["fgcolor"] = clr
-        if color_bg == True:
-            ns["bgcolor"] = clr
-        l.set_style(ns)
 
 def get_colormap(values):
 
@@ -172,7 +128,7 @@ def draw_tree(filename,df=None,col=None,cmap=None,width=500,height=500,**kwargs)
         #m = set(idx) - set(df.index)
         #tre = tre.drop_tips(m)
         #idx = tre.get_tip_labels()
-        df['color'] = df[col].apply(lambda x: cmap[x])        
+        df['color'] = df[col].apply(lambda x: cmap[x])
         df = df.loc[idx]
         tip_colors = list(df.color)
         node_sizes=[0 if i else 6 for i in tre.get_node_values(None, 1, 0)]

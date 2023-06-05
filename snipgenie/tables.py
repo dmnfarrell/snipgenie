@@ -182,7 +182,8 @@ class DataFrameTable(QTableView):
     """
     QTableView with pandas DataFrame as model.
     """
-    def __init__(self, parent=None, app=None, dataframe=None, plotter=None, fontsize=10):
+    def __init__(self, parent=None, app=None, dataframe=None, plotter=None, 
+                    font=core.FONT, fontsize=10):
 
         QTableView.__init__(self)
         self.parent = parent
@@ -212,9 +213,9 @@ class DataFrameTable(QTableView):
         self.resizeColumnsToContents()
         self.setCornerButtonEnabled(True)
 
-        self.font = QFont("Arial", fontsize)
-        #print (fontsize)
-        self.setFont(self.font)
+        self.fontname = font
+        self.fontsize = fontsize
+        self.updateFont()
         tm = DataFrameModel(dataframe)
         self.setModel(tm)
         self.model = tm
@@ -230,7 +231,7 @@ class DataFrameTable(QTableView):
     def updateFont(self):
         """Update the font"""
 
-        font = QFont(self.font)
+        font = self.font = QFont(self.fontname)
         font.setPointSize(int(self.fontsize))
         self.setFont(font)
         self.horizontalHeader().setFont(font)
@@ -482,8 +483,7 @@ class DataFrameTable(QTableView):
 
     def refresh(self):
         """Refresh table if dataframe is changed"""
-
-        #self.updateFont()
+        
         self.model.beginResetModel()
         index = self.model.index
         try:
@@ -937,10 +937,10 @@ class MyHeaderView(QHeaderView):
 
     def __init__(self, parent=None):
         super().__init__(Qt.Horizontal, parent)
-        self._font = QFont("Arial", 10)
+        self._font = QFont(core.FONT, core.FONTSIZE)
         self._metrics = QFontMetrics(self._font)
         self._descent = self._metrics.descent()
-        self._margin = 10
+        self._margin = 5
 
     def paintSection(self, painter, rect, index):
         data = self._get_data(index)
@@ -998,15 +998,15 @@ class SNPTable(DataFrameTable):
     Table for SNP alignment view.
     See docs for format of file.
     """
-    def __init__(self, parent=None, app=None, dataframe=None, *args):
-        DataFrameTable.__init__(self, parent, dataframe)
+    def __init__(self, parent=None, app=None, dataframe=None, **kwargs):
+        DataFrameTable.__init__(self, parent, dataframe, **kwargs)
         tm = SNPTableModel(dataframe)
         self.setModel(tm)
         self.app = app
         headerview = MyHeaderView()
         self.setHorizontalHeader(headerview)
         hh = self.horizontalHeader()
-        hh.setDefaultSectionSize(18)
+        hh.setDefaultSectionSize(20)
         #hh.customContextMenuRequested.connect(self.columnHeaderMenu)
         self.transposed = False
         return
@@ -1109,6 +1109,8 @@ class DistMatrixTableModel(DataFrameModel):
     def data(self, index, role):
         """see https://www.pythonguis.com/tutorials/qtableview-modelviews-numpy-pandas/"""
 
+        if self.df is None:
+            return
         i = index.row()
         j = index.column()
         rowname = self.df.index[i]
@@ -1128,12 +1130,12 @@ class DistMatrixTableModel(DataFrameModel):
 
         import matplotlib.colors as mcolors
         df = self.df
-        #max = df.max().max()
-        #norm = mpl.colors.Normalize(vmin=0, vmax=max, clip=True)
-        #mapper = plt.cm.ScalarMappable(norm=norm, cmap=plt.cm.Blues)
-        #self.colors = df.applymap(lambda x: mapper.to_rgba(x))
-        lut = plt.cm.coolwarm(df.to_numpy().flatten())
-        lut = {i:plt.cm.coolwarm(i) for i in df.to_numpy().flatten()}
+        if df is None:
+            return
+
+        cmap = plt.cm.coolwarm        
+        lut = cmap(df.to_numpy().flatten())
+        lut = {i:cmap(i) for i in df.to_numpy().flatten()}
         self.colors = df.applymap(lambda x: lut[x])
         #print (self.colors)
         return
@@ -1145,8 +1147,8 @@ class DistMatrixTable(DataFrameTable):
     """
     Table for a distance matrix.
     """
-    def __init__(self, parent=None, app=None, dataframe=None, *args):
-        DataFrameTable.__init__(self, parent, dataframe)
+    def __init__(self, parent=None, app=None, dataframe=None, **kwargs):
+        DataFrameTable.__init__(self, parent, dataframe, **kwargs)
         tm = DistMatrixTableModel(dataframe)
         self.setModel(tm)
         self.model = tm
@@ -1154,9 +1156,8 @@ class DistMatrixTable(DataFrameTable):
         headerview = MyHeaderView()
         self.setHorizontalHeader(headerview)
         hh = self.horizontalHeader()
-        hh.setDefaultSectionSize(18)
         self.transposed = False
-        self.zoomOut(10)
+        #self.zoomOut(10)
         return
 
     def setDataFrame(self, df):

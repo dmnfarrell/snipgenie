@@ -222,7 +222,7 @@ def update_snp_dist_matrix(aln, snpdist=None):
                 matrix.loc[x,y] = snp_count
                 matrix.loc[x,y] = snp_count
         
-    print (matrix[matrix.ref.isnull()])
+    #print (matrix[matrix.ref.isnull()])
     matrix = matrix.astype(int)   
     return matrix
 
@@ -231,10 +231,9 @@ def alignment_from_snps(df):
 
     df = df.set_index('pos').T
     seqs=[]
-    for i,r in df.iterrows():
-        #print (r)
-        s=''.join(r)
-        seqs.append(SeqRecord(s,id=i))
+    for i,r in df.iterrows():        
+        s = ''.join(list(r))
+        seqs.append(SeqRecord(Seq(s),id=i))
 
     aln = Align.MultipleSeqAlignment(seqs)
     return aln
@@ -265,6 +264,11 @@ def get_closest_samples(distance_matrix, row_index, n):
     closest = row.nsmallest(n + 1)[1:]
     return closest
 
+def get_within_distance(distance_matrix, row_index, n):
+    row = distance_matrix.loc[row_index]
+    x = row[row<n]
+    return x
+
 def dist_matrix_to_mst(distance_matrix, ax):
     
     import networkx as nx
@@ -282,8 +286,8 @@ def dist_matrix_to_mst(distance_matrix, ax):
     pos = nx.spring_layout(T)#, weight='weight', scale=10, seed=42)    
     labels = nx.get_edge_attributes(T, 'weight')  
 
-    nx.draw_networkx(T, pos, node_color='lightblue', ax=ax)
-    nx.draw_networkx_edge_labels(T, pos, edge_labels=labels, font_size=8, ax=ax)
+    nx.draw_networkx(T, pos, node_color='lightblue',font_size=8, ax=ax)
+    nx.draw_networkx_edge_labels(T, pos, edge_labels=labels, font_size=7, ax=ax)
     #nx.draw_networkx_edges(T, pos, width=edge_lengths)
     ax.axis('off')
     return

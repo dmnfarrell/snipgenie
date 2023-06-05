@@ -114,14 +114,15 @@ class App(QMainWindow):
         self.opentables = {}
         self.openplugins = {}
         self.plugindata = {}
+        self.meta = None
 
         self.main.setFocus()
         self.setCentralWidget(self.main)
+        self.load_settings()
 
         self.create_tool_bar()
-        
         self.setup_gui()
-        self.load_settings()
+
         self.show_recent_files()
         self.start_logging()
 
@@ -168,9 +169,14 @@ class App(QMainWindow):
             if winsize != None:
                 self.resize(s.value('window_size'))
                 self.move(s.value('window_position'))
-                self.setStyle(s.value('style'))
-                #self.FONT = s.value("font")
-                #self.FONTSIZE = int(s.value("fontsize"))
+                core.FONT = s.value("font")
+                core.FONTSIZE = int(s.value("fontsize"))
+                core.PLOTSTYLE = s.value("plotstyle")
+                core.DPI = int(s.value("dpi"))
+                import matplotlib as mpl
+                mpl.rcParams['savefig.dpi'] = int(core.DPI)
+                core.ICONSIZE = int(s.value("iconsize"))
+                self.setIconSize(QtCore.QSize(core.ICONSIZE, core.ICONSIZE))
                 r = s.value("recent_files")
                 if r != '':
                     rct = r.split(',')
@@ -187,9 +193,10 @@ class App(QMainWindow):
         for i in self.opentables:
             table = self.opentables[i]
             #table.toolbar.setIconSize(QtCore.QSize(core.ICONSIZE, core.ICONSIZE))
+            table.fontname = core.FONT
+            table.updateFont()
         import matplotlib as mpl
         mpl.rcParams['savefig.dpi'] = core.DPI
-        #self.setTheme(self.theme)
         return
 
     def save_settings(self):
@@ -197,24 +204,14 @@ class App(QMainWindow):
 
         self.settings.setValue('window_size', self.size())
         self.settings.setValue('window_position', self.pos())
-        #self.settings.setValue('style', self.style)
-        #self.settings.setValue('font', self.FONT)
-        #self.settings.setValue('fontsize', self.FONTSIZE)
+        self.settings.setValue('iconsize', core.ICONSIZE)
+        self.settings.setValue('font', core.FONT)
+        self.settings.setValue('fontsize', core.FONTSIZE)
+        self.settings.setValue('plotstyle', core.PLOTSTYLE)
+        self.settings.setValue('dpi', core.DPI)
         self.settings.setValue('recent_files',','.join(self.recent_files))
+        print (self.settings)
         self.settings.sync()
-        return
-
-    def set_style(self, style='default'):
-        """Change interface style."""
-
-        if style == 'default':
-            	self.setStyleSheet("")
-        else:
-            f = open(os.path.join(stylepath,'%s.qss' %style), 'r')
-            self.style_data = f.read()
-            f.close()
-            self.setStyleSheet(self.style_data)
-        self.style = style
         return
 
     def update_ref_genome(self):
@@ -279,7 +276,7 @@ class App(QMainWindow):
             #btn.setCheckable(True)
             toolbar.addAction(btn)
         return
-    
+
     def add_dock(self, widget, name):
         """Add a dock widget"""
 
@@ -463,12 +460,6 @@ class App(QMainWindow):
         self.view_menu.addAction(icon, 'Zoom Out', self.zoom_out,
                 QtCore.Qt.CTRL + QtCore.Qt.Key_Minus)
 
-        self.style_menu = QMenu("Styles",  self.view_menu)
-        self.style_menu.addAction('Default', self.set_style)
-        self.style_menu.addAction('Light', lambda: self.set_style('light'))
-        self.style_menu.addAction('Dark', lambda: self.set_style('dark'))
-        self.view_menu.addAction(self.style_menu.menuAction())
-
         self.analysis_menu = QMenu('Workflow', self)
         self.menuBar().addSeparator()
         self.menuBar().addMenu(self.analysis_menu)
@@ -525,7 +516,8 @@ class App(QMainWindow):
         self.settings_menu.addAction('Set Annnotation (genbank)', self.set_annotation)
         #self.settings_menu.addAction('Set Filters', self.set_filters)
         self.settings_menu.addAction('Add Mask File', self.add_mask)
-        self.settings_menu.addAction('Add Sample Meta Data', self.merge_meta_data)
+        self.settings_menu.addAction('Add Sample Meta Data', self.add_meta_data)
+        self.settings_menu.addAction('View Meta Data', self.view_meta_data)
         self.settings_menu.addAction('Clean Up Files', self.clean_up)
 
         self.presets_menu = QMenu('Preset Genomes', self)
@@ -645,6 +637,7 @@ class App(QMainWindow):
         data['scratch_items'] = self.scratch_items
         self.projectlabel.setText(filename)
         data['plugins'] = self.save_plugin_data()
+        data['meta'] = self.meta
         pickle.dump(data, open(filename,'wb'))
         self.add_recent_file(filename)
         return
@@ -683,6 +676,7 @@ class App(QMainWindow):
         self.results = {}
         self.scratch_items = {}
         self.proj_file = None
+        self.meta = None
         self.fastq_table.setDataFrame(pd.DataFrame({'name':[]}))
         self.fastq_table.refresh()
         self.tabs.clear()
@@ -717,7 +711,7 @@ class App(QMainWindow):
         if closed == False:
             return
         data = pickle.load(open(filename,'rb'))
-        keys = ['sheets','outputdir','results','ref_genome','ref_gb','mask_file']
+        keys = ['sheets','outputdir','results','ref_genome','ref_gb','mask_file','meta']
         for k in keys:
             if k in data:
                 self.__dict__[k] = data[k]
@@ -920,7 +914,7 @@ class App(QMainWindow):
         if not filename:
             return
         self.ref_gb = filename
-        #put annotation in a dataframe    
+        #put annotation in a dataframe
         self.annot = tools.genbank_to_dataframe(self.ref_gb)
         self.update_ref_genome()
         return
@@ -943,15 +937,32 @@ class App(QMainWindow):
         self.update_mask()
         return
 
-    def merge_meta_data(self):
-        """Add sample meta data by merging with file table"""
+    def add_meta_data(self):
+        """Add sample meta data"""
 
         filename, _ = QFileDialog.getOpenFileName(self, 'Open File', './',
                                     filter="Text Files(*.csv *.txt *.tsv);;All Files(*.*)")
         if not filename:
             return
 
-        meta = pd.read_csv(filename)
+        df = pd.read_csv(filename)
+        if 'sample' in df.columns:
+            df = df.set_index('sample')
+        self.meta = df
+        self.view_meta_data()
+        return
+
+    def view_meta_data(self):
+        """Show meta data table"""
+
+        if self.meta is not None:
+            mw = tables.DataFrameTable(self.right_tabs, dataframe=self.meta)
+            self.right_tabs.addTab(mw, 'metadata')
+        return
+
+    def merge_meta_data(self):
+        """Add sample meta data by merging with file table"""
+
         dlg = widgets.MergeDialog(self, self.fastq_table, meta)
         dlg.exec_()
         if not dlg.accepted:
@@ -1934,7 +1945,7 @@ class App(QMainWindow):
         """Update plugins"""
 
         from . import plugin
-        plgmenu = self.plugin_menu      
+        plgmenu = self.plugin_menu
         for plg in plugin.Plugin.__subclasses__():
             #print (plg)
             def func(p, **kwargs):
@@ -1951,23 +1962,23 @@ class App(QMainWindow):
     def plugin_toolbar_items(self):
         """Add plugin toolbar items"""
 
-        from . import plugin       
+        from . import plugin
         self.toolbar.addSeparator()
-        for plg in plugin.Plugin.__subclasses__():           
+        for plg in plugin.Plugin.__subclasses__():
             def func(p, **kwargs):
                 def new():
                    self.load_plugin(p)
-                return new        
+                return new
             if hasattr(plg,'iconfile'):
                 icon = QIcon(os.path.join(pluginiconpath,plg.iconfile))
             else:
                 icon = None
-            btn = QAction(icon, plg.menuentry, self) 
+            btn = QAction(icon, plg.menuentry, self)
             btn.triggered.connect(func(plg))
             self.toolbar.addAction(btn)
 
         return
-    
+
     def save_plugin_data(self):
         """Save data for any plugins that need it"""
 
@@ -1999,7 +2010,6 @@ class App(QMainWindow):
         opts = {}
         for k in core.defaults.keys():
             opts[k] = getattr(core,k)
-        #opts['THEME'] = core.TEH
         dlg = widgets.PreferencesDialog(self, opts)
         dlg.exec_()
         return

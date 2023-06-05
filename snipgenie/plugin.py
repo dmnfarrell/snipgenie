@@ -80,6 +80,11 @@ class Plugin(object):
         return '<%s %r>' % (
             self.__class__.__name__,
             self.capabilities)
+    
+    def load_data(self, data):
+        """Load any saved data from project -optional"""
+
+        return
 
     def save_data(self):
         """Return save data - optional"""

@@ -56,13 +56,16 @@ def get_colormap(values):
     clrs = dict(list(zip(labels,colors)))
     return clrs
 
-def run_fasttree(infile, outpath, bootstraps=100):
-    """Run fasttree"""
+def run_fasttree(infile, outpath='', bootstraps=100):
+    """Run fasttree on fasta alignment"""
 
     fc = tools.get_cmd('fasttree')
     out = os.path.join(outpath,'tree.newick')
     cmd = '{fc} -nt {i} > {o}'.format(fc=fc,b=bootstraps,i=infile,o=out)
-    tmp = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+    try:
+        tmp = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+    except Exception as e:
+        print(e)
     return out
 
 def run_RAXML(infile, name='variants', threads=8, bootstraps=100, outpath='.'):
@@ -106,6 +109,30 @@ def convert_branch_lengths(treefile, outfile, snps):
                     child.branch_length *= snps
     #Phylo.draw(tree)
     Phylo.write(tree, outfile, "newick")
+    return
+
+def tree_from_snps(snpmat):
+    """Make tree from core snp matrix"""
+
+    aln = tools.alignment_from_snps(snpmat)
+    AlignIO.write(aln, 'temp.fa', 'fasta')
+    treefile = run_fasttree('temp.fa')
+    ls = len(snpmat)
+    convert_branch_lengths(treefile,treefile, ls)
+    return treefile
+
+def njtree_from_snps():
+    """NJ tree from core SNP alignment"""
+    
+    aln = tools.alignment_from_snps(df)
+    # Calculate the pairwise distances
+    calculator = DistanceCalculator("identity")
+    dm = calculator.get_distance(aln)
+    # Build the Neighbor-Joining tree
+    constructor = DistanceTreeConstructor()
+    nj_tree = constructor.nj(dm)
+    # Plot and display the tree
+    ax=Phylo.draw(nj_tree)
     return
 
 def biopython_draw_tree(filename):
@@ -171,3 +198,4 @@ def get_clusters(tree):
 
     clusts = pd.pivot_table(pd.concat(c),index='SequenceName',columns='d',values='ClusterNumber').reset_index()
     return clusts
+

@@ -232,9 +232,9 @@ def getWidgetValues(widgets):
         val = None
         if i in widgets:
             w = widgets[i]
-            val = getWidgetValue(w)
+            val = getWidgetValue(w)            
             if val != None:
-                kwds[i] = val
+                kwds[i] = val                
     kwds = kwds
     return kwds
 
@@ -613,8 +613,7 @@ class PreferencesDialog(QDialog):
         self.opts = {
                 'FONT':{'type':'font','default':options['FONT'],'label':'Font'},
                 'FONTSIZE':{'type':'spinbox','default':options['FONTSIZE'],'range':(5,40),
-                            'interval':1,'label':'Font Size'},
-                'BGCOLOR':{'type':'colorbutton','default':options['BGCOLOR'],'label':'Background Color'},
+                            'interval':1,'label':'Font Size'},               
                 'TIMEFORMAT':{'type':'combobox','default':options['TIMEFORMAT'],
                             'items':timeformats,'label':'Date/Time format'},
                 'PLOTSTYLE':{'type':'combobox','default':options['PLOTSTYLE'],
@@ -622,11 +621,8 @@ class PreferencesDialog(QDialog):
                 'DPI':{'type':'entry','default':options['DPI'],#'range':(20,300),'interval':10,
                         'label':'Plot DPI'},
                 'ICONSIZE':{'type':'spinbox','default':options['ICONSIZE'],'range':(16,64), 'label':'Icon Size'},
-                'THEME':{'type':'combobox','default':options['THEME'],'items': themes,
-                        'label': 'Default Theme'}
                 }
-        sections = {'table':['FONT','FONTSIZE','TIMEFORMAT','BGCOLOR'],
-                    'view':['ICONSIZE','PLOTSTYLE','DPI','THEME']
+        sections = {'formats':['FONT','FONTSIZE','TIMEFORMAT','ICONSIZE','PLOTSTYLE','DPI']
                     }
 
         dialog, self.widgets = dialogFromOptions(self, self.opts, sections)
@@ -656,15 +652,14 @@ class PreferencesDialog(QDialog):
     def apply(self):
         """Apply options to current table"""
 
-        kwds = getWidgetValues(self.widgets)
+        kwds = getWidgetValues(self.widgets)        
         core.FONT = kwds['FONT']
         core.FONTSIZE = kwds['FONTSIZE']
-        core.TIMEFORMAT = kwds['TIMEFORMAT']
-        core.BGCOLOR = kwds['BGCOLOR']
+        core.TIMEFORMAT = kwds['TIMEFORMAT']    
         core.PLOTSTYLE = kwds['PLOTSTYLE']
         core.DPI = kwds['DPI']
         core.ICONSIZE = kwds['ICONSIZE']
-        self.parent.theme = kwds['THEME']
+        
         self.parent.refresh()
         self.parent.apply_settings()
         return
@@ -912,7 +907,67 @@ class PlotWidget(FigureCanvas):
         self.canvas = FigureCanvas(self.figure)
         self.ax = self.figure.add_subplot(111)
 
+class BasePlotViewer(QWidget):
+    """matplotlib plots widget"""
+    def __init__(self, parent=None, title=''):
 
+        super(BasePlotViewer, self).__init__(parent)
+        self.setGeometry(QtCore.QRect(200, 200, 900, 600))
+        self.main = QSplitter()
+        self.setLayout(QVBoxLayout())
+        self.layout().addWidget(self.main)
+        self.create_figure()
+        #self.create_controls()
+        self.setWindowTitle(title)
+        return
+
+    def create_figure(self, fig=None):
+        """Create canvas and figure"""
+
+        import matplotlib.pyplot as plt
+        #ax.plot(range(10))
+        if fig == None:
+            fig, ax = plt.subplots(1,1, figsize=(7,5), dpi=120)
+            self.ax = ax
+        if hasattr(self, 'canvas'):
+            self.layout().removeWidget(self.canvas)
+        canvas = FigureCanvas(fig)
+        left = QWidget()
+        self.main.addWidget(left)
+        l = QVBoxLayout()
+        left.setLayout(l)
+        l.addWidget(canvas)
+        self.toolbar = NavigationToolbar(canvas, self)
+        l.addWidget(self.toolbar)
+        self.fig = fig
+        self.canvas = canvas
+        iconfile = os.path.join(iconpath,'reduce')
+        a = QAction(QIcon(iconfile), "Reduce elements",  self)
+        a.triggered.connect(lambda: self.zoom(zoomin=False))
+        self.toolbar.addAction(a)
+        iconfile = os.path.join(iconpath,'enlarge')
+        a = QAction(QIcon(iconfile), "Enlarge elements",  self)
+        a.triggered.connect(lambda: self.zoom(zoomin=True))
+        self.toolbar.addAction(a)
+        return
+    
+    def set_figure(self, fig):
+        """Set the figure if we have plotted elsewhere"""
+
+        self.clear()
+        self.create_figure(fig)
+        #self.ax = fig.ax
+        self.canvas.draw()
+        return
+
+    def clear(self):
+        """Clear plot"""
+
+        self.fig.clear()
+        self.ax = self.fig.add_subplot(111)
+        self.canvas.draw()
+        return
+        
 class PlotOptions(BaseOptions):
     """Class to provide a dialog for plot options"""
 

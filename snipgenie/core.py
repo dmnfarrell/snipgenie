@@ -36,10 +36,8 @@ defaults = {
             'TIMEFORMAT' :'%m/%d/%Y',
             'PLOTSTYLE' : 'bmh',
             'ICONSIZE' : 20,
-            'DPI' : 100,
-            'BGCOLOR' : '#F4F4F3',
-            'THEME': 'Fusion'
-}
+            'DPI' : 100,         
+         }
 #populate current class variable
 for k in defaults:
     vars()[k] = defaults[k]

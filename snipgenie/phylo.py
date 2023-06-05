@@ -47,19 +47,21 @@ class PhyloApp(QMainWindow):
 
 class TreeViewer(QWidget):
     """Phylogeny viewer widget with toytree"""
-    def __init__(self, parent=None, filename=None):
+    def __init__(self, parent=None, filename=None, meta=None):
 
         super(TreeViewer, self).__init__(parent)
         self.setGeometry(QtCore.QRect(200, 200, 1000, 300))
         self.setMinimumHeight(150)
-        self.add_widgets()
-        self.create_menu(self)
+        self.parent = parent
         self.tree = None
+        self.meta = meta
         self.width = 500
-        self.height = 600
+        self.height = 700
         self.ts = ''
         import toytree
         self.colors = {}
+        self.node_colors = {}
+        self.node_sizes = 6
         self.default_style = {
             "layout":'r',
             "edge_type": 'p',
@@ -74,14 +76,16 @@ class TreeViewer(QWidget):
                 "font-size": "14px"
             },
             "node_labels": False,
-            "node_sizes": 10,
             "node_colors": toytree.colors[2],
+            "node_sizes": self.node_sizes,
             "node_markers":"c",
             "use_edge_lengths":True,
         }
-        self.style = self.default_style.copy()
 
-        self.test_tree(10)
+        self.style = self.default_style.copy()
+        self.add_widgets()
+        self.create_menu(self)
+        #self.test_tree(10)
         return
 
     def test_tree(self, n=None):
@@ -142,28 +146,28 @@ class TreeViewer(QWidget):
         self.tree_menu.addAction('Show Unrooted', self.unroot_tree)
         self.tree_menu.addAction('Reset Format', self.reset_style)
         self.menubar.addMenu(self.tree_menu)
-
         return
 
     def add_widgets(self):
         """Add widgets"""
 
-        layout = self.layout = QVBoxLayout()
-        self.main = QWidget()
-        vbox = QVBoxLayout(self.main)
+        layout = self.layout = QVBoxLayout(self)
+        self.main = QSplitter()
         layout.addWidget(self.main)
 
         self.browser = QWebEngineView()
-        vbox = QVBoxLayout()
-        self.setLayout(vbox)
-        vbox.addWidget(self.browser)
-        self.browser.setMinimumHeight(500)
+        self.main.addWidget(self.browser)
 
         toolswidget = QWidget()
-        toolswidget.setMaximumHeight(200)
-        vbox.addWidget(toolswidget)
+        #toolswidget.setMaximumHeight(200)
+        self.main.addWidget(toolswidget)
         l = QVBoxLayout(toolswidget)
 
+        self.main.setSizes([400,150])
+        self.main.setStretchFactor(1,0)
+
+        w=QLabel('zoom:')
+        l.addWidget(w)
         self.zoomslider = w = QSlider(QtCore.Qt.Horizontal)
         w.setSingleStep(5)
         w.setMinimum(5)
@@ -172,6 +176,8 @@ class TreeViewer(QWidget):
         l.addWidget(w)
         w.valueChanged.connect(self.zoom)
 
+        w=QLabel('hscale:')
+        l.addWidget(w)
         self.widthslider = w = QSlider(QtCore.Qt.Horizontal)
         w.setSingleStep(10)
         w.setMinimum(20)
@@ -180,6 +186,8 @@ class TreeViewer(QWidget):
         l.addWidget(w)
         w.valueChanged.connect(self.hscale)
 
+        w=QLabel('vscale:')
+        l.addWidget(w)
         self.heightslider = w = QSlider(QtCore.Qt.Horizontal)
         w.setSingleStep(10)
         w.setMinimum(20)
@@ -188,9 +196,20 @@ class TreeViewer(QWidget):
         l.addWidget(w)
         w.valueChanged.connect(self.vscale)
 
+        w=QLabel('color by:')
+        l.addWidget(w)
+        self.colorbybox = w = QComboBox()
+        l.addWidget(w)
+        items = ['']
+        if self.meta is not None:
+            items+=list(self.meta.columns)
+        w.addItems(items)
+        w.activated.connect(self.update)
+
         btn = QPushButton('Set Format')
         l.addWidget(btn)
         btn.clicked.connect(self.tree_style_options)
+
         t = self.tipitems = QTreeWidget()
         t.setHeaderItem(QTreeWidgetItem(["name","visible"]))
         t.setColumnWidth(0, 200)
@@ -198,7 +217,6 @@ class TreeViewer(QWidget):
         t.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         t.customContextMenuRequested.connect(self.show_tree_menu)
         l.addWidget(t)
-
         return
 
     def show_tree_menu(self, pos):
@@ -281,9 +299,26 @@ class TreeViewer(QWidget):
         if type(self.tree) is toytree.Multitree.MultiTree:
             self.update_multitree()
             return
-        #set colors
-        colorlist = [self.colors[tip] if tip in self.colors else "black" for tip in self.tree.get_tip_labels()]
-        self.style['tip_labels_colors'] = colorlist
+        tre = self.tree
+        ns = [0 if i else self.node_sizes for i in tre.get_node_values(None, 1, 0)]
+
+        colorcol = self.colorbybox.currentText()
+        if colorcol != '':
+            df = self.meta
+            idx = tre.get_tip_labels()
+            labels = df[colorcol].unique()
+            cmap = ({c:tools.random_hex_color() if c in labels else 'black' for c in labels})
+            df['color'] = df[colorcol].apply(lambda x: cmap[x])
+            df = df.loc[idx]
+            node_colors = [cmap[df.loc[n][colorcol]] if n in df.index else 'black' for n in tre.get_node_values('name', True, True)]
+            print (df)
+        else:
+            colorlist = [self.colors[tip] if tip in self.colors else "black" for tip in tre.get_tip_labels()]
+            self.style['tip_labels_colors'] = colorlist
+            node_colors = [self.node_colors[n] if n in self.node_colors else 'black' for n in tre.get_node_values('name', True, True)]
+
+        self.style['node_colors'] = node_colors
+        self.style['node_sizes'] = ns
         if self.ts != '':
             style = {}
         else:
@@ -362,7 +397,9 @@ class TreeViewer(QWidget):
         self.update()
         return
 
-    def clustermap(self):
+    def heatmap(self):
+        """Add heatmap to tree"""
+
         #canvas = toyplot.Canvas(width=600, height=800)
         #axes = canvas.cartesian()
         #y = np.linspace(0, 1, 20) ** 2
@@ -384,12 +421,10 @@ class TreeViewer(QWidget):
                 'use_edge_lengths':{'type':'checkbox','default':self.style['use_edge_lengths'] },
                 'tip_labels':{'type':'checkbox','default':self.style['tip_labels'] },
                 'tip_labels_align':{'type':'checkbox','default':self.style['tip_labels_align'] },
-                'node_labels':{'type':'combobox','default':self.style['node_labels'],'items': nlabels},
-                'node_sizes':{'type':'spinbox','default':self.style['node_sizes'],'range':(2,20),'interval':1},
+                #'node_labels':{'type':'combobox','default':self.style['node_labels'],'items': nlabels},
+                'node_sizes':{'type':'spinbox','default':self.node_sizes,'range':(2,20),'interval':1},
                 'node_markers': {'type':'combobox','default':self.style['node_markers'],'items':markers},
-                'font_size':{'type':'combobox','default':tip_labels_style['font-size'],'items':fonts},
-                'width':{'type':'entry','default':self.width},
-                'height':{'type':'entry','default':self.height,},
+                'font_size':{'type':'combobox','default':tip_labels_style['font-size'],'items':fonts}
                 }
 
         dlg = widgets.MultipleInputDialog(self, opts, title='Tree Style', width=300)
@@ -407,12 +442,11 @@ class TreeViewer(QWidget):
         for k in kwds:
             if k not in omit:
                 self.style[k] = kwds[k]
-        if kwds['node_labels'] == '':
-            self.style['node_labels'] = False
+        #if kwds['node_labels'] == '':
+        #    self.style['node_labels'] = False
         self.style['tip_labels_style']['font-size'] = kwds['font_size']
         self.ts = kwds['ts']
-        self.width = kwds['width']
-        self.height = kwds['height']
+        self.node_sizes = kwds['node_sizes']
         return
 
     def reset_style(self):
@@ -441,93 +475,8 @@ class TreeViewer(QWidget):
 
         items = self.tipitems.selectedItems()
         names = [i.text(0) for i in items]
-        #for name in names:
         self.tree = self.tree.drop_tips(names=names).ladderize()
         self.update()
-        return
-
-class TidyTreeViewer(QWidget):
-    """Phylogeny viewer widget with toytree"""
-    def __init__(self, parent=None, filename=None):
-
-        super(TidyTreeViewer, self).__init__(parent)
-        self.setGeometry(QtCore.QRect(200, 200, 1000, 300))
-        self.setMinimumHeight(150)
-        self.add_widgets()
-        #self.create_menu(self)
-        self.tree = None
-        self.width = 400
-        self.height = 500
-
-    def add_widgets(self):
-        """Add widgets"""
-
-        layout = self.layout = QVBoxLayout()
-        self.main = QWidget()
-        vbox = QVBoxLayout(self.main)
-        layout.addWidget(self.main)
-
-        self.browser = QWebEngineView()
-        vbox = QVBoxLayout()
-        self.setLayout(vbox)
-        vbox.addWidget(self.browser)
-        self.browser.setMinimumHeight(500)
-
-    def update(self):
-        """Update the tree view"""
-
-        if self.tree == None:
-            self.browser.setHtml('')
-            #self.tipitems.clear()
-        html = self.test2()
-        self.browser.setHtml(html)
-        return
-
-    def test(self):
-
-        print (module_path)
-        jsfile = os.path.join(module_path,'tidytree.js')
-        html = '''
-        <!DOCTYPE html>
-        <html lang="en-UK">
-
-        <body>
-        <h2> tree test</h2>
-    	<script src="https://d3js.org/d3.v5.min.js"></script>
-    	<script src="%s"></script>
-        <script type="text/javascript">
-            let newick = "(A:0.1,B:0.2,(C:0.3,D:0.4):0.5);";
-            let tree = new TidyTree(newick, { parent: "body" });
-        </script>
-        </body>
-        </html>
-        ''' %jsfile
-        print (html)
-        return html
-
-    def test2(self):
-        jsfile = os.path.join(module_path,'tidytree.js')
-        html = '''
-        <!DOCTYPE html>
-        <html lang="en-UK">
-
-        <body>
-        <h2> tree test</h2>
-    	<script src="https://d3js.org/d3.v3.min.js"></script>
-    	<script src="https://veg.github.io/phylotree.js/phylotree.js"></script>
-        <script type="text/javascript">
-        var example_tree = "(A:0.1,B:0.2,(C:0.3,D:0.4):0.5);";
-        var tree = d3.layout.phylotree()
-                     .svg(d3.select("#tree_display"));
-
-        tree(example_tree).layout();
-
-        </script>
-        </body>
-        </html>
-        '''
-        print (html)
-        return html
         return
 
 def main():

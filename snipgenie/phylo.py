@@ -22,6 +22,7 @@
 
 import sys, os, io
 import numpy as np
+import pandas as pd
 import string
 from .qt import *
 from . import tools, widgets
@@ -31,14 +32,16 @@ module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
 
 class PhyloApp(QMainWindow):
     """Tree viewer with Toytree, wraps TreeViewer widget"""
-    def __init__(self, filename=None):
+    def __init__(self, filename=None, meta=None):
 
         QMainWindow.__init__(self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.setWindowTitle("Tree-viewer")
-        self.setGeometry(QtCore.QRect(200, 200, 1000, 600))
+        self.setGeometry(QtCore.QRect(200, 200, 1000, 800))
         self.setMinimumHeight(150)
-        self.main = TreeViewer(self)
+        if meta != None:
+            m = pd.read_csv(meta).set_index('sample')
+        self.main = TreeViewer(self, meta=m)
         self.main.setFocus()
         self.setCentralWidget(self.main)
         if filename != None:
@@ -61,7 +64,7 @@ class TreeViewer(QWidget):
         import toytree
         self.colors = {}
         self.node_colors = {}
-        self.node_sizes = 6
+        self.node_sizes = 8
         self.default_style = {
             "layout":'r',
             "edge_type": 'p',
@@ -79,10 +82,11 @@ class TreeViewer(QWidget):
             "node_colors": toytree.colors[2],
             "node_sizes": self.node_sizes,
             "node_markers":"c",
-            "use_edge_lengths":True,
+            "use_edge_lengths":True
         }
 
         self.style = self.default_style.copy()
+        #self.set_style(self.style)
         self.add_widgets()
         self.create_menu(self)
         #self.test_tree(10)
@@ -166,7 +170,7 @@ class TreeViewer(QWidget):
         self.main.setSizes([400,150])
         self.main.setStretchFactor(1,0)
 
-        w=QLabel('zoom:')
+        w = QLabel('zoom')
         l.addWidget(w)
         self.zoomslider = w = QSlider(QtCore.Qt.Horizontal)
         w.setSingleStep(5)
@@ -176,7 +180,7 @@ class TreeViewer(QWidget):
         l.addWidget(w)
         w.valueChanged.connect(self.zoom)
 
-        w=QLabel('hscale:')
+        w = QLabel('hscale')
         l.addWidget(w)
         self.widthslider = w = QSlider(QtCore.Qt.Horizontal)
         w.setSingleStep(10)
@@ -186,25 +190,27 @@ class TreeViewer(QWidget):
         l.addWidget(w)
         w.valueChanged.connect(self.hscale)
 
-        w=QLabel('vscale:')
+        w = QLabel('vscale')
         l.addWidget(w)
         self.heightslider = w = QSlider(QtCore.Qt.Horizontal)
         w.setSingleStep(10)
         w.setMinimum(20)
-        w.setMaximum(2000)
+        w.setMaximum(1200)
         w.setValue(500)
         l.addWidget(w)
         w.valueChanged.connect(self.vscale)
 
-        w=QLabel('color by:')
-        l.addWidget(w)
-        self.colorbybox = w = QComboBox()
-        l.addWidget(w)
-        items = ['']
-        if self.meta is not None:
-            items+=list(self.meta.columns)
-        w.addItems(items)
-        w.activated.connect(self.update)
+        self.colorby = {}
+        for label in ['node color','tip color']:
+            w = QLabel(label)
+            l.addWidget(w)
+            self.colorby[label] = w = QComboBox()
+            l.addWidget(w)
+            items = ['']
+            if self.meta is not None:
+                items += list(self.meta.columns)
+            w.addItems(items)
+            w.activated.connect(self.update)
 
         btn = QPushButton('Set Format')
         l.addWidget(btn)
@@ -239,6 +245,7 @@ class TreeViewer(QWidget):
             self.drop_tips()
 
     def load_tree(self, filename=None):
+        """Load the tree"""
 
         import toytree
         if filename == None:
@@ -264,7 +271,6 @@ class TreeViewer(QWidget):
             item = QTreeWidgetItem(self.tipitems)
             item.setCheckState(1, QtCore.Qt.Checked)
             item.setText(0, t)
-
         return
 
     def load_multitree(self):
@@ -302,16 +308,23 @@ class TreeViewer(QWidget):
         tre = self.tree
         ns = [0 if i else self.node_sizes for i in tre.get_node_values(None, 1, 0)]
 
-        colorcol = self.colorbybox.currentText()
-        if colorcol != '':
-            df = self.meta
+        def get_color(x, cmap):
+            if x in cmap:
+                return cmap[x]
+            else:
+                return 'black'
+
+        w = self.colorby['node color']
+        nodecol = w.currentText()
+        if nodecol != '':
+            df = self.meta.copy().fillna('')
             idx = tre.get_tip_labels()
-            labels = df[colorcol].unique()
-            cmap = ({c:tools.random_hex_color() if c in labels else 'black' for c in labels})
-            df['color'] = df[colorcol].apply(lambda x: cmap[x])
+            df = df.reindex(index=idx)
             df = df.loc[idx]
-            node_colors = [cmap[df.loc[n][colorcol]] if n in df.index else 'black' for n in tre.get_node_values('name', True, True)]
-            print (df)
+            labels = df[nodecol].unique()
+            cmap = ({c:tools.random_hex_color() if c in labels else 'black' for c in labels})
+            #df['color'] = df[nodecol].apply(lambda x: get_color(x,cmap))
+            node_colors = [cmap[df.loc[n][nodecol]] if n in df.index else 'black' for n in tre.get_node_values('name', True, True)]
         else:
             colorlist = [self.colors[tip] if tip in self.colors else "black" for tip in tre.get_tip_labels()]
             self.style['tip_labels_colors'] = colorlist
@@ -409,6 +422,7 @@ class TreeViewer(QWidget):
         return
 
     def tree_style_options(self):
+        """Tree style dialog"""
 
         fonts = ['%spx' %i for i in range (6,28)]
         markers = ['o','s','d','^','>','oo']
@@ -437,8 +451,9 @@ class TreeViewer(QWidget):
         return
 
     def set_style(self, kwds):
+        """Set style"""
 
-        omit=['width','height','font_size','ts']
+        omit = ['width','height','font_size','ts']
         for k in kwds:
             if k not in omit:
                 self.style[k] = kwds[k]
@@ -487,7 +502,8 @@ def main():
     parser = ArgumentParser(description='snipgenie gui tool')
     parser.add_argument("-f", "--file", dest="filename",default=[],
                         help="input tree file", metavar="FILE")
-
+    parser.add_argument("-m", "--meta", dest="meta",default=None,
+                        help="meta data csv file", metavar="FILE")
     args = vars(parser.parse_args())
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QApplication(sys.argv)

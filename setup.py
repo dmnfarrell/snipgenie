@@ -33,7 +33,7 @@ setup(
         'console_scripts': [
             'snipgenie-gui=snipgenie.gui:main',
             'snipgenie=snipgenie.app:main',
-            'snipgenie-wgmlst=snipgenie.wgmlst:main']
+            'snipgenie-treeview=snipgenie.phylo:main']
             },
     classifiers = ['Operating System :: OS Independent',
             'Programming Language :: Python :: 2.7',

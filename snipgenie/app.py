@@ -600,7 +600,7 @@ def csq_call(ref, gff_file, vcf_file, csqout):
     """Consequence calling"""
 
     bcftoolscmd = tools.get_cmd('bcftools')
-    cmd = '{bc} csq -f {r} -g {g} {f} -Ot -o {o}'.format(bc=bcftoolscmd,r=ref,g=gff_file,
+    cmd = '{bc} csq -f {r} -g {g} {f} -v 0 -Ot -o {o}'.format(bc=bcftoolscmd,r=ref,g=gff_file,
                 f=vcf_file,o=csqout)
     print (cmd)
     #if callback != None:
@@ -728,6 +728,7 @@ def read_csq_file(filename):
 
     cols = ['1','sample','2','chrom','start','snp_type','gene','locus_tag','strand','feature_type','aa','nuc',]
     csqdf = pd.read_csv(filename,sep='[|\t]',comment='#',names=cols, engine='python')
+    csqdf = csqdf[csqdf['1']!='LOG']
     csqdf['aa'] = csqdf.aa.fillna(csqdf.snp_type)
     csqdf['nuc'] = csqdf.nuc.fillna(csqdf.snp_type)
     return csqdf
@@ -777,6 +778,24 @@ def run_bamfiles(bam_files, ref, gff_file=None, mask=None, outdir='.', threads=4
     treefile = trees.run_RAXML(outfasta, outpath=outdir)
     ls = len(smat)
     trees.convert_branch_lengths(treefile,os.path.join(outdir,'tree.newick'), ls)
+    return
+
+def make_mask_file_mbovis(filename=None):
+    """Make mask bed file for M.bovis"""
+
+    g = tools.genbank_to_dataframe(mbovis_gb)
+    g['gene'] = g.gene.fillna('')
+    g=g[(g.gene.str.contains('PE_PGRS') | g.gene.str.contains('PPE')) & (g.feat_type=='CDS') | (g.feat_type=='repeat_region')]
+    lines = []
+    for i,r in g.iterrows():  
+        l = 'LT708304.1 \t {s}\t{e}\t{g}\t{t}'.format(s=r.start,e=r.end,g=r.gene,t=r.locus_tag)
+        #print (l)
+        lines.append(l)
+    print (len(lines))
+    if filename != None:
+        with open(filename, 'w') as fp:
+            for l in lines:
+                fp.write("%s\n" %l)     
     return
 
 class Logger(object):

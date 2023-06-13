@@ -1324,3 +1324,4 @@ def get_spoligotypes(samples, spo=None):
 
     res = pd.DataFrame(res,columns=['sample','SB','code'])
     return res
+

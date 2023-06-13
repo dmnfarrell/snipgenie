@@ -29,19 +29,25 @@ from . import tools, widgets
 
 home = os.path.expanduser("~")
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
+iconpath = os.path.join(module_path, 'plugins', 'icons')
+logoimg = os.path.join(iconpath, 'tree.svg')
+version = '0.2'
 
 class PhyloApp(QMainWindow):
     """Tree viewer with Toytree, wraps TreeViewer widget"""
-    def __init__(self, filename=None, meta=None):
+    def __init__(self, filename=None, metafile=None):
 
         QMainWindow.__init__(self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.setWindowTitle("Tree-viewer")
+        self.setWindowIcon(QIcon(logoimg))
         self.setGeometry(QtCore.QRect(200, 200, 1000, 800))
         self.setMinimumHeight(150)
-        if meta != None:
-            m = pd.read_csv(meta).set_index('sample')
-        self.main = TreeViewer(self, meta=m)
+        if metafile != None:
+            meta = pd.read_csv(metafile).set_index('sample')
+        else:
+            meta = None
+        self.main = TreeViewer(self, meta=meta)
         self.main.setFocus()
         self.setCentralWidget(self.main)
         if filename != None:
@@ -59,12 +65,13 @@ class TreeViewer(QWidget):
         self.tree = None
         self.meta = meta
         self.width = 500
-        self.height = 700
+        self.height = 800
         self.ts = ''
         import toytree
         self.colors = {}
         self.node_colors = {}
-        self.node_sizes = 8
+        self.node_sizes = 10
+        self.showtiplabels = True
         self.default_style = {
             "layout":'r',
             "edge_type": 'p',
@@ -92,31 +99,6 @@ class TreeViewer(QWidget):
         #self.test_tree(10)
         return
 
-    def test_tree(self, n=None):
-        """Load a test tree"""
-
-        import toytree
-        if n==None:
-            n, ok = QInputDialog().getInt(self, "Test tree",
-                                                 "Nodes:", 10)
-            if not ok:
-                return
-        self.set_tree(self.random_tree(n=n))
-        self.height = 200+self.tree.ntips*10
-        self.update()
-        return
-
-    def random_tree(self, n=12):
-        """Make a random tree"""
-
-        import toytree
-        tre = toytree.rtree.coaltree(n)
-        ## assign random edge lengths and supports to each node
-        for node in tre.treenode.traverse():
-            node.dist = np.random.exponential(1)
-            node.support = int(np.random.uniform(50, 100))
-        return tre
-
     def saveData(self):
         """Save layers"""
 
@@ -139,17 +121,21 @@ class TreeViewer(QWidget):
         """Menu bar"""
 
         self.menubar = QMenuBar(parent)
+        self.layout.setMenuBar(self.menubar)
         self.file_menu = QMenu('File', parent)
         self.file_menu.addAction('Import Tree', self.load_tree)
         self.file_menu.addAction('Import MultiTree', self.load_multitree)
         self.file_menu.addAction('Load Test Tree', self.test_tree)
-        self.file_menu.addAction('Show Newick', self.show_newick)
+        #self.file_menu.addAction('Show Newick', self.show_newick)
         self.file_menu.addAction('Export Image', self.export_image)
         self.menubar.addMenu(self.file_menu)
         self.tree_menu = QMenu('Tree', parent)
         self.tree_menu.addAction('Show Unrooted', self.unroot_tree)
         self.tree_menu.addAction('Reset Format', self.reset_style)
         self.menubar.addMenu(self.tree_menu)
+        self.help_menu = QMenu('Help', parent)
+        self.menubar.addMenu(self.help_menu)
+        self.help_menu.addAction('About', self.about)
         return
 
     def add_widgets(self):
@@ -201,7 +187,7 @@ class TreeViewer(QWidget):
         w.valueChanged.connect(self.vscale)
 
         self.colorby = {}
-        for label in ['node color','tip color']:
+        for label in ['node color','tip color','tip labels']:
             w = QLabel(label)
             l.addWidget(w)
             self.colorby[label] = w = QComboBox()
@@ -243,6 +229,31 @@ class TreeViewer(QWidget):
             self.set_color('node')
         elif action == dropAction:
             self.drop_tips()
+
+    def test_tree(self, n=None):
+        """Load a test tree"""
+
+        import toytree
+        if n==None:
+            n, ok = QInputDialog().getInt(self, "Test tree",
+                                                 "Nodes:", 10)
+            if not ok:
+                return
+        self.set_tree(self.random_tree(n=n))
+        self.height = 200+self.tree.ntips*10
+        self.update()
+        return
+
+    def random_tree(self, n=12):
+        """Make a random tree"""
+
+        import toytree
+        tre = toytree.rtree.coaltree(n)
+        ## assign random edge lengths and supports to each node
+        for node in tre.treenode.traverse():
+            node.dist = np.random.exponential(1)
+            node.support = int(np.random.uniform(50, 100))
+        return tre
 
     def load_tree(self, filename=None):
         """Load the tree"""
@@ -314,17 +325,30 @@ class TreeViewer(QWidget):
             else:
                 return 'black'
 
-        w = self.colorby['node color']
-        nodecol = w.currentText()
-        if nodecol != '':
+        ncw = self.colorby['node color']
+        nodecol = ncw.currentText()
+        tcw = self.colorby['tip color']
+        tipcol = tcw.currentText()
+        tlw = self.colorby['tip labels']
+        tiplabelcol = tlw.currentText()
+        node_colors = None
+        
+        if self.meta is not None:
             df = self.meta.copy().fillna('')
             idx = tre.get_tip_labels()
             df = df.reindex(index=idx)
             df = df.loc[idx]
-            labels = df[nodecol].unique()
-            cmap = ({c:tools.random_hex_color() if c in labels else 'black' for c in labels})
-            #df['color'] = df[nodecol].apply(lambda x: get_color(x,cmap))
-            node_colors = [cmap[df.loc[n][nodecol]] if n in df.index else 'black' for n in tre.get_node_values('name', True, True)]
+
+            if nodecol != '':
+                labels = df[nodecol].unique()
+                cmap = ({c:tools.random_hex_color() if c in labels else 'black' for c in labels})
+                #df['color'] = df[nodecol].apply(lambda x: get_color(x,cmap))
+                node_colors = [cmap[df.loc[n][nodecol]] if n in df.index else 'black' for n in tre.get_node_values('name', True, True)]
+         
+            if tiplabelcol != '':
+                tiplabels = list(df[tiplabelcol].astype(str))
+                self.style['tip_labels'] = tiplabels
+
         else:
             colorlist = [self.colors[tip] if tip in self.colors else "black" for tip in tre.get_tip_labels()]
             self.style['tip_labels_colors'] = colorlist
@@ -337,14 +361,19 @@ class TreeViewer(QWidget):
         else:
             style = self.style
         canvas,axes,mark = self.tree.draw(ts=self.ts,
-                        width=self.width,
-                        height=self.height,
-                        scalebar=True, **style)
+                                        width=self.width,
+                                        height=self.height,
+                                        scalebar=True, **style)
+        #self.add_legend(canvas)
         toyplot.html.render(canvas, "temp.html")
         with open('temp.html', 'r') as f:
             html = f.read()
             self.browser.setHtml(html)
         self.canvas = canvas
+        return
+
+    def add_legend(self, canvas):
+
         return
 
     def update_multitree(self):
@@ -433,7 +462,7 @@ class TreeViewer(QWidget):
                 'layout': {'type':'combobox','default':self.style['layout'],'items':['r','d','c']},
                 'edge_type': {'type':'combobox','default':self.style['edge_type'],'items':['p','b','c']},
                 'use_edge_lengths':{'type':'checkbox','default':self.style['use_edge_lengths'] },
-                'tip_labels':{'type':'checkbox','default':self.style['tip_labels'] },
+                'tip_labels':{'type':'checkbox','default': self.showtiplabels},
                 'tip_labels_align':{'type':'checkbox','default':self.style['tip_labels_align'] },
                 #'node_labels':{'type':'combobox','default':self.style['node_labels'],'items': nlabels},
                 'node_sizes':{'type':'spinbox','default':self.node_sizes,'range':(2,20),'interval':1},
@@ -494,6 +523,16 @@ class TreeViewer(QWidget):
         self.update()
         return
 
+    def about(self):
+
+        text='Phylo Tree Viewer\n'\
+            +'version '+version+'\n'\
+            +'Copyright (C) Damien Farrell 2021-\n'
+
+        msg = QMessageBox.about(self, "About", text)
+        return
+        return
+
 def main():
     "Run the application"
 
@@ -502,7 +541,7 @@ def main():
     parser = ArgumentParser(description='snipgenie gui tool')
     parser.add_argument("-f", "--file", dest="filename",default=[],
                         help="input tree file", metavar="FILE")
-    parser.add_argument("-m", "--meta", dest="meta",default=None,
+    parser.add_argument("-m", "--meta", dest="metafile",default=None,
                         help="meta data csv file", metavar="FILE")
     args = vars(parser.parse_args())
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)

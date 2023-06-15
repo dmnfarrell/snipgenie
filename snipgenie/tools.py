@@ -28,7 +28,8 @@ from Bio import SeqIO
 from Bio import Phylo, AlignIO, Align
 import numpy as np
 import pandas as pd
-#import pylab as plt
+import pylab as plt
+import matplotlib as mpl
 from gzip import open as gzopen
 
 home = os.path.expanduser("~")
@@ -146,6 +147,19 @@ def random_hex_colors(n=1,seed=None):
     if seed != None:
         np.random.seed(seed)
     return [random_hex_color() for i in range(n)]
+
+def get_colormap_colors(colormap_name, n):
+    
+    colormap = plt.cm.get_cmap(colormap_name, n)
+    colors = [mpl.colors.rgb2hex(colormap(i)) for i in range(n)]
+    return colors
+
+def get_colormap_from_labels(colormap_name, labels):
+    
+    n=len(labels)
+    colormap = plt.cm.get_cmap(colormap_name, n)
+    colors = {labels[i]: mpl.colors.rgb2hex(colormap(i)) for i in range(n)}
+    return colors
 
 def diffseqs(seq1,seq2):
     """Diff two sequences"""

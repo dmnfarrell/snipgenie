@@ -27,7 +27,7 @@ import pandas as pd
 import pylab as plt
 from Bio import Phylo, SeqIO, Entrez
 import toytree, toyplot
-from snipgenie import app, widgets, tables, tools, trees, clustering, plotting, phylo
+from snipgenie import app, widgets, tables, tools, trees, clustering, plotting, treeview
 from snipgenie.plugin import Plugin
 
 #location for main snp tables/clustering
@@ -48,7 +48,7 @@ class ResultsViewer(QWidget):
         self.layout().addWidget(self.main)
         self.mstplot = widgets.PlotWidget()
         self.main.addTab(self.mstplot,'mst')
-        self.tv = phylo.TreeViewer(meta=meta)
+        self.tv = treeview.TreeViewer(meta=meta)
         self.main.addTab(self.tv,'phylogeny')
         self.clustermap = widgets.PlotWidget()
         self.main.addTab(self.clustermap,'clustermap')

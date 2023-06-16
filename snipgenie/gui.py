@@ -1286,9 +1286,9 @@ class App(QMainWindow):
     def tree_viewer(self):
         """Show tree viewer"""
 
-        from . import phylo
+        from . import treeview
         if not hasattr(self, 'treeviewer'):
-            self.treeviewer = phylo.TreeViewer(self)
+            self.treeviewer = treeview.TreeViewer(self)
         if not 'phylogeny' in self.get_right_tabs():
             idx = self.right_tabs.addTab(self.treeviewer, 'phylogeny')
             self.right_tabs.setCurrentIndex(idx)

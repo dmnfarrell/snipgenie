@@ -148,15 +148,17 @@ def random_hex_colors(n=1,seed=None):
         np.random.seed(seed)
     return [random_hex_color() for i in range(n)]
 
-def get_colormap_colors(colormap_name, n):
-    
+def colormap_colors(colormap_name, n):
+    """Colors list from mpl colormap"""
+
     colormap = plt.cm.get_cmap(colormap_name, n)
     colors = [mpl.colors.rgb2hex(colormap(i)) for i in range(n)]
     return colors
 
-def get_colormap_from_labels(colormap_name, labels):
-    
-    n=len(labels)
+def colormap_from_labels(colormap_name, labels):
+    """Get dict of colors mapping to labels using mpl colormap"""
+
+    n = len(labels)
     colormap = plt.cm.get_cmap(colormap_name, n)
     colors = {labels[i]: mpl.colors.rgb2hex(colormap(i)) for i in range(n)}
     return colors
@@ -172,7 +174,7 @@ def diffseqs(seq1,seq2):
 
 def snp_dist_matrix(aln):
     """
-    Compute the number of Single Nucleotide Polymorphisms (SNPs) 
+    Compute the number of Single Nucleotide Polymorphisms (SNPs)
     between sequences in a Biopython alignment.
     Args:
         aln:
@@ -187,7 +189,7 @@ def snp_dist_matrix(aln):
 
     for i in range(num_sequences):
         seq1 = str(aln[i].seq)
-        for j in range(i + 1, num_sequences):            
+        for j in range(i + 1, num_sequences):
             seq2 = str(aln[j].seq)
             # Calculate the number of SNPs
             snp_count = sum(c1 != c2 for c1, c2 in zip(seq1, seq2))
@@ -209,7 +211,7 @@ def update_snp_dist_matrix(aln, snpdist=None):
     returns:
         a matrix as pandas dataframe
     """
-    
+
     present = snpdist.index
     #print (present)
     new_aln = [s for s in aln if s.id not in present]
@@ -218,26 +220,26 @@ def update_snp_dist_matrix(aln, snpdist=None):
     print ('%s samples to be added' %len(new))
     #create the new matrix
     matrix = snpdist.copy()
-    new_index = snpdist.columns.tolist() + new    
+    new_index = snpdist.columns.tolist() + new
     matrix = snpdist.reindex(new_index)
     matrix = matrix.reindex(new_index, axis=1)
-    
-    for s1 in aln:        
+
+    for s1 in aln:
         seq1 = str(s1.seq)
         x=s1.id
         #print (x)
         for s2 in aln:
-            y=s2.id            
-            if not np.isnan(matrix.loc[x,y]):                
+            y=s2.id
+            if not np.isnan(matrix.loc[x,y]):
                 continue
             else:
                 seq2 = str(s2.seq)
-                snp_count = sum(c1 != c2 for c1, c2 in zip(seq1, seq2))                
+                snp_count = sum(c1 != c2 for c1, c2 in zip(seq1, seq2))
                 matrix.loc[x,y] = snp_count
                 matrix.loc[x,y] = snp_count
-        
+
     #print (matrix[matrix.ref.isnull()])
-    matrix = matrix.astype(int)   
+    matrix = matrix.astype(int)
     return matrix
 
 def alignment_from_snps(df):
@@ -245,7 +247,7 @@ def alignment_from_snps(df):
 
     df = df.set_index('pos').T
     seqs=[]
-    for i,r in df.iterrows():        
+    for i,r in df.iterrows():
         s = ''.join(list(r))
         seqs.append(SeqRecord(Seq(s),id=i))
 
@@ -254,7 +256,7 @@ def alignment_from_snps(df):
 
 def combine_core_snps(core, new):
     """Add new sample(s) to core snps by combining both tables."""
-    
+
     #new=new.drop(columns='ref')
     ncols = new.columns[1:]
     #print (ncols)
@@ -267,7 +269,7 @@ def combine_core_snps(core, new):
     print (len(core),len(df))
     df['ref'] = df.ref_y.fillna(df.ref_x)
     #print (df[df.ref.isnull()])
-    df=df.drop(columns=['ref_y','ref_x'])    
+    df=df.drop(columns=['ref_y','ref_x'])
     return df
 
 def get_closest_samples(distance_matrix, row_index, n):
@@ -284,7 +286,7 @@ def get_within_distance(distance_matrix, row_index, n):
     return x
 
 def dist_matrix_to_mst(distance_matrix, ax):
-    
+
     import networkx as nx
     import pylab as plt
     G = nx.Graph()
@@ -297,8 +299,8 @@ def dist_matrix_to_mst(distance_matrix, ax):
     # Compute edge lengths based on distances
     edge_lengths = [T[u][v]['weight'] for u, v in T.edges()]
     # Plot the minimum spanning tree with edge lengths proportional to distances
-    pos = nx.spring_layout(T)#, weight='weight', scale=10, seed=42)    
-    labels = nx.get_edge_attributes(T, 'weight')  
+    pos = nx.spring_layout(T)#, weight='weight', scale=10, seed=42)
+    labels = nx.get_edge_attributes(T, 'weight')
 
     nx.draw_networkx(T, pos, node_color='lightblue',font_size=8, ax=ax)
     nx.draw_networkx_edge_labels(T, pos, edge_labels=labels, font_size=7, ax=ax)
@@ -844,7 +846,7 @@ def bcftools_query(bcf_file, positions=[], field='AD'):
             bc=bcftoolscmd,f=field,p=pstr)
     tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
     print (cmd)
-    from io import StringIO  
+    from io import StringIO
     df = pd.read_csv(StringIO(tmp),sep=' ',header=None)
     df = df.rename(columns={0:'chrom',1:'pos',2:'ref',3:'alt'})
     return df
@@ -1058,7 +1060,7 @@ def core_alignment_from_vcf(vcf_file, callback=None, uninformative=False, missin
     missing_sites = []
     uninf_sites = []
     for record in vcf_reader:
-        S = {sample.sample: sample.gt_bases for sample in record.samples}        
+        S = {sample.sample: sample.gt_bases for sample in record.samples}
         if omit != None:
             for o in omit:
                 del S[o]

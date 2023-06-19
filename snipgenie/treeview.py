@@ -27,6 +27,7 @@ import pylab as plt
 import string
 from .qt import *
 from . import tools, widgets
+import toyplot, toytree
 
 home = os.path.expanduser("~")
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
@@ -47,6 +48,67 @@ widgetstyle = '''
         max-width: 300px;
     }
     '''
+
+def colormap_from_labels(colormap_name, labels):
+    """Get dict of colors mapping to labels using toyplot colormap"""
+
+    n = len(labels)
+    #colormap = toyplot.color.brewer.map(colormap_name,domain_min=0,domain_max=n,count=n)
+    colormap = toyplot.color.CategoricalMap(toyplot.color.brewer.palette(colormap_name))
+    cm = {labels[i]:colormap.css(i) for i in range(n)}
+    return cm
+
+def colormap_from_values(colormap_name, vals):
+    """Toyplot color mapping from continuous values"""
+
+    labels = vals.unique()  
+    colormap = toyplot.color.brewer.map(colormap_name, domain_min=vals.min(), domain_max=vals.max(), reverse=True)
+    cm = {i:colormap.css(i) for i in labels}
+    return cm
+
+def add_legend(canvas, cmap, label='', shape='o'):
+    """Category or continuous value legend.
+    canvas: canvas
+    cmap: mapping of labels to colors
+    label: label for legend, optional
+    """
+
+    legendmarkers = [(i,toyplot.marker.create(shape=shape, mstyle={"fill":cmap[i]}, size=14)) for i in cmap]
+    l = len(legendmarkers)
+    s=20
+    min=10
+    e=min+s+l*3
+    legend = canvas.legend(
+        legendmarkers,       
+        bounds=("70%", "100%", f"{s}%", f"{e}%"),
+        label=label,
+        margin=100,
+        )
+    return
+
+def add_color_scale(canvas, colormap_name, min=0, max=1, label=''):
+    
+    colormap = toyplot.color.brewer.map(name=colormap_name, domain_min=min, domain_max=max, reverse=True)   
+    legend = canvas.color_scale(colormap, 
+                                x1="90%", y1="-20%", x2="90%", y2="20%",
+                                label="label") 
+    return
+
+def get_node_colors(tre, df, col, cmap):
+    """Node colors from tree and dataframe labels"""
+
+    node_colors=[]
+    for n in tre.get_node_values('name', True, True):
+        if n in df.index:
+            val = df.loc[n][col]
+            if val in cmap:
+                node_colors.append(cmap[val])
+            else:
+                node_colors.append('black')
+        else:
+            node_colors.append('black')
+    return node_colors
+
 
 class PhyloApp(QMainWindow):
     """Tree viewer with Toytree, wraps TreeViewer widget"""
@@ -104,7 +166,7 @@ class TreeViewer(QWidget):
             "node_labels": False,
             "node_colors": toytree.colors[2],
             "node_sizes": self.node_sizes,
-            "node_markers":"c",
+            "node_markers":"o",
             "use_edge_lengths":True
         }
 
@@ -228,7 +290,7 @@ class TreeViewer(QWidget):
         w = QLabel('colormap')
         l.addWidget(w)
         self.colormapw = w = QComboBox()
-        w.addItems(plt.colormaps())
+        w.addItems(toyplot.color.brewer.names())
         l.addWidget(w)
         w.activated.connect(self.update)
         w.setStyleSheet(widgetstyle)
@@ -279,7 +341,7 @@ class TreeViewer(QWidget):
         item = self.tipitems.itemAt( pos )
         menu = QMenu(self.tipitems)
         colorAction = menu.addAction("Set Label Color")
-        nodecolorAction = menu.addAction("Set Node Color")
+        #nodecolorAction = menu.addAction("Set Node Color")
         rootAction = menu.addAction("Root On")
         dropAction = menu.addAction("Drop Tips")
         action = menu.exec_(self.tipitems.mapToGlobal(pos))
@@ -287,8 +349,8 @@ class TreeViewer(QWidget):
             self.root_tree()
         elif action == colorAction:
             self.set_color()
-        elif action == nodecolorAction:
-            self.set_color('node')
+        #elif action == nodecolorAction:
+        #    self.set_color('node')
         elif action == dropAction:
             self.drop_tips()
 
@@ -312,9 +374,9 @@ class TreeViewer(QWidget):
 
         tip_labels = tre.get_tip_labels()
         df = pd.DataFrame(tip_labels,columns=['name'])
-        df['label']=[random.choice(['cow','badger','deer']) for i in df.name]
-        df['label2']=[random.choice(['A','B','C','D']) for i in df.name]
-        df['val'] = np.random.random(len(df))
+        df['label']=[random.choice(['badger','deer','mouse','rabbit']) for i in df.name]
+        df['label2']=[random.choice(['A','B','C','D','E','F','G']) for i in df.name]
+        df['val'] = (np.random.random(len(df))*10).round(2)
         df = df.set_index('name')
         self.meta = df
         self.update_widgets()
@@ -400,9 +462,6 @@ class TreeViewer(QWidget):
     def update(self):
         """Update the plot"""
 
-        import toytree
-        import toyplot
-
         if self.tree == None:
             self.browser.setHtml('')
             self.tipitems.clear()
@@ -413,16 +472,9 @@ class TreeViewer(QWidget):
         tre = self.tree
         ns = [0 if i else self.node_sizes for i in tre.get_node_values(None, 1, 0)]
 
-        def get_color(x, cmap):
-            if x in cmap:
-                return cmap[x]
-            else:
-                return 'black'
-
+        #widget values
         ncw = self.colorby['node color']
         nodecol = ncw.currentText()
-        #tcw = self.colorby['tip label color']
-        #tipcol = tcw.currentText()
         tlw = self.colorby['tip labels']
         tiplabelcol = tlw.currentText()
         node_colors = None
@@ -434,22 +486,34 @@ class TreeViewer(QWidget):
             idx = tre.get_tip_labels()
             df = df.reindex(index=idx)
             df = df.loc[idx]
+            #get type
 
-            if nodecol != '':
+            if nodecol != '':            
+                try:                    
+                    df[nodecol].replace('',np.nan).dropna().astype(float)
+                    dtype = 'float'
+                except:
+                    dtype = 'object'
+                
                 labels = df[nodecol].unique()
-                cmap = tools.colormap_from_labels(colormap, labels)
-                #cmap = ({c:tools.random_hex_color() if c in labels else 'black' for c in labels})
-                node_colors = [cmap[df.loc[n][nodecol]] if n in df.index else 'black' for n in tre.get_node_values('name', True, True)]
+                if len(labels)>20:
+                     print ('too many categories for legend')
+                     node_colors = None
+                elif dtype == 'object':
+                    cmap = colormap_from_labels(colormap, labels)
+                    node_colors = get_node_colors(tre, df, nodecol, cmap)
+                else: 
+                    vals = df[nodecol].replace('',np.nan)
+                    cmap = colormap_from_values(colormap, vals)
+                    node_colors = get_node_colors(tre, df, nodecol, cmap)
 
             if tiplabelcol != '':
                 tiplabels = list(df[tiplabelcol].astype(str))
                 self.style['tip_labels'] = tiplabels
 
-        else:
-            colorlist = [self.colors[tip] if tip in self.colors else "black" for tip in tre.get_tip_labels()]
-            self.style['tip_labels_colors'] = colorlist
-            node_colors = [self.node_colors[n] if n in self.node_colors else 'black' for n in tre.get_node_values('name', True, True)]
-
+        #label colors if any
+        colorlist = [self.colors[tip] if tip in self.colors else "black" for tip in tre.get_tip_labels()]
+        self.style['tip_labels_colors'] = colorlist
         self.style['node_colors'] = node_colors
         self.style['node_sizes'] = ns
         if self.ts != '':
@@ -458,14 +522,18 @@ class TreeViewer(QWidget):
             style = self.style
 
         canvas = toyplot.Canvas(width=self.width, height=self.height)
-        axes1 = canvas.cartesian(bounds=("5%", "75%", "5%", "95%"), margin=20)
+        axes1 = canvas.cartesian(bounds=("5%", "75%", "5%", "95%"), margin=10)
         c,axes,mark = self.tree.draw(ts=self.ts,
-                                        #width=self.width,
-                                        #height=self.height,
                                         axes=axes1,
                                         scalebar=True, **style)
+
+        #add legend
         if node_colors != None and cmap != None:
-            self.add_legend(canvas, cmap, nodecol)
+            if dtype == 'object':
+                add_legend(canvas, cmap, nodecol, shape=style['node_markers'])
+            else:
+                vals = df[nodecol].replace('',np.nan).dropna().values
+                add_color_scale(canvas, colormap,  min=vals.min(), max=vals.max(), label=nodecol)
 
         toyplot.html.render(canvas, "temp.html")
         with open('temp.html', 'r') as f:
@@ -474,31 +542,8 @@ class TreeViewer(QWidget):
         self.canvas = canvas
         return
 
-    def add_legend(self, canvas, cmap, label=''):
-        """Category or continuous value legend.
-        canvas: canvas
-        cmap: mapping of labels to colors
-        label: label for legend, optional
-        """
-
-        import toyplot
-        legendmarkers = [(i,toyplot.marker.create(shape='o', mstyle={"fill":cmap[i]}, size=14)) for i in cmap]
-        l = len(legendmarkers)
-        s=20
-        e=s+l*3
-        legend = canvas.legend(
-            legendmarkers,
-            #corner=('right', 200, 200, s),
-            bounds=("75%", "100%", f"{s}%", f"{e}%"),
-            label=label,
-            margin=100,
-            )
-
-        return
-
     def update_multitree(self):
 
-        import toyplot
         style = self.style
         canvas,axes,mark = self.tree.draw(ncols=3,nrows=3, ts=self.ts,
                         width=self.width,

@@ -61,7 +61,7 @@ def colormap_from_labels(colormap_name, labels):
 def colormap_from_values(colormap_name, vals):
     """Toyplot color mapping from continuous values"""
 
-    labels = vals.unique()  
+    labels = vals.unique()
     colormap = toyplot.color.brewer.map(colormap_name, domain_min=vals.min(), domain_max=vals.max(), reverse=True)
     cm = {i:colormap.css(i) for i in labels}
     return cm
@@ -75,23 +75,23 @@ def add_legend(canvas, cmap, label='', shape='o'):
 
     legendmarkers = [(i,toyplot.marker.create(shape=shape, mstyle={"fill":cmap[i]}, size=14)) for i in cmap]
     l = len(legendmarkers)
-    s=20
-    min=10
-    e=min+s+l*3
+    s = 50
+    min = 15
+    e = min+s+l*15
     legend = canvas.legend(
-        legendmarkers,       
-        bounds=("70%", "100%", f"{s}%", f"{e}%"),
+        legendmarkers,
+        bounds=("70%", "100%", s, e),
         label=label,
         margin=100,
         )
     return
 
 def add_color_scale(canvas, colormap_name, min=0, max=1, label=''):
-    
-    colormap = toyplot.color.brewer.map(name=colormap_name, domain_min=min, domain_max=max, reverse=True)   
-    legend = canvas.color_scale(colormap, 
+
+    colormap = toyplot.color.brewer.map(name=colormap_name, domain_min=min, domain_max=max, reverse=True)
+    legend = canvas.color_scale(colormap,
                                 x1="90%", y1="-20%", x2="90%", y2="20%",
-                                label="label") 
+                                label=label)
     return
 
 def get_node_colors(tre, df, col, cmap):
@@ -167,6 +167,7 @@ class TreeViewer(QWidget):
             "node_colors": toytree.colors[2],
             "node_sizes": self.node_sizes,
             "node_markers":"o",
+            "node_style": { "stroke": 'black','stroke-width':0},
             "use_edge_lengths":True
         }
 
@@ -310,6 +311,9 @@ class TreeViewer(QWidget):
             w.activated.connect(self.update)
             w.setStyleSheet(widgetstyle)
 
+        w = self.catlegendw = QCheckBox('Categorical Legend')
+        l.addWidget(w)
+
         btn = QPushButton('Set Format')
         l.addWidget(btn)
         btn.clicked.connect(self.tree_style_options)
@@ -354,6 +358,10 @@ class TreeViewer(QWidget):
         elif action == dropAction:
             self.drop_tips()
 
+    def reset(self):
+
+        return
+
     def test_tree(self, n=None):
         """Load a test tree"""
 
@@ -366,7 +374,8 @@ class TreeViewer(QWidget):
         self.set_tree(self.random_tree(n=n))
         self.height = 200+self.tree.ntips*10
         self.load_test_meta(self.tree)
-        self.update()
+        self.reset()
+        self.fit_to_window()
         return
 
     def load_test_meta(self, tre):
@@ -377,6 +386,7 @@ class TreeViewer(QWidget):
         df['label']=[random.choice(['badger','deer','mouse','rabbit']) for i in df.name]
         df['label2']=[random.choice(['A','B','C','D','E','F','G']) for i in df.name]
         df['val'] = (np.random.random(len(df))*10).round(2)
+        df['val2'] = (np.random.randint(1,10,len(df))*10)
         df = df.set_index('name')
         self.meta = df
         self.update_widgets()
@@ -406,7 +416,8 @@ class TreeViewer(QWidget):
                 return
         self.set_tree(toytree.tree(filename))
         self.height = 200+self.tree.ntips*10
-        self.update()
+        #self.update()
+        self.fit_to_window()
         return
 
     def load_meta(self, filename=None):
@@ -486,15 +497,16 @@ class TreeViewer(QWidget):
             idx = tre.get_tip_labels()
             df = df.reindex(index=idx)
             df = df.loc[idx]
-            #get type
 
-            if nodecol != '':            
-                try:                    
+            if nodecol != '':
+                try:
                     df[nodecol].replace('',np.nan).dropna().astype(float)
                     dtype = 'float'
                 except:
                     dtype = 'object'
-                
+                if self.catlegendw.isChecked():
+                    dtype = 'object'
+
                 labels = df[nodecol].unique()
                 if len(labels)>20:
                      print ('too many categories for legend')
@@ -502,7 +514,7 @@ class TreeViewer(QWidget):
                 elif dtype == 'object':
                     cmap = colormap_from_labels(colormap, labels)
                     node_colors = get_node_colors(tre, df, nodecol, cmap)
-                else: 
+                else:
                     vals = df[nodecol].replace('',np.nan)
                     cmap = colormap_from_values(colormap, vals)
                     node_colors = get_node_colors(tre, df, nodecol, cmap)
@@ -533,6 +545,9 @@ class TreeViewer(QWidget):
                 add_legend(canvas, cmap, nodecol, shape=style['node_markers'])
             else:
                 vals = df[nodecol].replace('',np.nan).dropna().values
+                if len(vals)==0:
+                    print ('no values for legend')
+                    return
                 add_color_scale(canvas, colormap,  min=vals.min(), max=vals.max(), label=nodecol)
 
         toyplot.html.render(canvas, "temp.html")
@@ -628,8 +643,8 @@ class TreeViewer(QWidget):
     def tree_style_options(self):
         """Tree style dialog"""
 
-        fonts = ['%spx' %i for i in range (6,28)]
-        markers = ['o','s','d','^','>','oo']
+        fonts = ['%spx' %i for i in range (6,34)]
+        markers = ['o','s','d','^','>']
         nlabels = ['','idx','support']
         tip_labels_style = self.style['tip_labels_style']
         tree_styles = [None,'n','s','c','o','p','d']
@@ -641,7 +656,7 @@ class TreeViewer(QWidget):
                 'tip_labels':{'type':'checkbox','default': self.showtiplabels},
                 'tip_labels_align':{'type':'checkbox','default':self.style['tip_labels_align'] },
                 #'node_labels':{'type':'combobox','default':self.style['node_labels'],'items': nlabels},
-                'node_sizes':{'type':'spinbox','default':self.node_sizes,'range':(2,20),'interval':1},
+                'node_sizes':{'type':'spinbox','default':self.node_sizes,'range':(2,40),'interval':1},
                 'node_markers': {'type':'combobox','default':self.style['node_markers'],'items':markers},
                 'font_size':{'type':'combobox','default':tip_labels_style['font-size'],'items':fonts}
                 }

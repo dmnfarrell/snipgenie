@@ -616,7 +616,8 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         self.df = df
 
     def rowCount(self, parent=QtCore.QModelIndex()):
-        return len(self.df.index)
+        
+        return len(self.df)
 
     def columnCount(self, parent=QtCore.QModelIndex()):
         return len(self.df.columns)
@@ -639,7 +640,7 @@ class DataFrameModel(QtCore.QAbstractTableModel):
             elif type(value) != str:
                 if type(value) in [float,np.float64] and np.isnan(value):
                     return ''
-                elif type(value) == np.float:
+                elif type(value) == float:
                     return value
                 else:
                     return (str(value))

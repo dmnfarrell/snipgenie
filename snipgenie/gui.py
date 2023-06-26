@@ -341,7 +341,7 @@ class App(QMainWindow):
         center = QSplitter(Qt.Vertical)
         self.m.addWidget(center)
 
-        self.fastq_table = tables.SampleTable(self, dataframe=pd.DataFrame, app=self)
+        self.fastq_table = tables.SampleTable(self, dataframe=pd.DataFrame(), app=self)
         self.table_widget = tables.DataFrameWidget(parent=center, table=self.fastq_table,
                             toolbar=True)
         #self.fastq_table = self.table_widget.table
@@ -1965,6 +1965,7 @@ class App(QMainWindow):
         from . import plugin
         self.toolbar.addSeparator()
         for plg in plugin.Plugin.__subclasses__():
+            print 
             def func(p, **kwargs):
                 def new():
                    self.load_plugin(p)
@@ -1973,7 +1974,7 @@ class App(QMainWindow):
                 icon = QIcon(os.path.join(pluginiconpath,plg.iconfile))
             else:
                 icon = None
-            btn = QAction(icon, plg.menuentry, self)
+            btn = QAction(icon, plg.menuentry, self) 
             btn.triggered.connect(func(plg))
             self.toolbar.addAction(btn)
 

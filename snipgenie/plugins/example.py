@@ -35,6 +35,7 @@ class ExamplePlugin(Plugin):
     requires = ['']
     menuentry = 'Example Plugin'
     name = 'Example Plugin'
+    iconfile = 'tests.png'
     side = 'right'
 
     def __init__(self, parent=None):

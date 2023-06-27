@@ -182,7 +182,7 @@ class DataFrameTable(QTableView):
     """
     QTableView with pandas DataFrame as model.
     """
-    def __init__(self, parent=None, app=None, dataframe=None, plotter=None, 
+    def __init__(self, parent=None, app=None, dataframe=None, plotter=None,
                     font=core.FONT, fontsize=10):
 
         QTableView.__init__(self)
@@ -483,7 +483,7 @@ class DataFrameTable(QTableView):
 
     def refresh(self):
         """Refresh table if dataframe is changed"""
-        
+
         self.model.beginResetModel()
         index = self.model.index
         try:
@@ -616,7 +616,7 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         self.df = df
 
     def rowCount(self, parent=QtCore.QModelIndex()):
-        
+
         return len(self.df)
 
     def columnCount(self, parent=QtCore.QModelIndex()):
@@ -944,11 +944,11 @@ class MyHeaderView(QHeaderView):
         self._margin = 5
 
     def paintSection(self, painter, rect, index):
-        data = self._get_data(index)
+        data = str(self._get_data(index))
         painter.rotate(-90)
         painter.setFont(self._font)
-        painter.drawText(- rect.height() + self._margin,
-                         rect.left() + (rect.width() + self._descent) / 2, data)
+        painter.drawText(int(rect.height() + self._margin),
+                         int(rect.left() + (rect.width() + self._descent) / 2), data)
 
     def sizeHint(self):
         return QtCore.QSize(0, self._get_text_width() + 2 * self._margin)
@@ -1134,7 +1134,7 @@ class DistMatrixTableModel(DataFrameModel):
         if df is None:
             return
 
-        cmap = plt.cm.coolwarm        
+        cmap = plt.cm.coolwarm
         lut = cmap(df.to_numpy().flatten())
         lut = {i:cmap(i) for i in df.to_numpy().flatten()}
         self.colors = df.applymap(lambda x: lut[x])

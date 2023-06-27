@@ -90,9 +90,10 @@ class StrainTypingPlugin(Plugin):
                 self.result_table.setDataFrame(self.st)
                 self.newdm = pd.read_csv(snpdistfile, index_col=0)
                 self.newsnps = pd.read_csv(snpfile, index_col=0, sep=' ')
+                self.result_table.setDataFrame(self.st)
             except:
                 pass
-        self.result_table.setDataFrame(self.st)
+
         self.meta = self.parent.meta
         return
 

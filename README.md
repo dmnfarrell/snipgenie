@@ -7,7 +7,7 @@
 
 _SNiPgenie_ is a tool for microbial variant calling and phylogenetic analysis from raw read data. It was primarily written to be used with bacterial isolates of M. bovis but can be applied to other species. You need a good quality reference genome to align to. Anyone interested in using the software is encouraged to make suggestions on improving or adding features.
 
-This software is written in Python. It was developed on Ubuntu linux but is designed to also run on Windows 10 with a standalone application. The GUI is made using the Qt toolkit using PySide2.
+This software is written in Python. It was developed on Ubuntu linux but is designed to also run on Windows 10 with a standalone application. The GUI is made using the Qt toolkit using PyQt5/PySide2.
 
 ## Current Features
 
@@ -23,9 +23,21 @@ This software is written in Python. It was developed on Ubuntu linux but is desi
 
 ## Installation
 
+### Linux 
+
 `pip install -e git+https://github.com/dmnfarrell/snipgenie.git#egg=snipgenie`
 
-Notes: You may need to use pip3 on Ubuntu to ensure you use Python 3. Use sudo if installing system-wide. Running this also requires you have **git** installed. The same command can be used to update to the latest version.
+Notes: You may need to use pip3 on Ubuntu to ensure you use Python 3. Running this also requires you have **git** installed. The same command can be used to update to the latest version.
+
+### WSL on Windows
+
+The tool can be run on Windows using Windows Subsystem for Linux (WSL). This is [easy to install](https://www.omgubuntu.co.uk/how-to-install-wsl2-on-windows-10) from the Micrsoft store. (You can also run `wsl --install' from a terminal window). You then install Ubuntu 22.04 LTS from the store. Just make sure your version of Windows 10 is also reasonably up to date.
+
+Open Ubuntu from the start menu and run it. It will bring up a terminal. This is just like being in normal Linux. You should first install some required packages:
+
+```sudo apt install python3-pip x11-apps libqt5extras5```
+
+You can then install the app using pip as above.
 
 ## Dependencies
 
@@ -37,7 +49,7 @@ For Linux installs, you require Python 3 and the following packages. These will 
 * biopython
 * pyvcf
 * pyfaidx
-* pyside2 (GUI only)
+* pyqt5 (GUI only)
 * toytree (GUI only)
 
 Other binaries required:

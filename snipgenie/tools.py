@@ -266,7 +266,7 @@ def combine_core_snps(core, new):
     currcols = core.columns
     #fill remainder
     df = df.apply(lambda x: x.fillna(df.ref_y))
-    print (len(core),len(df))
+    print ('%s->%s SNPs added' %(len(core),len(df)))
     df['ref'] = df.ref_y.fillna(df.ref_x)
     #print (df[df.ref.isnull()])
     df=df.drop(columns=['ref_y','ref_x'])
@@ -324,7 +324,7 @@ def get_unique_snps(names, df, present=True):
     other = df.loc[:, ~df.columns.isin(names)]
     if present == True:
         u = other[other.sum(1)==0]
-        u = insamp.loc[u.index]
+        u = df.loc[u.index]
     else:
         u = other[other.sum(1)==len(other.columns)]
         #sns.clustermap(df.loc[u.index])
@@ -757,7 +757,7 @@ def trim_reads(filename1, filename2, outpath, quality=20,
         result = subprocess.check_output(cmd, shell=True, executable='/bin/bash')
     return outfile1, outfile2
 
-def get_subsample_reads(filename, outpath, reads=10000):
+'''def get_subsample_reads(filename, outpath, reads=10000):
     """
     Sub-sample a fastq file with first n reads.
     Args:
@@ -774,7 +774,26 @@ def get_subsample_reads(filename, outpath, reads=10000):
     cmd = 'zcat {f} | head -n {r} | gzip > {o}'.format(f=filename,r=lines,o=out)
     print (cmd)
     subprocess.check_output(cmd, shell=True)
-    return
+    return'''
+
+def subset_reads(filename, path='/tmp', numreads=10000, overwrite=False):
+    """Subset of reads"""
+
+    from Bio import SeqIO, bgzf
+    from gzip import open as gzopen
+    new = os.path.join(path,os.path.basename(filename))
+    if os.path.exists(new) and overwrite == False:
+        return new
+    print ('subsetting %s reads' %numreads)
+    recs = SeqIO.parse(gzopen(filename, "rt"), "fastq")
+    i=0
+    with bgzf.BgzfWriter(new, "wb") as outgz:
+        for rec in recs:
+            if i>numreads:
+                break
+            SeqIO.write(sequences=rec, handle=outgz, format="fastq")
+            i+=1
+    return new
 
 def get_vcf_samples(filename):
     """Get list of samples in a vcf/bcf"""

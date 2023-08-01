@@ -1280,6 +1280,8 @@ class App(QMainWindow):
         self.tree_viewer()
         filename = os.path.join(self.outputdir,'tree.newick')
         self.treeviewer.load_tree(filename)
+        self.treeviewer.meta = self.meta
+        self.treeviewer.update_widgets()
         self.treeviewer.update()
         return
 
@@ -1487,8 +1489,11 @@ class App(QMainWindow):
                 continue
             s = get_stats(r.bam_file)
             df.loc[i,'mapped'] = s['primary']
-            total = df.loc[i,'reads']
-            if pd.isna(total):
+            if 'reads' in df.columns:
+                total = df.loc[i,'reads']
+            else:
+                total = None
+            if pd.isna(total) or total is None:
                 total = tools.get_fastq_size(r.filename1)
                 df.loc[i,'reads'] = total
             df.loc[i,'perc_mapped'] = round(s['primary']/(total*2)*100,2)
@@ -1598,6 +1603,32 @@ class App(QMainWindow):
         w.append(fastafmt)
         i = self.right_tabs.addTab(w, name)
         self.right_tabs.setCurrentIndex(i)
+        return
+
+    def normalise_fastq(self, row):
+        """Normalise fastq files"""
+
+        df = self.fastq_table.model.df
+        rows = self.fastq_table.getSelectedRows()
+        data = df.iloc[rows]
+        path = os.path.join(self.outputdir, 'normalised')
+        os.makedirs(path, exist_ok=True)
+
+        num,ok = QInputDialog.getInt(self,"Normalise Reads","Enter number of reads",2000000)
+        if not ok:
+            return
+
+        def func(progress_callback):
+            for i,r in data.iterrows():
+                print (i)
+                fname1 = tools.subset_reads(r.filename1, path=path, numreads=num, overwrite=True)
+                fname2 = tools.subset_reads(r.filename2, path=path, numreads=num, overwrite=True)
+                print (fname1, fname2)
+        def completed():
+            QMessageBox.information(self, "Finished", 'New files written to %s' %path)
+            self.processing_completed()
+
+        self.run_threaded_process(func, completed)
         return
 
     def show_blast_url(self):
@@ -1965,7 +1996,7 @@ class App(QMainWindow):
         from . import plugin
         self.toolbar.addSeparator()
         for plg in plugin.Plugin.__subclasses__():
-            print 
+
             def func(p, **kwargs):
                 def new():
                    self.load_plugin(p)
@@ -1974,7 +2005,7 @@ class App(QMainWindow):
                 icon = QIcon(os.path.join(pluginiconpath,plg.iconfile))
             else:
                 icon = None
-            btn = QAction(icon, plg.menuentry, self) 
+            btn = QAction(icon, plg.menuentry, self)
             btn.triggered.connect(func(plg))
             self.toolbar.addAction(btn)
 

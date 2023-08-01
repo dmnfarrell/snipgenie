@@ -822,7 +822,8 @@ class SampleTable(DataFrameTable):
         plotbamAction = menu.addAction("Show Read Alignments")
         mappingstatsAction = menu.addAction("Mapping Statistics")
         contamaction = menu.addAction('Check Contamination')
-        fastareadsaction = menu.addAction('Sample Sequences')
+        samplereadsaction = menu.addAction('Sample Sequences')
+        normalisefastqaction = menu.addAction('Normalise Fastq')
         removeAction = menu.addAction("Remove Selected")
         removebamAction = menu.addAction("Delete Bam Files")
         exportAction = menu.addAction("Export Table")
@@ -840,8 +841,10 @@ class SampleTable(DataFrameTable):
             self.app.read_distributon(row)
         elif action == contamaction:
             self.app.check_contamination()
-        elif action == fastareadsaction:
+        elif action == samplereadsaction:
             self.app.get_fasta_reads()
+        elif action == normalisefastqaction:
+            self.app.normalise_fastq(row)
         elif action == mappingstatsAction:
             self.app.mapping_stats(row)
         elif action == plotbamAction:

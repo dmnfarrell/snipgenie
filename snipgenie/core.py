@@ -23,13 +23,11 @@
 import sys,os,subprocess,glob,re
 import time, datetime
 import platform
-import pandas as pd
-import numpy as np
 
 if 'Windows' in platform.platform():
     defaultfont = 'Arial'
 else:
-    defaultfont = 'Monospace'
+    defaultfont = 'Lato'
 defaults = {
             'FONT' :defaultfont,
             'FONTSIZE' : 10,

@@ -575,7 +575,8 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     #apply mask if required
     if mask != None:
         mask_filter(snpsout, mask, outdir=outpath, overwrite=True)
-
+        mask_filter(indelsout, mask, outdir=outpath, overwrite=True)
+        
     #custom filters
     if custom_filters == True:
         site_proximity_filter(snpsout, outdir=outpath, overwrite=True)

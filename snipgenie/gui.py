@@ -904,7 +904,12 @@ class App(QMainWindow):
             if not filename:
                 return
         self.ref_genome = filename
+        #also reset annotation and mask
+        self.ref_gb = None
+        self.annot = None
+        self.mask_file = None
         self.update_ref_genome()
+        self.update_mask()
         return
 
     def set_annotation(self, filename=None):

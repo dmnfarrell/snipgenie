@@ -72,6 +72,12 @@ def random_colors(n=10, seed=1):
         clrs.append(c)
     return clrs
 
+def random_cmap(n, seed=10):
+
+    rcolors = random_colors(n,seed)
+    c=range(n)
+    return dict(zip(c, rcolors))
+
 def gen_colors(cmap,n,reverse=False):
     '''Generates n distinct color from a given colormap.
     Args:

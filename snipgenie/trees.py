@@ -111,14 +111,20 @@ def convert_branch_lengths(treefile, outfile, snps):
     Phylo.write(tree, outfile, "newick")
     return
 
+def tree_from_aln(aln):
+    """Make tree from core snp matrix"""
+
+    AlignIO.write(aln, 'temp.fa', 'fasta')
+    treefile = run_fasttree('temp.fa')
+    ls = len(aln[0])
+    convert_branch_lengths(treefile,treefile, ls)
+    return treefile
+
 def tree_from_snps(snpmat):
     """Make tree from core snp matrix"""
 
     aln = tools.alignment_from_snps(snpmat)
-    AlignIO.write(aln, 'temp.fa', 'fasta')
-    treefile = run_fasttree('temp.fa')
-    ls = len(snpmat)
-    convert_branch_lengths(treefile,treefile, ls)
+    treefile = tree_from_aln(aln)
     return treefile
 
 def njtree_from_snps():

@@ -294,14 +294,14 @@ def reassign_clusters(clusters, labels, prevclusters):
     return newlabels, final
 
 def get_cluster_levels(S, cluster_members=None, linkage='single'):
-    """Clusters at different thresholds.
+    """Cluster distance matrix at different thresholds.
     S: snp distance matrix
     cluster_members (dataframe): previous sets of clusters at each level
     linkage: linkage method - 'single', 'complete', 'ward'
     """
 
-    levels=[500,200,50,12,7,3]
-    df=pd.DataFrame(index=S.index)
+    levels = [1000,500,200,50,20,12,7,3]
+    df = pd.DataFrame(index=S.index)
     clusts=[]
     for t in levels:
         if cluster_members is not None:
@@ -377,3 +377,10 @@ def generate_strain_names(cl):
         new.append(df)
     new = pd.concat(new)
     return new
+
+def nonredundant_samples(df, col='snp3'):
+    """Get non redundant samples at a specific threshold from cluster table"""
+
+    df['dup'] = df[col].replace(-1,np.nan)
+    x = df[(~df.duplicated('dup')) | (df.dup.isnull())]
+    return x

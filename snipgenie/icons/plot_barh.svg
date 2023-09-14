@@ -28,12 +28,12 @@
      showgrid="false"
      width="209mm"
      inkscape:zoom="0.22897889"
-     inkscape:cx="262.03289"
+     inkscape:cx="235.8296"
      inkscape:cy="875.62657"
-     inkscape:window-width="1862"
-     inkscape:window-height="1016"
-     inkscape:window-x="58"
-     inkscape:window-y="27"
+     inkscape:window-width="2560"
+     inkscape:window-height="1300"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
      inkscape:window-maximized="1"
      inkscape:current-layer="layer1" />
   <defs
@@ -43,7 +43,7 @@
      inkscape:groupmode="layer"
      id="layer1">
     <rect
-       style="fill:#95ce48;stroke:#14191f;stroke-width:9.16619;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.707692"
+       style="fill:#95ce48;stroke:#0c0b0b;stroke-width:10.06600201;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect31"
        width="89.503403"
        height="457.43918"
@@ -51,7 +51,7 @@
        y="-485.89581"
        transform="matrix(0.00244411,0.99999701,-0.99999444,0.00333507,0,0)" />
     <rect
-       style="fill:#58a680;fill-opacity:1;stroke:#14191f;stroke-width:9.16619;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.707692"
+       style="fill:#58a680;fill-opacity:1;stroke:#0c0b0b;stroke-width:10.06600201;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect31-3"
        width="89.503403"
        height="295.26529"
@@ -59,7 +59,7 @@
        y="-325.13379"
        transform="matrix(0.00244411,0.99999701,-0.99999444,0.00333507,0,0)" />
     <rect
-       style="fill:#d47800;fill-opacity:1;stroke:#14191f;stroke-width:9.16619;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.707692"
+       style="fill:#d47800;fill-opacity:1;stroke:#0c0b0b;stroke-width:10.06600201;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect31-3-7"
        width="89.503403"
        height="361.1926"
@@ -67,7 +67,7 @@
        y="-388.84897"
        transform="matrix(0.00244411,0.99999701,-0.99999444,0.00333507,0,0)" />
     <rect
-       style="fill:#ffdd55;fill-opacity:1;stroke:#14191f;stroke-width:9.16619;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.707692"
+       style="fill:#ffdd55;fill-opacity:1;stroke:#0c0b0b;stroke-width:10.06600201;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect31-3-7-5"
        width="89.503403"
        height="218.39996"

@@ -1197,9 +1197,7 @@ class App(QMainWindow):
 
         vcf_file = os.path.join(self.outputdir, 'snps.vcf.gz')
         snprecs, smat = tools.core_alignment_from_vcf(vcf_file, missing=True)
-        #outfasta = os.path.join(self.outdir, 'core.fa')
-        #SeqIO.write(snprecs, outfasta, 'fasta')
-        #write out sites matrix as txt file
+        #write out missing sites matrix as txt file
         smat.to_csv(os.path.join(self.outputdir,'core_missing.txt'), sep=' ')
         missing = smat[smat=='N'].count().sort_values()
 

@@ -79,6 +79,7 @@ if not os.path.exists(config_path):
         os.makedirs(config_path)
 
 defaults = {'threads':4, 'labelsep':'_', 'labelindex':0,
+            'manifest': None,
             'trim':False, 'unmapped':False, 'quality':25,
             'aligner': 'bwa', 'platform': 'illumina', 'species': None,
             'filters': default_filter, 'custom_filters': False, 'mask': None,
@@ -436,6 +437,7 @@ def mpileup_multiprocess(bam_files, ref, outpath, threads=4, callback=None):
     t=time.time()-st
     print ('took %s seconds' %str(round(t,3)))
     rawbcf = os.path.join(outpath,'raw.bcf')
+    print (outfiles)
     bcf_files = ' '.join(outfiles)
     cmd = '{bc} merge --threads {t} -o {r} {b}'.format(b=bcf_files,r=rawbcf, bc=bcftoolscmd,t=threads)
     print (cmd)
@@ -515,13 +517,13 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     rawbcf = os.path.join(outpath,'raw.bcf')
     bcftoolscmd = tools.get_cmd('bcftools')
     if not os.path.exists(rawbcf) or overwrite == True:
-        print ('running mpileup..')
+        print ('running mpileup for %s files..' %len(bam_files))
         if threads == 1:
             bam_files = ' '.join(bam_files)
             cmd = '{bc} mpileup -a {a} --max-depth 500 -O b --min-MQ 60 -o {o} -f {r} {b}'\
                 .format(bc=bcftoolscmd,r=ref, b=bam_files, o=rawbcf, a=annotatestr)
-            print (cmd)
-            subprocess.check_output(cmd, shell=True)
+            #print (cmd)
+            tmp = subprocess.check_output(cmd, shell=True)
         #or use mpileup in parallel to speed up
         else:
             rawbcf = mpileup_parallel(bam_files, ref, outpath, threads=threads,
@@ -576,7 +578,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     if mask != None:
         mask_filter(snpsout, mask, outdir=outpath, overwrite=True)
         mask_filter(indelsout, mask, outdir=outpath, overwrite=True)
-        
+
     #custom filters
     if custom_filters == True:
         site_proximity_filter(snpsout, outdir=outpath, overwrite=True)
@@ -664,9 +666,10 @@ def site_proximity_filter(vcf_file, dist=10, overwrite=False, outdir=None):
         overwrite: whether to overwrite the vcf
     """
 
-    #get vcf into dataframe
-    df = tools.vcf_to_dataframe(vcf_file)
-    df = df[df.REF != df.ALT]
+    print('applying proximity filter..')
+    #get vcf positions into dataframe
+    df = tools.get_vcf_positions(vcf_file)
+    #print (df)
     sites = list(df.pos.unique())
     found = []
     #check distances in sites per sample
@@ -766,6 +769,12 @@ def run_bamfiles(bam_files, ref, gff_file=None, mask=None, outdir='.', threads=4
     vcf_file = variant_calling(bam_files, ref, outdir, threads=threads,
                                    gff_file=gff_file, mask=mask, sep=sep,
                                    **kwargs)
+    run_vcf(vcf_file, outdir, threads=threads)
+    return
+
+def run_vcf(vcf_file, outdir, threads=8):
+    """Run steps on a final vcf file to get core alignment, snp matrix and tree"""
+
     print ('getting core alignment..')
     snprecs, smat = tools.core_alignment_from_vcf(vcf_file)
     outfasta = os.path.join(outdir, 'core.fa')
@@ -774,9 +783,10 @@ def run_bamfiles(bam_files, ref, gff_file=None, mask=None, outdir='.', threads=4
     aln = AlignIO.read(outfasta, 'fasta')
     #remove ref
     aln = aln[1:]
+    print ('computing snp distance matrix..')
     snp_dist = tools.snp_dist_matrix(aln)
     snp_dist.to_csv(os.path.join(outdir,'snpdist.csv'), sep=',')
-    treefile = trees.run_RAXML(outfasta, outpath=outdir)
+    treefile = trees.run_RAXML(outfasta, outpath=outdir, threads=threads)
     ls = len(smat)
     trees.convert_branch_lengths(treefile,os.path.join(outdir,'tree.newick'), ls)
     return
@@ -788,7 +798,7 @@ def make_mask_file_mbovis(filename=None):
     g['gene'] = g.gene.fillna('')
     g=g[(g.gene.str.contains('PE_PGRS') | g.gene.str.contains('PPE')) & (g.feat_type=='CDS') | (g.feat_type=='repeat_region')]
     lines = []
-    for i,r in g.iterrows():  
+    for i,r in g.iterrows():
         l = 'LT708304.1 \t {s}\t{e}\t{g}\t{t}'.format(s=r.start,e=r.end,g=r.gene,t=r.locus_tag)
         #print (l)
         lines.append(l)
@@ -796,7 +806,7 @@ def make_mask_file_mbovis(filename=None):
     if filename != None:
         with open(filename, 'w') as fp:
             for l in lines:
-                fp.write("%s\n" %l)     
+                fp.write("%s\n" %l)
     return
 
 class Logger(object):
@@ -876,14 +886,21 @@ class WorkFlow(object):
             self.reference = mbovis_genome
             self.gb_file = mbovis_gb
 
-        self.filenames = get_files_from_paths(self.input)
         if self.threads == None:
             import multiprocessing
             self.threads = multiprocessing.cpu_count()
         else:
             self.threads = int(self.threads)
-        df = get_samples(self.filenames, sep=self.labelsep, index=self.labelindex)
-        df = get_pivoted_samples(df)
+
+        if self.manifest != None:
+            print ('using manifest file for samples')
+            df = pd.read_csv(self.manifest)            
+        else:
+            #get files from input folder(s)
+            self.filenames = get_files_from_paths(self.input)
+            df = get_samples(self.filenames, sep=self.labelsep, index=self.labelindex)
+            df = get_pivoted_samples(df)
+            
         if df is None:
             return
         if len(df) == 0:
@@ -996,8 +1013,9 @@ class WorkFlow(object):
 
         print ('Done. Sample summary:')
         print ('---------------------')
-        pd.set_option('display.max_rows', 150)
-        print (samples.drop(columns=list(samples.filter(regex='filename'))))
+        #pd.set_option('display.max_rows', 150)
+        #print (samples.drop(columns=list(samples.filter(regex='filename'))))
+        print ('%s samples processed' %len(samples))
         print ()
 
         if self.buildtree == True:
@@ -1045,6 +1063,8 @@ def main():
     parser = ArgumentParser(description='snipgenie CLI tool. https://github.com/dmnfarrell/snipgenie')
     parser.add_argument("-i", "--input", action='append', dest="input", default=[],
                         help="input folder(s)", metavar="FILE")
+    parser.add_argument("-M", "--manifest", dest="manifest", default=[],
+                        help="manifest file with samples, optional - overrides input", metavar="FILE")
     #parser.add_argument("-l", "--labels", dest="labels", default=[],
     #                    help="sample labels file, optional", metavar="FILE")
     parser.add_argument("-e", "--labelsep", dest="labelsep", default='_',

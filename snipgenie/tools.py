@@ -808,6 +808,7 @@ def get_vcf_samples(filename):
 def vcf_to_dataframe(vcf_file):
     """
     Convert a multi sample bcf/vcf to dataframe. Records each samples FORMAT fields.
+    May use a lot of memory for large vcfs!
     Args:
         vcf_file: input multi sample vcf
     Returns: pandas DataFrame
@@ -847,6 +848,30 @@ def vcf_to_dataframe(vcf_file):
     res = res[~res.start.isnull()]
     res['pos'] = res.pos.astype(int)
     #res['end'] = res.end.astype(int)
+    return res
+
+def get_vcf_positions(vcf_file):
+    """Extract all positions from vcf per sample into a dataframe.
+      Used in site proxmity filtering."""
+    
+    import vcf
+    from gzip import open as gzopen
+    ext = os.path.splitext(vcf_file)[1]
+    if ext == '.gz':
+        file = gzopen(vcf_file, "rt")
+    else:
+        file = open(vcf_file)
+    vcf_reader = vcf.Reader(file,'r')    
+       
+    res=[]
+    cols = ['sample','pos']
+    for rec in vcf_reader:
+        x = []
+        for sample in rec.samples:
+            row = [sample.sample, rec.POS]            
+            res.append(row)
+        
+    res = pd.DataFrame(res,columns=cols)
     return res
 
 def bcftools_query(bcf_file, positions=[], field='AD'):

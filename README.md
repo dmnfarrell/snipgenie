@@ -7,7 +7,7 @@
 
 _SNiPgenie_ is a tool for microbial variant calling and phylogenetic analysis from raw read data. It was primarily written to be used with bacterial isolates of M. bovis but can be applied to other species. You need a good quality reference genome to align to. Anyone interested in using the software is encouraged to make suggestions on improving or adding features.
 
-This software is written in Python. It was developed on Ubuntu linux but is designed to also run on Windows 10 with a standalone application. The GUI is made using the Qt toolkit using PyQt5/PySide2.
+This software is written in Python. It was developed on Ubuntu linux but can also run on Windows 10 via WSL. The GUI is made using the Qt toolkit using PyQt5/PySide2.
 
 ## Current Features
 
@@ -23,7 +23,7 @@ This software is written in Python. It was developed on Ubuntu linux but is desi
 
 ## Installation
 
-### Linux 
+### Linux
 
 `pip install -e git+https://github.com/dmnfarrell/snipgenie.git#egg=snipgenie`
 
@@ -78,41 +78,51 @@ Run `snipgenie` for the cli or `snipgenie-gui` for the desktop version. You requ
 
 This will run the entire process based on a set of options given at the terminal::
 ```
--h, --help            show this help message and exit
--i FILE, --input FILE
-                      input folder(s)
--e LABELSEP, --labelsep LABELSEP
-                      symbol to split the sample labels on
--r FILE, --reference FILE
-                      reference genome filename
--S SPECIES, --species SPECIES
-                      set the species reference genome, overrides -r
--g FILE, --genbank_file FILE
-                      annotation file, optional
--t THREADS, --threads THREADS
-                      cpu threads to use
--w, --overwrite       overwrite intermediate files
--T, --trim            whether to trim fastq files
--U, --unmapped        whether to save unmapped reads
--Q QUALITY, --quality QUALITY
-                      right trim quality, default 25
--f FILTERS, --filters FILTERS
-                      variant calling post-filters
--m MASK, --mask MASK  mask regions from a bed file
--c, --custom          apply custom filters
--p PLATFORM, --platform PLATFORM
-                      sequencing platform, change to ont if using oxford nanopore
--a ALIGNER, --aligner ALIGNER
-                      aligner to use, bwa, subread, bowtie or minimap2
--b, --buildtree       whether to build a phylogenetic tree, requires RaXML
--N BOOTSTRAPS, --bootstraps BOOTSTRAPS
-                      number of bootstraps to build tree
--o FILE, --outdir FILE
-                      Results folder
--q, --qc              Get version
--d, --dummy           Check samples but don't run
--x, --test            Test run
--v, --version         Get version
+  -h, --help            show this help message and exit
+  -i FILE, --input FILE
+                        input folder(s)
+  -M FILE, --manifest FILE
+                        manifest file with samples, optional
+                        overrides input
+  -e LABELSEP, --labelsep LABELSEP
+                        symbol to split the sample labels on
+  -x LABELINDEX, --labelindex LABELINDEX
+                        position to extract label in split filenames
+  -r FILE, --reference FILE
+                        reference genome filename
+  -S SPECIES, --species SPECIES
+                        set the species reference genome, overrides -r.
+                        possible values are
+                        Mbovis-AF212297, MTB-H37Rv, MAP-K10,
+                        M.smegmatis-MC2155,
+                        Mycoplasmabovis-PG45, Sars-Cov-2
+  -g FILE, --genbank_file FILE
+                        annotation file, optional
+  -t THREADS, --threads THREADS
+                        cpu threads to use
+  -w, --overwrite       overwrite intermediate files
+  -T, --trim            whether to trim fastq files
+  -U, --unmapped        whether to save unmapped reads
+  -Q QUALITY, --quality QUALITY
+                        right trim quality, default 25
+  -f FILTERS, --filters FILTERS
+                        variant calling post-filters
+  -m MASK, --mask MASK  mask regions from a bed file
+  -c, --custom          apply custom filters
+  -p PLATFORM, --platform PLATFORM
+                        sequencing platform, change to ont if
+                        using oxford nanopore
+  -a ALIGNER, --aligner ALIGNER
+                        aligner to use, bwa, subread, bowtie or minimap2
+  -b, --buildtree       whether to build a phylogenetic tree, requires RaXML
+  -N BOOTSTRAPS, --bootstraps BOOTSTRAPS
+                        number of bootstraps to build tree
+  -o FILE, --outdir FILE
+                        Results folder
+  -q, --qc              Get version
+  -d, --dummy           Check samples but don't run
+  -X, --test            Test run
+  -v, --version         Get version
 ```
 
 ### Examples
@@ -180,6 +190,17 @@ data/
 ```
 
 Filenames are parsed and a sample name is extracted for each pair (if paired end). This is simply done by splitting on the _ symbol. So a file called /path/13-11594_S85_L001-4_R1_001.fastq.gz will be given a sample name 13-11594. As long as the sample names are unique this is ok. If you had a file names like A_2_L001-4_R1_001, A_3_L001-4_R1_001 you should split on '-' instead. You can specify this in the labelsep option. The workflow won't run unless sample names are unique.
+
+### Manifest file
+
+You can use a manifest file (-M) with the sample names and files in a table if parsing folders won't work for you. This could be useful if your files have non-unique names but are in different subfolders. This overrides the `input` option. The format of the file is below. You should give the full path of each file. Sample names have to be unique.
+
+```
+sample,filename1,filename2
+S1,/folder/S1/cleaned_1.fastq.gz,/folder/S1/cleaned_2.fastq.gz
+S2,/folder/S2/cleaned_1.fastq.gz,/folder/S2/cleaned_2.fastq.gz
+S3,/folder/S3/cleaned_1.fastq.gz,/folder/S3/cleaned_2.fastq.gz
+```
 
 ## Outputs
 

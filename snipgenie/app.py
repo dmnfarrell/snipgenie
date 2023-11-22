@@ -894,13 +894,13 @@ class WorkFlow(object):
 
         if self.manifest != None:
             print ('using manifest file for samples')
-            df = pd.read_csv(self.manifest)            
+            df = pd.read_csv(self.manifest)
         else:
             #get files from input folder(s)
             self.filenames = get_files_from_paths(self.input)
             df = get_samples(self.filenames, sep=self.labelsep, index=self.labelindex)
             df = get_pivoted_samples(df)
-            
+
         if df is None:
             return
         if len(df) == 0:
@@ -992,14 +992,13 @@ class WorkFlow(object):
                                         filters=self.filters,
                                         mask=self.mask,
                                         custom_filters=self.custom_filters,
-                                        #sep='',
                                         overwrite=self.overwrite,
                                         tempdir=self.tempdir)
         print (self.vcf_file)
         print ()
         print ('making SNP matrix')
         print ('-----------------')
-        snprecs, smat = tools.core_alignment_from_vcf(self.vcf_file, omit=self.omit_samples)
+        snprecs, smat = tools.core_alignment_from_vcf(self.vcf_file)
         outfasta = os.path.join(self.outdir, 'core.fa')
         SeqIO.write(snprecs, outfasta, 'fasta')
         #write out sites matrix as txt file
@@ -1063,7 +1062,7 @@ def main():
     parser = ArgumentParser(description='snipgenie CLI tool. https://github.com/dmnfarrell/snipgenie')
     parser.add_argument("-i", "--input", action='append', dest="input", default=[],
                         help="input folder(s)", metavar="FILE")
-    parser.add_argument("-M", "--manifest", dest="manifest", default=[],
+    parser.add_argument("-M", "--manifest", dest="manifest", default=None,
                         help="manifest file with samples, optional - overrides input", metavar="FILE")
     #parser.add_argument("-l", "--labels", dest="labels", default=[],
     #                    help="sample labels file, optional", metavar="FILE")
@@ -1107,7 +1106,7 @@ def main():
     #parser.add_argument("-O", "--omit", dest="omit_samples",
     #                    help="List of sample names to omit of required", metavar="FILE")
     parser.add_argument("-q", "--qc", dest="qc", action="store_true",
-                        help="Get version")
+                        help="QC report")
     parser.add_argument("-d", "--dummy", dest="dummy",  action="store_true",
                         default=False, help="Check samples but don't run")
     parser.add_argument("-X", "--test", dest="test",  action="store_true",

@@ -499,19 +499,17 @@ def mpileup_parallel(bam_files, ref, outpath, threads=4, callback=None, tempdir=
         os.remove(f)
     return rawbcf
 
-def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
+def variant_calling(bam_files, ref, outpath, samples=None, threads=4,
                     callback=None, overwrite=False, filters=None, gff_file=None,
                     mask=None, tempdir=None, sep='_',
                     custom_filters=False, **kwargs):
     """Call variants with bcftools"""
 
     st = time.time()
-    #always write out new samples.txt file for reheader step
-    samples = get_samples_from_bams(bam_files, sep=sep)
-    #print (samples)
-    write_samples(samples[['sample']], outpath)
-    sample_file = os.path.join(outpath,'samples.txt')
-
+    if samples is not None:
+        #write out new samples.txt file for reheader step
+        write_samples(samples[['sample']], outpath)
+        sample_file = os.path.join(outpath,'samples.txt')
     if filters == None:
         filters = default_filter
     rawbcf = os.path.join(outpath,'raw.bcf')
@@ -551,7 +549,7 @@ def variant_calling(bam_files, ref, outpath, relabel=True, threads=4,
     print ('%s sites called as variants' %sites)
 
     #relabel samples in vcf header
-    if relabel == True:
+    if samples is not None:
         relabel_vcfheader(vcfout, sample_file)
 
     #filters
@@ -752,7 +750,7 @@ def run_bamfiles(bam_files, ref, gff_file=None, mask=None, outdir='.', threads=4
     Run workflow with bam files from a previous sets of alignments.
     We can arbitrarily combine results from multiple other runs this way.
     kwargs are passed to variant_calling method.
-    Should write a samples.txt file in the outdir in case vcf header is to be
+    Should write a samples.txt file in the outdir if vcf header is to be
     relabelled.
     Args:
         bam_files: list of bam files
@@ -766,7 +764,10 @@ def run_bamfiles(bam_files, ref, gff_file=None, mask=None, outdir='.', threads=4
         os.makedirs(outdir, exist_ok=True)
 
     print ('%s samples were loaded:' %len(bam_files))
-    vcf_file = variant_calling(bam_files, ref, outdir, threads=threads,
+
+    samples = get_samples_from_bams(bam_files, sep=sep)
+    vcf_file = variant_calling(bam_files, ref, outdir,
+                                   samples=samples, threads=threads,
                                    gff_file=gff_file, mask=mask, sep=sep,
                                    **kwargs)
     run_vcf(vcf_file, outdir, threads=threads)
@@ -985,8 +986,9 @@ class WorkFlow(object):
         print ()
         print ('calling variants')
         print ('----------------')
-        bam_files = list(samples.bam_file.unique())
+        bam_files = list(samples.bam_file)
         self.vcf_file = variant_calling(bam_files, self.reference, self.outdir,
+                                        samples=samples,
                                         threads=self.threads,
                                         gff_file=self.gff_file,
                                         filters=self.filters,

@@ -1066,12 +1066,6 @@ def main():
                         help="input folder(s)", metavar="FILE")
     parser.add_argument("-M", "--manifest", dest="manifest", default=None,
                         help="manifest file with samples, optional - overrides input", metavar="FILE")
-    #parser.add_argument("-l", "--labels", dest="labels", default=[],
-    #                    help="sample labels file, optional", metavar="FILE")
-    parser.add_argument("-e", "--labelsep", dest="labelsep", default='_',
-                        help="symbol to split the sample labels on")
-    parser.add_argument("-x", "--labelindex", dest="labelindex", default=0,
-                        help="position to extract label in split filenames")
     parser.add_argument("-r", "--reference", dest="reference", default=None,
                         help="reference genome filename", metavar="FILE")
     parser.add_argument("-S", "--species", dest="species", default=None,
@@ -1081,6 +1075,10 @@ def main():
                         help="annotation file, optional", metavar="FILE")
     parser.add_argument("-t", "--threads", dest="threads", default=4,
                         help="cpu threads to use")
+    parser.add_argument("-e", "--labelsep", dest="labelsep", default='_',
+                        help="symbol to split the sample labels on if parsing filenames")
+    parser.add_argument("-x", "--labelindex", dest="labelindex", default=0,
+                        help="position to extract label in split filenames")
     parser.add_argument("-w", "--overwrite", dest="overwrite", action="store_true", default=False,
                         help="overwrite intermediate files")
     parser.add_argument("-T", "--trim", dest="trim", action="store_true", default=False,

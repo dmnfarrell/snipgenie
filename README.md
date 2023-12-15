@@ -189,11 +189,11 @@ data/
     └── ERR1588785_2.fastq.gz
 ```
 
-Filenames are parsed and a sample name is extracted for each pair (if paired end). This is simply done by splitting on the _ symbol. So a file called /path/13-11594_S85_L001-4_R1_001.fastq.gz will be given a sample name 13-11594. As long as the sample names are unique this is ok. If you had a file names like A_2_L001-4_R1_001, A_3_L001-4_R1_001 you should split on '-' instead. You can specify this in the labelsep option. The workflow won't run unless sample names are unique.
+Filenames are parsed and a sample name is extracted for each pair (if paired end). This is simply done by splitting on the _ symbol by default. So a file called /path/13-11594_S85_L001-4_R1_001.fastq.gz will be given a sample name 13-11594. As long as the sample names are unique this is ok. If you had a file names like A_2_L001-4_R1_001, A_3_L001-4_R1_001 you should split on '-' instead. You can specify this in the `labelsep` option. The workflow won't run unless sample names are unique.
 
 ### Manifest file
 
-You can use a manifest file (-M) with the sample names and files in a table if parsing folders won't work for you. This could be useful if your files have non-unique names but are in different subfolders. This overrides the `input` option. The format of the file is below. You should give the full path of each file. Sample names have to be unique.
+You can use a manifest file (-M) with the sample names and files in a table if parsing folders won't work for you. This could be useful if your files have non-unique names but are in different subfolders. This overrides the `input` option. The format of the file is below. You should give the full path of each file. Sample names have to be unique and you should provide an entry for all the samples you want to run.
 
 ```
 sample,filename1,filename2
@@ -232,7 +232,7 @@ import snipgenie
 args = {'threads':8, 'outdir': 'results', 'labelsep':'-',
         'input':['/my/folder/',
                  '/my/other/folder'],
-        'reference': None, 'overwrite':False}
+        'reference': 'sequence.fa', 'overwrite':False}
 W = snipgenie.app.WorkFlow(**args)
 W.setup()
 W.run()
@@ -250,7 +250,7 @@ You can view a short video on using the GUI [here](https://www.youtube.com/watch
 
 _The run was stopped during execution, can it be resumed?_
 
-Yes, by default the program won't overwrite intermediate files when re-run. So just run it again. Make sure there are no old tmp.****.bam files in the mapped folder if an alignment got interrupted.
+Yes, by default the program won't overwrite intermediate files when re-run. So just run it again. Make sure there are no old tmp.****.bam files in the mapped folder if an alignment got interrupted. Variant calling can't be resumed though, so it will have to start again if interrupted.
 
 _My sample files are not being parsed properly._
 

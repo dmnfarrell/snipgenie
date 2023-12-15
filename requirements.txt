@@ -2,6 +2,6 @@ pandas
 numpy
 biopython
 matplotlib
-pyvcf
+pyvcf3
 pyfaidx
 pyside2

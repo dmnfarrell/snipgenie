@@ -245,7 +245,10 @@ def update_snp_dist_matrix(aln, snpdist=None):
 def alignment_from_snps(df):
     """MultipleSeqAlignment object from core snps"""
 
-    df = df.set_index('pos').T
+    if 'pos' in df.columns:
+        df = df.set_index('pos')
+    #transpose
+    df = df.T
     seqs=[]
     for i,r in df.iterrows():
         s = ''.join(list(r))
@@ -255,12 +258,21 @@ def alignment_from_snps(df):
     return aln
 
 def combine_core_snps(core, new):
-    """Add new sample(s) to core snps by combining both tables."""
+    """
+    Add new sample(s) to a core snps file by combining both tables.
+    Args:
+        core: dataframe of core snps from core.txt
+        new: dataframe of new snps from core.txt
+    returns:
+        dataframe with combined snps
+    """
 
     #new=new.drop(columns='ref')
     ncols = new.columns[1:]
-    #print (ncols)
+    print (ncols)
     df = core.merge(new,on='pos',how='outer')
+    #print (df)
+    #fill first empty cols with ref
     for col in ncols:
         df[col] = df[col].fillna(df['ref_x'])
     currcols = core.columns
@@ -488,12 +500,12 @@ def blast_sequences(database, seqs, labels=None, **kwargs):
     df = blast_fasta(database, 'tempseq.fa', **kwargs)
     return df
 
-def kraken(file1, file2='', dbname='STANDARD16', threads=4):
+def kraken(file1, file2='', dbname='STANDARD16', threads=4, outfile='krakenreport.txt'):
     """Run kraken2 on single/paired end fastq files"""
 
     os.environ['KRAKEN2_DB_PATH'] = '/local/kraken2'
-    cmd = 'kraken2 -db {db} --report krakenreport.txt --threads {t} --paired {f1} {f2} > kraken.out'\
-            .format(f1=file1,f2=file2,t=threads,db=dbname)
+    cmd = 'kraken2 -db {db} --report {o} --threads {t} --paired {f1} {f2} > kraken.out'\
+            .format(f1=file1,f2=file2,t=threads,db=dbname,o=outfile)
     print (cmd)
     subprocess.check_output(cmd, shell=True)
     rep=pd.read_csv('krakenreport.txt',sep='\t',names=['perc_frag','n_frags_root','n_frags','rank_code','taxid','name'])
@@ -853,7 +865,7 @@ def vcf_to_dataframe(vcf_file):
 def get_vcf_positions(vcf_file):
     """Extract all positions from vcf per sample into a dataframe.
       Used in site proxmity filtering."""
-    
+
     import vcf
     from gzip import open as gzopen
     ext = os.path.splitext(vcf_file)[1]
@@ -861,16 +873,16 @@ def get_vcf_positions(vcf_file):
         file = gzopen(vcf_file, "rt")
     else:
         file = open(vcf_file)
-    vcf_reader = vcf.Reader(file,'r')    
-       
+    vcf_reader = vcf.Reader(file,'r')
+
     res=[]
     cols = ['sample','pos']
     for rec in vcf_reader:
         x = []
         for sample in rec.samples:
-            row = [sample.sample, rec.POS]            
+            row = [sample.sample, rec.POS]
             res.append(row)
-        
+
     res = pd.DataFrame(res,columns=cols)
     return res
 
@@ -970,7 +982,8 @@ def get_snp_matrix(df):
     x = x.fillna(0)
     return x
 
-def plot_fastq_qualities(filename, ax=None, limit=10000):
+def plot_fastq_qualities(filename, ax=None, limit=20000,
+                         title='per base sequence quality'):
     """Plot fastq qualities for illumina reads."""
 
     if not os.path.exists(filename):
@@ -1010,7 +1023,7 @@ def plot_fastq_qualities(filename, ax=None, limit=10000):
     ax.set_xlabel('position(bp)')
     ax.set_xlim((0,l))
     ax.set_ylim((0,40))
-    ax.set_title('per base sequence quality')
+    ax.set_title(title, fontsize=10)
     return
 
 def normpdf(x, mean, sd):
@@ -1034,12 +1047,13 @@ def plot_fastq_gc_content(filename, ax=None, limit=50000):
     """Plot fastq gc conent"""
 
     import pylab as plt
-    from Bio.SeqUtils import GC
+    from Bio.SeqUtils import gc_fraction
     if ax==None:
         f,ax=plt.subplots(figsize=(12,5))
+    plt.style.use('bmh')
     df = fastq_to_dataframe(filename, size=limit)
-    gc = df.seq.apply(lambda x: GC(x))
-    gc.hist(ax=ax,bins=150,color='black',grid=False,histtype='step',lw=2)
+    gc = df.seq.apply(lambda x: gc_fraction(x)*100)
+    gc.hist(ax=ax,bins=80,color='black',grid=False,histtype='step',lw=1)
     ax.set_xlim((0,100))
     x=np.arange(1,100,.1)
     meangc = round(gc.mean(),2)
@@ -1047,7 +1061,7 @@ def plot_fastq_gc_content(filename, ax=None, limit=50000):
     ax2=ax.twinx()
     ax2.plot(x,f)
     ax2.set_ylim(0,max(f))
-    ax.set_title('GC content. Mean=%s' %meangc,size=15)
+    ax.set_title('GC content. Mean=%s' %meangc,size=12)
     return
 
 def fastq_quality_report(filename, figsize=(7,5), **kwargs):
@@ -1385,3 +1399,25 @@ def get_spoligotypes(samples, spo=None):
     res = pd.DataFrame(res,columns=['sample','SB','code'])
     return res
 
+def make_mask_file(gb_file, outfile):
+    """
+    Make mask bed file from genbank annoation by finding repeat regions.
+    """
+
+    g = tools.genbank_to_dataframe(gb_file)
+    g['gene'] = g.gene.fillna('')
+    g = g[((g.gene.str.contains('PE') | g.gene.str.contains('PPE')) & (g.feat_type=='CDS')) | (g.feat_type=='repeat_region')]
+    if len(g)==0:
+        return
+    lines = []
+    #get chromosome/genome name (assumes only one)
+    chrom = g.iloc[0].id
+    for i,r in g.iterrows():
+        l = '{c} \t {s}\t{e}\t{g}\t{t}'.format(c=chrom,s=r.start,e=r.end,g=r.gene,t=r.locus_tag)
+        #print (l)
+        lines.append(l)
+    print ('found %s regions' %len(lines))
+    with open(outfile, 'w') as fp:
+        for l in lines:
+            fp.write("%s\n" %l)
+    return lines

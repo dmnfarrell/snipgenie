@@ -190,3 +190,12 @@ def minimap2_align(file1, file2, idx, out, platform='illumina', threads=4, overw
         print (cmd)
         result = subprocess.check_output(cmd, shell=True, stderr= subprocess.STDOUT)
     return
+
+def bam_index(bamfile):
+    """Index bam file"""
+
+    samtoolscmd = tools.get_cmd('samtools')
+    cmd = '{s} index {o}'.format(o=bamfile,s=samtoolscmd)
+    subprocess.check_output(cmd,shell=True)
+    print (cmd)
+    return

@@ -36,10 +36,10 @@ iconpath = os.path.join(module_path, 'icons')
 class Plugin(object):
     """Base Plugin class, should be inherited by any plugin"""
 
-    #capabilities can be 'gui', 'docked'
-    capabilities = []
+    capabilities = [] #can be 'gui', 'docked'
     requires = []
     menuentry = ''
+    enabled = True
 
     def __init__(self, parent=None):
         self.parent = parent

@@ -42,7 +42,7 @@ class ContaminationCheckerPlugin(Plugin):
     requires = ['']
     menuentry = 'Contamination Check'
     name = 'Contamination Check'
-    iconfile = 'dna.svg'
+    iconfile = 'contam.svg'
     side = 'right' #dock location to load plugin
 
     def __init__(self, parent=None):

@@ -41,7 +41,8 @@ class TestingPlugin(Plugin):
     name = 'Testing'
     iconfile = 'tests.svg'
     side = 'right' #dock location to load plugin
-
+    enabled = False
+    
     def __init__(self, parent=None, table=None):
         """Customise this and/or doFrame for your widgets"""
 

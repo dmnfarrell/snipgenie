@@ -63,7 +63,7 @@ widgetstyle = '''
     }
     QLabel {
         min-width: 60px;
-        width:80px;
+        width:100px;
     }
     QPlainTextEdit {
         max-height: 100px;
@@ -1077,6 +1077,10 @@ class App(QMainWindow):
         elif kwds['aligner'] == 'subread':
             aligners.build_subread_index(self.ref_genome)
 
+        if kwds['unmapped'] == True:
+            unmapped = os.path.join(self.outputdir, 'unmapped')
+        else:
+            unmapped = None
         print('Using reference genome: %s' %ref)
         path = os.path.join(self.outputdir, 'mapped')
         if not os.path.exists(path):
@@ -1085,6 +1089,7 @@ class App(QMainWindow):
                         threads=kwds['threads'],
                         aligner=kwds['aligner'],
                         platform=kwds['platform'],
+                        unmapped=unmapped,
                         callback=progress_callback.emit)
         self.update_table(new)
         #df.to_csv(os.path.join(self.outputdir,'samples.csv'),index=False)
@@ -1123,8 +1128,10 @@ class App(QMainWindow):
         tools.gff_bcftools_format(self.ref_gb, gff_file)
 
         bam_files = list(df.bam_file.dropna().unique())
+        samples = self.fastq_table.model.df
         print ('Calling with %s of %s samples aligned' %(len(bam_files), len(df)))
         self.results['vcf_file'] = app.variant_calling(bam_files, self.ref_genome, path,
+                                    samples=samples,
                                     threads=threads, relabel=True,
                                     overwrite=overwrite, filters=filters,
                                     gff_file=gff_file, mask=self.mask_file,
@@ -1397,41 +1404,34 @@ class App(QMainWindow):
         df = self.fastq_table.model.df
         row = self.fastq_table.getSelectedRows()[0]
         data = df.iloc[row]
+        sample = data['sample']
         rl = tools.get_fastq_read_lengths(data.filename1)
         if 'filename2' in df.columns:
             colnames = zip([data.name1, data.name2], [data.filename1, data.filename2])
         else:
             colnames = [[data.name1, data.filename1]]
+
+        fig,ax = plt.subplots(4,1, figsize=(6,7), dpi=100,
+                       facecolor=(1,1,1), edgecolor=(0,0,0))
+        axs=ax.flat
+        w = widgets.PlotWidget(self, figure=fig)
+        label = 'quality:'+sample
+        i=0
         for name,fname in colnames:
-            label = 'quality:'+name
             if label in self.get_tab_names():
                 return
-            w = widgets.PlotViewer(self)
-            fig,ax = plt.subplots(3,1, figsize=(7,5), dpi=100,
-                        facecolor=(1,1,1), edgecolor=(0,0,0))
-            axs=ax.flat
             if not os.path.exists(fname):
                 self.show_info('This file is missing.')
                 return
             if rl.mean()<800:
-                tools.plot_fastq_qualities(fname, ax=axs[0])
-            tools.plot_fastq_gc_content(fname, ax=axs[1])
-
-            c = app.blast_contaminants(fname)
-            #c.perc_hits.plot(kind='pie',ax=axs[2])
-            ax=axs[2]
-            c.perc_hits.plot(kind='bar',ax=ax)
-            labels = ax.get_xticklabels()
-            labels = [label.get_text().replace('_', '\n') for label in labels ]
-            ax.set_xticklabels(labels, rotation=0)
-            ax.set_ylabel('% total')
-            ax.set_title('contaminant check')
-
-            fig.suptitle('Qualities: %s' %name, fontsize=18)
-            plt.tight_layout()
-            w.set_figure(fig)
-            i = self.right_tabs.addTab(w, label)
-            self.right_tabs.setCurrentIndex(i)
+                tools.plot_fastq_qualities(fname, title=name, ax=axs[i])
+            tools.plot_fastq_gc_content(fname, ax=axs[i+1])
+            i+=2
+        fig.suptitle('Qualities: %s' %sample, fontsize=12)
+        plt.tight_layout()
+        #w.set_figure(fig)
+        idx = self.right_tabs.addTab(w, label)
+        self.right_tabs.setCurrentIndex(idx)
         return
 
     def read_distributon(self, row):
@@ -1982,6 +1982,8 @@ class App(QMainWindow):
         plgmenu = self.plugin_menu
         for plg in plugin.Plugin.__subclasses__():
             #print (plg)
+            if plg.enabled == False:
+                continue
             def func(p, **kwargs):
                 def new():
                    self.load_plugin(p)
@@ -1999,7 +2001,8 @@ class App(QMainWindow):
         from . import plugin
         self.toolbar.addSeparator()
         for plg in plugin.Plugin.__subclasses__():
-
+            if plg.enabled == False:
+                continue
             def func(p, **kwargs):
                 def new():
                    self.load_plugin(p)
@@ -2163,8 +2166,8 @@ class AppOptions(widgets.BaseOptions):
         separators = ['_','-','|',';','~','.']
         cpus = os.cpu_count()
         self.groups = {'general':['threads','labelsep','overwrite'],
-                        'trimming':['quality'],
-                        'aligners':['aligner','platform'],
+                        #'trimming':['quality'],
+                        'aligners':['aligner','platform','unmapped'],
                         'variant calling':['filters','proximity'],
                         #'blast':['db','identity','coverage']
                        }
@@ -2176,9 +2179,10 @@ class AppOptions(widgets.BaseOptions):
                     'items':aligners,'label':'aligner'},
                     'platform':{'type':'combobox','default':'illumina',
                     'items':platforms,'label':'platform'},
+                    'unmapped': {'type':'checkbox','default':0,'label':'save unmapped'},
                     'filters':{'type':'entry','default':app.default_filter},
                     'proximity': {'type':'checkbox','default':0},
-                    'quality':{'type':'spinbox','default':30}
+                    #'quality':{'type':'spinbox','default':30}
                     #'db':{'type':'combobox','default':'card',
                     #'items':[],'label':'database'},
                     #'identity':{'type':'entry','default':90},

@@ -52,6 +52,7 @@ msmeg_genome = os.path.join(sequence_path, 'Msmeg-MC2.fa')
 msmeg_gb = os.path.join(datadir, 'Msmeg-MC2.gb')
 mbovis_mask =  os.path.join(datadir, 'Mbovis_AF212297_mask.bed')
 mtb_mask =  os.path.join(datadir, 'MTB-H37Rv_mask.bed')
+map_mask =  os.path.join(datadir, 'MAP-K10_mask.bed')
 mycoplasmabovis_genome = os.path.join(sequence_path, 'Mpbovis-PG45.fa')
 mycoplasmabovis_gb = os.path.join(datadir, 'Mpbovis-PG45.gb')
 sarscov2_genome = os.path.join(sequence_path, 'Sars-Cov-2.fa')
@@ -60,7 +61,7 @@ sarscov2_gb = os.path.join(datadir, 'Sars-Cov-2.gb')
 preset_genomes = {
            'Mbovis-AF212297':{'sequence':mbovis_genome, 'gb':mbovis_gb, 'mask':mbovis_mask},
            'MTB-H37Rv':{'sequence':mtb_genome, 'gb':mtb_gb, 'mask':mtb_mask},
-           'MAP-K10':{'sequence':map_genome, 'gb':map_gb},
+           'MAP-K10':{'sequence':map_genome, 'gb':map_gb,'mask':map_mask},
            'M.smegmatis-MC2155':{'sequence':msmeg_genome, 'gb':msmeg_gb},
            'Mycoplasmabovis-PG45':{'sequence':mycoplasmabovis_genome, 'gb':mycoplasmabovis_gb},
            'Sars-Cov-2':{'sequence':sarscov2_genome, 'gb':sarscov2_gb}
@@ -326,7 +327,7 @@ def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform
         df: dataframe with sample names and filenames
         idx: index name
         outdir: output folder
-        unmapped_dir: folder for unmapped files if required
+        unmapped: folder for unmapped files if required
     """
 
     if not os.path.exists(outdir):
@@ -790,24 +791,6 @@ def run_vcf(vcf_file, outdir, threads=8):
     treefile = trees.run_RAXML(outfasta, outpath=outdir, threads=threads)
     ls = len(smat)
     trees.convert_branch_lengths(treefile,os.path.join(outdir,'tree.newick'), ls)
-    return
-
-def make_mask_file_mbovis(filename=None):
-    """Make mask bed file for M.bovis"""
-
-    g = tools.genbank_to_dataframe(mbovis_gb)
-    g['gene'] = g.gene.fillna('')
-    g=g[(g.gene.str.contains('PE_PGRS') | g.gene.str.contains('PPE')) & (g.feat_type=='CDS') | (g.feat_type=='repeat_region')]
-    lines = []
-    for i,r in g.iterrows():
-        l = 'LT708304.1 \t {s}\t{e}\t{g}\t{t}'.format(s=r.start,e=r.end,g=r.gene,t=r.locus_tag)
-        #print (l)
-        lines.append(l)
-    print (len(lines))
-    if filename != None:
-        with open(filename, 'w') as fp:
-            for l in lines:
-                fp.write("%s\n" %l)
     return
 
 class Logger(object):

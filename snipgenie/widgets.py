@@ -232,9 +232,9 @@ def getWidgetValues(widgets):
         val = None
         if i in widgets:
             w = widgets[i]
-            val = getWidgetValue(w)            
+            val = getWidgetValue(w)
             if val != None:
-                kwds[i] = val                
+                kwds[i] = val
     kwds = kwds
     return kwds
 
@@ -605,15 +605,13 @@ class PreferencesDialog(QDialog):
                 '%Y-%m-%d %H:%M:%S','%Y-%m-%d %H:%M',
                 '%d-%m-%Y %H:%M:%S','%d-%m-%Y %H:%M',
                 '%Y','%m','%d','%b']
-        plotstyles = ['','default', 'classic', 'fivethirtyeight',
-                     'seaborn-pastel','seaborn-whitegrid', 'ggplot','bmh',
-                     'grayscale','dark_background']
+        plotstyles = [''] + plt.style.available
         themes = QStyleFactory.keys() + ['dark','light']
 
         self.opts = {
                 'FONT':{'type':'font','default':options['FONT'],'label':'Font'},
                 'FONTSIZE':{'type':'spinbox','default':options['FONTSIZE'],'range':(5,40),
-                            'interval':1,'label':'Font Size'},               
+                            'interval':1,'label':'Font Size'},
                 'TIMEFORMAT':{'type':'combobox','default':options['TIMEFORMAT'],
                             'items':timeformats,'label':'Date/Time format'},
                 'PLOTSTYLE':{'type':'combobox','default':options['PLOTSTYLE'],
@@ -652,14 +650,14 @@ class PreferencesDialog(QDialog):
     def apply(self):
         """Apply options to current table"""
 
-        kwds = getWidgetValues(self.widgets)        
+        kwds = getWidgetValues(self.widgets)
         core.FONT = kwds['FONT']
         core.FONTSIZE = kwds['FONTSIZE']
-        core.TIMEFORMAT = kwds['TIMEFORMAT']    
+        core.TIMEFORMAT = kwds['TIMEFORMAT']
         core.PLOTSTYLE = kwds['PLOTSTYLE']
         core.DPI = kwds['DPI']
         core.ICONSIZE = kwds['ICONSIZE']
-        
+
         self.parent.refresh()
         self.parent.apply_settings()
         return
@@ -895,7 +893,7 @@ class FileViewer(QDialog):
         return
 
 class PlotWidget(FigureCanvas):
-    """Basic mpl plot view"""
+    """Basic mpl plot view."""
 
     def __init__(self, parent=None, figure=None, dpi=100, hold=False):
 
@@ -903,12 +901,31 @@ class PlotWidget(FigureCanvas):
             figure = Figure()
         super(PlotWidget, self).__init__(figure)
         self.setParent(parent)
-        self.figure = Figure(dpi=dpi)
+        if figure is not None:
+            self.fig = figure
+        else:
+            self.fig = Figure(dpi=dpi)
         self.canvas = FigureCanvas(self.figure)
-        self.ax = self.figure.add_subplot(111)
+        #self.ax = self.figure.add_subplot(111)
+
+    def clear(self):
+        """Clear plot"""
+
+        self.fig.clear()
+        self.canvas.draw()
+        return
+
+    def set_figure(self, fig):
+        """Set the figure if we have plotted elsewhere"""
+
+        self.clear()
+        self.fig = fig
+        self.canvas = FigureCanvas(fig)
+        self.canvas.draw()
+        return
 
 class BasePlotViewer(QWidget):
-    """matplotlib plots widget"""
+    """matplotlib plots widget base class"""
     def __init__(self, parent=None, title=''):
 
         super(BasePlotViewer, self).__init__(parent)
@@ -950,7 +967,7 @@ class BasePlotViewer(QWidget):
         a.triggered.connect(lambda: self.zoom(zoomin=True))
         self.toolbar.addAction(a)
         return
-    
+
     def set_figure(self, fig):
         """Set the figure if we have plotted elsewhere"""
 
@@ -967,7 +984,7 @@ class BasePlotViewer(QWidget):
         self.ax = self.fig.add_subplot(111)
         self.canvas.draw()
         return
-        
+
 class PlotOptions(BaseOptions):
     """Class to provide a dialog for plot options"""
 
@@ -978,9 +995,7 @@ class PlotOptions(BaseOptions):
         self.kwds = {}
         kinds = ['','bar','barh','hist','scatter','line','heatmap','pie','box']
         scales = ['linear','log']
-        style_list = ['default', 'classic', 'fivethirtyeight',
-                     'seaborn-pastel','seaborn-whitegrid', 'ggplot','bmh',
-                     'grayscale','dark_background']
+        style_list = plt.style.available
         markers = ['','o','.','^','v','>','<','s','+','x','p','d','h','*']
         linestyles = ['-','--','-.',':']
         fonts = get_fonts()
@@ -1505,7 +1520,7 @@ class TableViewer(QDialog):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.grid.addWidget(self.table)
         return
-    
+
 class SimpleBamViewer(QDialog):
     """Sequence records features viewer using dna_features_viewer"""
     def __init__(self, parent=None, filename=None):

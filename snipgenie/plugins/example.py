@@ -37,7 +37,8 @@ class ExamplePlugin(Plugin):
     name = 'Example Plugin'
     iconfile = 'tests.png'
     side = 'right'
-
+    enabled = False
+    
     def __init__(self, parent=None):
         """Customise this and/or doFrame for your widgets"""
 

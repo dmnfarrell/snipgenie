@@ -293,14 +293,21 @@ def reassign_clusters(clusters, labels, prevclusters):
     newlabels=list(final.cluster)
     return newlabels, final
 
-def get_cluster_levels(S, cluster_members=None, linkage='single'):
-    """Cluster distance matrix at different thresholds.
-    S: snp distance matrix
-    cluster_members (dataframe): previous sets of clusters at each level
-    linkage: linkage method - 'single', 'complete', 'ward'
+def get_cluster_levels(S, cluster_members=None, linkage='single',
+                       levels=None):
+    """Cluster a distance matrix at different threshold levels.
+    Args:
+        S: snp distance matrix
+        cluster_members (dataframe): previous sets of clusters at each level
+        linkage: linkage method - 'single', 'complete', 'ward'
+        levels: threshold levels, a list of 1 or more levels, optional
+    returns:
+        a dataframe of cluster labels for each sample n the matrix and 
+        a dataframe of cluster labels in long form
     """
 
-    levels = [1000,500,200,50,20,12,7,3]
+    if levels == None:
+        levels = [1000,500,200,50,20,12,7,3]
     df = pd.DataFrame(index=S.index)
     clusts=[]
     for t in levels:

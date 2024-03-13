@@ -58,6 +58,7 @@ class ContaminationCheckerPlugin(Plugin):
         self.refs = pd.DataFrame(columns=['name','description','filename','species'])
         self.ref_table = os.path.join(index_path,'contam_refs.csv')
         self.numreads = 100000
+        self.mismatches = 4
         self.create_widgets()
         self.fetch_defaults()
         if not os.path.exists(self.ref_table):
@@ -118,14 +119,23 @@ class ContaminationCheckerPlugin(Plugin):
 
         w = QLabel('Read limit:')
         vbox.addWidget(w)
-        self.readsentry = w = QLineEdit()
-        w.setText(str(self.numreads))
+        self.readsentry = w = QSpinBox()
+        w.setRange(10000,1e6)
+        #w.setMaximum(max)
+        #w.setMinimum(min)
+        w.setSingleStep(10000)
+        w.setValue(self.numreads)
         vbox.addWidget(w)
         w = QLabel('Use percentage:')
         vbox.addWidget(w)
         self.percbox = w = QCheckBox()
         w.setChecked(0)
         vbox.addWidget(w)
+        #w = QLabel('Mismatches:')
+        vbox.addWidget(w)
+        #self.mismatchentry = w = QSpinBox()
+        #w.setValue(self.mismatches)
+        #vbox.addWidget(w)
         button = QPushButton("Set Folder")
         button.clicked.connect(self.set_folder)
         vbox.addWidget(button)
@@ -412,19 +422,35 @@ class ContaminationCheckerPlugin(Plugin):
         return new
 
     def save_unmapped_reads(self):
-        """Save unmapped reads to new files - needs to be finished"""
+        """
+        Save unmapped reads to new fastq files - combine all selected genomes
+        and map them together, then keep the unmapped reads.
+        """
 
-        #get outdir
-        #outdir = QFileDialog.getExistingDirectory()
+        msg = 'This map all reads to the selected genomes and\n'\
+            +'output the unmapped reads. May take some time. Continue?\n'
+        reply = QMessageBox.question(self.parent, 'Confirm',
+                                msg,
+                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.No:
+            return
+
+        #combine ref genomes
+        checked = self.get_checked()
+        print (checked)
+        infiles = list(self.refs.loc[checked].filename)
+        #print (infiles)
+        outfile = 'joined.fasta'
+        tools.concatenate_fasta(infiles, outfile)
+
         outdir = os.path.join(self.parent.outputdir,'contam_unmapped')
+        print ('files will be saved to %s' %outdir)
         if not os.path.exists(outdir):
             os.makedirs(outdir, exist_ok=True)
         tempdir = tempfile.tempdir
         if not outdir:
             return
 
-        g = self.refs.loc['cow']
-        idx = g.filename
         def func(progress_callback):
             table = self.parent.fastq_table
             df = table.model.df.copy()
@@ -433,12 +459,11 @@ class ContaminationCheckerPlugin(Plugin):
             self.parent.opts.applyOptions()
             kwds = self.parent.opts.kwds
             threads = kwds['threads']
-
-            aligners.build_bwa_index(idx, show_cmd=False, overwrite=False)
+            aligners.build_bwa_index(outfile, show_cmd=False, overwrite=False)
             for i,r in new.iterrows():
                 label = r['sample']
                 out = os.path.join(tempdir,label+'.bam')
-                aligners.bwa_align(r.filename1, r.filename2, idx=idx, out=out, unmapped=outdir,
+                aligners.bwa_align(r.filename1, r.filename2, idx=outfile, out=out, unmapped=outdir,
                                     threads=threads, overwrite=False)
                 #remove temp bam
                 os.remove(out)
@@ -457,7 +482,8 @@ class ContaminationCheckerPlugin(Plugin):
             self.parent.opts.applyOptions()
             kwds = self.parent.opts.kwds
             threads = kwds['threads']
-            self.numreads = int(self.readsentry.text())
+            self.numreads = self.readsentry.value()
+            #mm = self.mismatchentry.value()
             checked = self.get_checked()
             outdir = self.outpath
             #align to each index in turn
@@ -480,7 +506,8 @@ class ContaminationCheckerPlugin(Plugin):
                     tmp2 = self.subset_reads(file2, outdir, self.numreads)
                     out = os.path.join(outdir,label+'.bam')
                     aligners.bwa_align(tmp1, tmp2, idx=g.filename, out=out,
-                                        threads=threads, overwrite=False)
+                                        threads=threads, overwrite=False,
+                                        filterstr='-q 60')
                     print (out)
 
         self.parent.run_threaded_process(func, self.run_completed)
@@ -536,7 +563,7 @@ class ContaminationCheckerPlugin(Plugin):
         Run when plugin is initially launched."""
 
         self.numreads = data['numreads']
-        self.readsentry.setText(str(self.numreads))
+        self.readsentry.setValue(self.numreads)
         checked = data['checked']
         #print (checked)
         for i in range(self.tree.topLevelItemCount()):

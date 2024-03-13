@@ -1126,7 +1126,6 @@ class PlotViewer(QWidget):
         self.style = kwds['style']
         self.set_style()
         self.data = data
-        #self.kind = kind
 
         d = data._get_numeric_data()
         xcol = d.columns[0]

@@ -49,7 +49,7 @@ def build_bwa_index(fastafile, path=None, show_cmd=True, overwrite=True):
     return
 
 def bwa_align(file1, file2, idx, out, threads=4, overwrite=False,
-              options='', filter=None, unmapped=None):
+              options='', filterstr='', unmapped=None):
     """Align reads to a reference with bwa.
     Args:
         file1, file2: fastq files
@@ -57,6 +57,7 @@ def bwa_align(file1, file2, idx, out, threads=4, overwrite=False,
         out: output bam file name
         options: extra command line options e.g. -k INT for seed length
         unmapped: path to folder for unmapped reads if required
+        filterstr: filter string, default is empty
     """
 
     bwacmd = tools.get_cmd('bwa')
@@ -71,9 +72,15 @@ def bwa_align(file1, file2, idx, out, threads=4, overwrite=False,
         filestr = '"{f}"'.format(f=file1)
     else:
         filestr = '"{f1}" "{f2}"'.format(f1=file1,f2=file2)
-    cmd = '{b} mem -M -t {t} {p} {i} {f} | {s} view {k} -bt - | {s} sort -o {o}'.format(
+    #if mismatches != None:
+    #    filterstr = '-e \'[NM]<=%s\'' %mismatches
+    #else:
+    #    filterstr = ''
+
+    cmd = '{b} mem -M -t {t} {p} {i} {f} | {s} view {k} {fs} -bt - | {s} sort -o {o}'.format(
                 b=bwacmd,i=idx,s=samtoolscmd,
-                f=filestr,o=out,t=threads,p=options,k=keepmapped)
+                f=filestr,o=out,t=threads,fs=filterstr,
+                p=options,k=keepmapped)
     if not os.path.exists(out) or overwrite == True:
         print (cmd)
         tmp = subprocess.check_output(cmd, shell=True)

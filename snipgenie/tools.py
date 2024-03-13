@@ -1096,6 +1096,18 @@ def concat_seqrecords(recs):
         concated += r.seq
     return SeqRecord(concated, id=recs[0].id)
 
+def concatenate_fasta(input_files, output_file, max_length=1e7):
+    """Join fasta files into one"""
+
+    with open(output_file, 'w') as output_handle:
+        for input_file in input_files:
+            for record in SeqIO.parse(input_file, 'fasta'):
+                if len(record.seq) > max_length:
+                    print (record.id, len(record.seq), 'too large')
+                    continue
+                SeqIO.write(record, output_handle, 'fasta')
+    return
+
 def core_alignment_from_vcf(vcf_file, callback=None, uninformative=False, missing=False, omit=None):
     """
     Get core SNP site calls as sequences from a multi sample vcf file.
@@ -1404,7 +1416,7 @@ def make_mask_file(gb_file, outfile):
     Make mask bed file from genbank annoation by finding repeat regions.
     """
 
-    g = tools.genbank_to_dataframe(gb_file)
+    g = genbank_to_dataframe(gb_file)
     g['gene'] = g.gene.fillna('')
     g = g[((g.gene.str.contains('PE') | g.gene.str.contains('PPE')) & (g.feat_type=='CDS')) | (g.feat_type=='repeat_region')]
     if len(g)==0:

@@ -516,6 +516,7 @@ class App(QMainWindow):
         self.settings_menu.addAction('Set Annnotation (genbank)', self.set_annotation)
         #self.settings_menu.addAction('Set Filters', self.set_filters)
         self.settings_menu.addAction('Add Mask File', self.add_mask)
+        self.settings_menu.addAction('Create Mask File', self.create_mask)
         self.settings_menu.addAction('Add Sample Meta Data', self.add_meta_data)
         self.settings_menu.addAction('View Meta Data', self.view_meta_data)
         self.settings_menu.addAction('Clean Up Files', self.clean_up)
@@ -940,6 +941,21 @@ class App(QMainWindow):
         filename = self.add_file("Bed files(*.bed)")
         self.mask_file = filename
         self.update_mask()
+        return
+
+    def create_mask(self):
+        """Automatically make mask file from annotation"""
+
+        if self.ref_gb is None:
+            return
+        outfile = os.path.join(self.ref_genome+'_mask.bed')
+        print (outfile)
+        tools.make_mask_file(self.ref_gb, outfile)
+        f = open(outfile,'r')
+        s = ''.join(f.readlines())
+        w = widgets.TextViewer(self, s, title='mask file')
+        #dlg.exec_()
+        self.right_tabs.addTab(w, 'mask')
         return
 
     def add_meta_data(self):

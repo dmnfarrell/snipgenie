@@ -492,7 +492,7 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.missing_sites, self.processing_completed))
         self.tools_menu.addAction('Mean GC content',
             lambda: self.run_threaded_process(self.add_gc_mean, self.processing_completed))
-        self.tools_menu.addAction('Fastq Qualities Report', self.fastq_quality_report)
+        self.tools_menu.addAction('QC Report', self.fastq_quality_report)
         self.tools_menu.addAction('Consensus Sequences', self.get_consensus_sequences)
 
         self.tools_menu.addAction('Show Annotation', self.show_ref_annotation)

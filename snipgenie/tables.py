@@ -107,7 +107,7 @@ class DataFrameWidget(QWidget):
                  }
 
         self.toolbar = toolbar = QToolBar("Toolbar")
-        toolbar.setIconSize(QtCore.QSize(core.ICONSIZE, core.ICONSIZE))
+        toolbar.setIconSize(QtCore.QSize(core.ICONSIZE-4, core.ICONSIZE-4))
         toolbar.setOrientation(QtCore.Qt.Vertical)
         widgets.addToolBarItems(toolbar, self, items)
         self.layout.addWidget(toolbar,1,2)

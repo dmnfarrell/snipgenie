@@ -70,6 +70,7 @@ class StrainTypingPlugin(Plugin):
     name = 'M.bovis Typing'
     iconfile = 'mbovis.svg'
     side = 'right'
+    enabled = False
 
     def __init__(self, parent=None):
         """Customise this and/or create_widgets"""

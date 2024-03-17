@@ -85,7 +85,7 @@ defaults = {'threads':4, 'labelsep':'_', 'labelindex':0,
             'aligner': 'bwa', 'platform': 'illumina', 'species': None,
             'filters': default_filter, 'custom_filters': False, 'mask': None,
             'reference': None, 'gb_file': None, 'overwrite':False,
-            'omit_samples': [], 'get_stats':True,
+            'omit_samples': [], 'get_stats':False,
             'buildtree':False, 'bootstraps':100}
 
 def check_platform():
@@ -160,6 +160,8 @@ def get_samples(filenames, sep='-', index=0):
      Args:
         sep: separator to split name on
         index: placement of label in split list, default 0
+    Returns:
+        a dataframe of samples, one row per filename
      """
 
     res = []
@@ -183,9 +185,15 @@ def get_samples(filenames, sep='-', index=0):
     df = df.drop_duplicates('filename')
     return df
 
-def get_pivoted_samples(df):
-    """Get pivoted samples by pair, returns a table with one sample per row and
-       filenames in separate columns.
+def get_pivoted_samples(df, allow_errors=False):
+    """
+    Args:
+        df: dataframe of sample names from get_samples()
+    Returns:
+        dataframe of pivoted samples
+    Get pivoted samples by pair, returns a table with one sample per row and
+    filenames in separate columns. If there are duplicates they will be printed
+    out and an error called. The return value is None if there is an error.
     """
 
     #check pairs
@@ -194,13 +202,16 @@ def get_pivoted_samples(df):
     if len(c)>0:
         print ('there seem to be duplicates:')
         print (c)
-
+        print ('here are the duplicate entries:')
+        print (df[df['sample'].isin(c.index)])
+        print ()
     p = pd.pivot_table(df,index='sample',columns='pair',values=['filename','name'],
                         aggfunc='first')
     if len(p.columns) > 4:
-        print ('error in filename parsing, check labelsep and labelindex options')
-        print (df[:10])
-        return
+        print ('error in filename parsing, check for duplicates or labelsep/labelindex options')
+        #print (p[:2])
+        if allow_errors == False:
+            return
     c = list(zip(p.columns.get_level_values(0),p.columns.get_level_values(1)))
     p.columns = [i[0]+str(i[1]) for i in c]
     p = p.fillna('')
@@ -860,7 +871,7 @@ class WorkFlow(object):
             s = self.species
             if s not in preset_genomes:
                 valid = '; '.join(list(preset_genomes.keys()))
-                print ('Invalid species value! Use one of: %s' %valid)
+                print ('Invalid preset species value! Use one of: %s' %valid)
                 return
             self.reference = preset_genomes[s]['sequence']
             self.gb_file = preset_genomes[s]['gb']
@@ -891,17 +902,22 @@ class WorkFlow(object):
             print ('no samples provided. files should be fastq.gz type')
             return False
 
-        df['read_length'] = df.filename1.apply(tools.get_fastq_info)
-        self.fastq_table = df
         sample_size = len(df['sample'].unique())
         print ('%s samples were loaded:' %sample_size)
         print ('----------------------')
         print (df)
         print ()
         s = check_samples_unique(df)
+        if self.get_stats == True:
+            print ('getting read lengths..')
+            df['read_length'] = df.filename1.apply(tools.get_fastq_info)
+        self.fastq_table = df
         if s == False:
             print ('samples names are not unique! try a different labelsep value.')
             return False
+        #save sample table
+        df.to_csv(os.path.join(self.outdir,'samples.csv'),index=False)
+
         print ('building index')
         if self.aligner == 'bwa':
             aligners.build_bwa_index(self.reference)
@@ -960,10 +976,10 @@ class WorkFlow(object):
         #    print ('%s samples have mean depth <15' %len(lowdepth))
 
         #mapping stats
-        #if self.get_stats == True:
-        #    print ('getting mapping stats..')
-        #    samples = mapping_stats(samples)
-        #save sample table
+        if self.get_stats == True:
+            print ('getting mapping stats..')
+            samples = mapping_stats(samples)
+        #save sample table agaim
         samples.to_csv(os.path.join(self.outdir,'samples.csv'),index=False)
 
         print ()
@@ -1073,7 +1089,7 @@ def main():
     parser.add_argument("-f", "--filters", dest="filters", default=default_filter,
                         help="variant calling post-filters" )
     parser.add_argument("-m", "--mask", dest="mask", default=None,
-                        help="mask regions from a bed file" )
+                        help="supply mask regions from a bed file" )
     parser.add_argument("-c", "--custom", dest="custom_filters", action="store_true", default=False,
                         help="apply custom filters" )
     parser.add_argument("-p", "--platform", dest="platform", default='illumina',
@@ -1090,6 +1106,8 @@ def main():
     #                    help="List of sample names to omit of required", metavar="FILE")
     parser.add_argument("-q", "--qc", dest="qc", action="store_true",
                         help="QC report")
+    parser.add_argument("-s", "--stats", dest="get_stats", action="store_true", default=False,
+                        help="Calculate read length and mapping stats")
     parser.add_argument("-d", "--dummy", dest="dummy",  action="store_true",
                         default=False, help="Check samples but don't run")
     parser.add_argument("-X", "--test", dest="test",  action="store_true",

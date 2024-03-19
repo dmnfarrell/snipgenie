@@ -486,6 +486,8 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.add_read_lengths, self.processing_completed))
         self.tools_menu.addAction('Get Mapping Stats',
             lambda: self.run_threaded_process(self.add_mapping_stats, self.processing_completed))
+        self.tools_menu.addAction('Get File Stats',
+            lambda: self.run_threaded_process(self.add_file_size, self.processing_completed))
         self.tools_menu.addAction('Get Depth/Coverage',
             lambda: self.run_threaded_process(self.add_mean_depth, self.processing_completed))
         self.tools_menu.addAction('Missing Sites',
@@ -1475,9 +1477,26 @@ class App(QMainWindow):
         df = self.fastq_table.model.df
         rows = self.fastq_table.getSelectedRows()
         data = df.iloc[rows]
+        if len(data) == 0:
+            print ('no rows selected')
+            return
         for i,r in data.iterrows():
-            total = tools.get_fastq_size(r.filename1)
+            total = tools.get_fastq_read_lengths(r.filename1)
             df.loc[i,'reads'] = total
+        return
+
+    def add_file_size(self, progress_callback):
+        """Get file size"""
+
+        df = self.fastq_table.model.df
+        rows = self.fastq_table.getSelectedRows()
+        data = df.iloc[rows]
+        if len(data) == 0:
+            print ('no rows selected')
+            return
+        for i,r in data.iterrows():
+            total = tools.get_file_size(r.filename1)
+            df.loc[i,'filesize_MB'] = total
         return
 
     def add_gc_mean(self, progress_callback):
@@ -1486,6 +1505,9 @@ class App(QMainWindow):
         df = self.fastq_table.model.df
         rows = self.fastq_table.getSelectedRows()
         data = df.iloc[rows]
+        if len(data) == 0:
+            print ('no rows selected')
+            return
         for i,r in data.iterrows():
             df.loc[i,'meanGC'] = tools.get_gc(r.filename1, limit=5e4).mean().round(2)
         return
@@ -1496,6 +1518,9 @@ class App(QMainWindow):
         df = self.fastq_table.model.df
         rows = self.fastq_table.getSelectedRows()
         data = df.iloc[rows]
+        if len(data) == 0:
+            print ('no rows selected')
+            return
 
         def get_stats(x):
             d = tools.samtools_flagstat(x)
@@ -1513,7 +1538,7 @@ class App(QMainWindow):
             else:
                 total = None
             if pd.isna(total) or total is None:
-                total = tools.get_fastq_size(r.filename1)
+                total = tools.get_fastq_read_lengths(r.filename1)
                 df.loc[i,'reads'] = total
             df.loc[i,'perc_mapped'] = round(s['primary']/(total*2)*100,2)
             #print (s['mapped'],total)

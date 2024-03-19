@@ -204,5 +204,5 @@ def bam_index(bamfile):
     samtoolscmd = tools.get_cmd('samtools')
     cmd = '{s} index {o}'.format(o=bamfile,s=samtoolscmd)
     subprocess.check_output(cmd,shell=True)
-    print (cmd)
+    #print (cmd)
     return

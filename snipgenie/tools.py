@@ -365,19 +365,25 @@ def get_fastq_info(filename):
     return int(rl.mean())
 
 def get_fastq_read_lengths(filename):
-    """Return fastq read lengths"""
-
-    df = fastq_to_dataframe(filename, size=20000)
-    name = os.path.basename(filename).split('.')[0]
-    return df.length
-
-def get_fastq_size(filename):
-    """Return fastq number of reads"""
+    """Return fastq mean number of reads"""
 
     cmd = 'expr $(zcat "%s" | wc -l) / 4' %filename
     tmp = subprocess.check_output(cmd, shell=True)
     l = int(tmp)
     return l
+
+def get_fastq_read_lengths_alt(filename):
+    """Return fastq read lengths"""
+
+    df = fastq_to_dataframe(filename, size=2000)
+    name = os.path.basename(filename).split('.')[0]
+    return df.length
+
+def get_file_size(filename):
+    """Get file size in MB"""
+
+    stats1 = os.stat(filename)
+    return round(stats1.st_size / (1024 * 1024),2)
 
 def clustal_alignment(filename=None, seqs=None, command="clustalw"):
     """

@@ -119,7 +119,8 @@ This will run the entire process based on a set of options given at the terminal
                         number of bootstraps to build tree
   -o FILE, --outdir FILE
                         Results folder
-  -q, --qc              Get version
+  -q, --qc              QC report
+  -s, --stats           Calculate read length and mapping stats, default False
   -d, --dummy           Check samples but don't run
   -X, --test            Test run
   -v, --version         Get version
@@ -264,6 +265,6 @@ _I have more than 1000 samples and the bcftools mpileup step fails._
 
 This is likely due to the limit on the number of files that can be opened at the same time. You can increase this limit on Linux using `ulimit -n 2000` or whatever value you need up to 9999. Note that for many samples this step could take several days to run.
 
-## BTBGENIE
+## Funding
 
-This is software is developed as part of the **BTBGENIE** project, a DAFM funded project for development of genomic epidemiology systems for tracking and eradicating Mycobacterium bovis in Ireland.
+This is software was developed with funding from the Irish Department of Agriculture and the Marine (DAFM) for development of genomic epidemiology systems for tracking and eradicating Mycobacterium bovis in Ireland.

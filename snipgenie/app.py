@@ -266,9 +266,9 @@ def mapping_stats(samples):
         s = get_stats(r.bam_file)
 
         samples.loc[i,'mapped'] = s['primary']
-        total = tools.get_fastq_size(r.filename1)
+        total = tools.get_fastq_read_lengths(r.filename1)
         #if 'filename2' in samples.columns:
-        #    total += tools.get_fastq_size(r.filename1)
+        #    total += tools.get_fastq_read_lengths(r.filename1)
         samples.loc[i,'reads'] = total
         samples.loc[i,'perc_mapped'] = round(s['primary']/(total*2)*100,2)
     return samples
@@ -362,6 +362,7 @@ def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform
                 file2 = None
 
         out = os.path.join(outdir,name+'.bam')
+        print (name)
         if aligner == 'bwa':
             aligners.bwa_align(file1, file2, idx=idx, out=out, unmapped=unmapped, **kwargs)
         elif aligner == 'bowtie':
@@ -375,10 +376,10 @@ def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform
             aligners.minimap2_align(file1, file2, idx=idx, out=out, platform=platform, **kwargs)
         bamidx = out+'.bai'
         if not os.path.exists(bamidx) or kwargs['overwrite']==True:
-            print('indexing %s' %name)
+            #print('indexing %s' %name)
             cmd = '{s} index {o}'.format(o=out,s=samtoolscmd)
             subprocess.check_output(cmd,shell=True)
-            print (cmd)
+            #print (cmd)
         #set bam file
         df.loc[i,'bam_file'] = os.path.abspath(out)
 

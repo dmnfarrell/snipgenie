@@ -482,7 +482,7 @@ class App(QMainWindow):
         self.tools_menu = QMenu('Tools', self)
         self.menuBar().addMenu(self.tools_menu)
 
-        self.tools_menu.addAction('Get Read Stats',
+        self.tools_menu.addAction('Get Read Lengths',
             lambda: self.run_threaded_process(self.add_read_lengths, self.processing_completed))
         self.tools_menu.addAction('Get Mapping Stats',
             lambda: self.run_threaded_process(self.add_mapping_stats, self.processing_completed))
@@ -490,10 +490,14 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.add_file_size, self.processing_completed))
         self.tools_menu.addAction('Get Depth/Coverage',
             lambda: self.run_threaded_process(self.add_mean_depth, self.processing_completed))
-        self.tools_menu.addAction('Missing Sites',
-            lambda: self.run_threaded_process(self.missing_sites, self.processing_completed))
+        self.tools_menu.addAction('Get Instrument',
+            lambda: self.run_threaded_process(self.add_instrument, self.processing_completed))
         self.tools_menu.addAction('Mean GC content',
             lambda: self.run_threaded_process(self.add_gc_mean, self.processing_completed))
+        self.tools_menu.addAction('Quality Check',
+            lambda: self.run_threaded_process(self.add_quality_test, self.processing_completed))
+        self.tools_menu.addAction('Missing Sites',
+            lambda: self.run_threaded_process(self.missing_sites, self.processing_completed))
         self.tools_menu.addAction('QC Report', self.fastq_quality_report)
         self.tools_menu.addAction('Consensus Sequences', self.get_consensus_sequences)
 
@@ -624,7 +628,7 @@ class App(QMainWindow):
         filename = self.proj_file
         data={}
         data['inputs'] = self.fastq_table.getDataFrame()
-        keys = ['outputdir','results','ref_genome','ref_gb','mask_file']
+        keys = ['outputdir','results','ref_genome','ref_gc','ref_gb','mask_file']
         for k in keys:
             if hasattr(self, k):
                 data[k] = self.__dict__[k]
@@ -686,6 +690,7 @@ class App(QMainWindow):
         if hasattr(self, 'treeviewer'):
             self.treeviewer.clear()
         self.ref_genome = None
+        self.ref_gc = None
         self.ref_gb = None
         self.mask_file = None
         self.projectlabel.setText('')
@@ -913,9 +918,11 @@ class App(QMainWindow):
         self.mask_file = None
         self.update_ref_genome()
         self.update_mask()
+        self.ref_gc = tools.get_fasta_gc(self.ref_genome)
         return
 
     def set_annotation(self, filename=None):
+        """Set annotation file for reference"""
 
         if filename == None:
             filename = self.add_file("Genbank Files(*.gb *.gbk *.gbff)")
@@ -928,6 +935,7 @@ class App(QMainWindow):
         return
 
     def set_mask(self, filename):
+        """Set mask file"""
 
         self.mask_file = filename
         self.update_mask()
@@ -1218,7 +1226,9 @@ class App(QMainWindow):
         return
 
     def missing_sites(self, progress_callback=None):
-        """Find missing sites in each sample - useful for quality control"""
+        """
+        Find missing sites in each sample - useful for quality control. Need to test this more.
+        """
 
         vcf_file = os.path.join(self.outputdir, 'snps.vcf.gz')
         snprecs, smat = tools.core_alignment_from_vcf(vcf_file, missing=True)
@@ -1423,7 +1433,8 @@ class App(QMainWindow):
         row = self.fastq_table.getSelectedRows()[0]
         data = df.iloc[row]
         sample = data['sample']
-        rl = tools.get_fastq_read_lengths(data.filename1)
+        rl = tools.get_fastq_read_lengths(data.filename1, size=20).mean()
+
         if 'filename2' in df.columns:
             colnames = zip([data.name1, data.name2], [data.filename1, data.filename2])
         else:
@@ -1441,7 +1452,7 @@ class App(QMainWindow):
             if not os.path.exists(fname):
                 self.show_info('This file is missing.')
                 return
-            if rl.mean()<800:
+            if rl<=800:
                 tools.plot_fastq_qualities(fname, title=name, ax=axs[i])
             tools.plot_fastq_gc_content(fname, ax=axs[i+1])
             i+=2
@@ -1461,11 +1472,11 @@ class App(QMainWindow):
         name=data['sample']
         rl = tools.get_fastq_read_lengths(data.filename1)
 
-        w = widgets.PlotViewer(self)
+        w = widgets.PlotWidget(self)
         fig,ax = plt.subplots(1,1, figsize=(7,5), dpi=65)
         rl.hist(bins=20,ax=ax)
         ax.set_title(name)
-        w.show_figure(fig)
+        w.set_figure(fig)
         label = 'readlengths:'+name
         i = self.tabs.addTab(w, label )
         self.tabs.setCurrentIndex(i)
@@ -1481,8 +1492,8 @@ class App(QMainWindow):
             print ('no rows selected')
             return
         for i,r in data.iterrows():
-            total = tools.get_fastq_read_lengths(r.filename1)
-            df.loc[i,'reads'] = total
+            total = tools.get_fastq_read_lengths(r.filename1).mean().round(1)
+            df.loc[i,'read_length'] = total
         return
 
     def add_file_size(self, progress_callback):
@@ -1509,7 +1520,7 @@ class App(QMainWindow):
             print ('no rows selected')
             return
         for i,r in data.iterrows():
-            df.loc[i,'meanGC'] = tools.get_gc(r.filename1, limit=5e4).mean().round(2)
+            df.loc[i,'meanGC'] = tools.get_fastq_gc(r.filename1, limit=5e4).mean().round(2)
         return
 
     def add_mapping_stats(self, progress_callback):
@@ -1538,11 +1549,11 @@ class App(QMainWindow):
             else:
                 total = None
             if pd.isna(total) or total is None:
-                total = tools.get_fastq_read_lengths(r.filename1)
+                total = tools.get_fastq_num_reads()
                 df.loc[i,'reads'] = total
             df.loc[i,'perc_mapped'] = round(s['primary']/(total*2)*100,2)
             #print (s['mapped'],total)
-        #self.fastq_table.setDataFrame(df)
+
         return
 
     def mapping_stats(self, row):
@@ -1580,6 +1591,39 @@ class App(QMainWindow):
             #df.loc[i,'depth'] = tools.get_mean_depth(r.bam_file)
             c = tools.samtools_coverage(r.bam_file)
             df.loc[i,cols] = c[cols]
+        return
+
+    def add_instrument(self, progress_callback):
+        """Try to get illumina instrument"""
+
+        df = self.fastq_table.model.df
+        data = self.get_selected()
+        for i,r in data.iterrows():
+            df.loc[i,'instrument'] = tools.get_instrument(r.filename1)
+        return
+
+    def add_quality_test(self, progress_callback):
+        """Use metrics to estimate a pass/fail quality measure"""
+
+        df = self.fastq_table.model.df
+        data = self.get_selected()
+
+        for i,r in data.iterrows():
+            val = ''
+            #gc difference to ref
+            if self.ref_gc!=None and abs(r.meanGC-self.ref_gc)>3:
+                val += ':gc'
+            #mean depth
+            if r.meandepth < 15:
+                val += ':meandepth'
+            #coverage
+            if r.coverage < 90:
+                val += ':coverage'
+            if val != '':
+               val = 'fail'+val
+            else:
+                val = 'pass'
+            df.loc[i, 'quality'] = val
         return
 
     def get_consensus_sequences(self):
@@ -1694,17 +1738,25 @@ class App(QMainWindow):
             print ('another process running')
             return
         self.running == True
-        df = self.fastq_table.model.df
+        #df = self.fastq_table.model.df
+
+        data = self.get_selected()
+        if len(data) == 0:
+            print ('no rows selected')
+            return
         out = os.path.join(self.outputdir,'qc_report.pdf')
-        if not os.path.exists(out):
-            def func(progress_callback):
-                tools.pdf_qc_reports(df.filename1, out)
-                import webbrowser
-                webbrowser.open_new(out)
-            self.run_threaded_process(func, self.processing_completed)
-        else:
-                import webbrowser
-                webbrowser.open_new(out)
+        #if os.path.exists(out):
+
+        def completed():
+            self.processing_completed()
+            import webbrowser
+            webbrowser.open_new(out)
+            print ('file saved to %s' %out)
+
+        def func(progress_callback):
+            tools.pdf_qc_reports(data.filename1, out)
+
+        self.run_threaded_process(func, completed)
         return
 
     def plot_dist_matrix(self):
@@ -1723,6 +1775,7 @@ class App(QMainWindow):
         return
 
     def show_scratchpad(self):
+        """Show the scratchpad window"""
 
         if not hasattr(self, 'scratchpad'):
             self.scratchpad = widgets.ScratchPad()
@@ -1785,24 +1838,6 @@ class App(QMainWindow):
         w.set_figure(fig)
         i = self.tabs.addTab(w, 'hetero')
         #fig.savefig(os.path.join(self.outputdir, 'hetero.png'))
-        return'''
-
-    '''def snp_typing(self, progress_callback):
-        """SNP typing for M.bovis"""
-
-        from . import snp_typing
-        df = self.fastq_table.model.df
-        #use ALL snp sites including uninformative
-        if not os.path.exists(self.snp_matrix):
-            print ('You need to create a SNP alignment first')
-            return
-        snpmat = pd.read_csv(self.snp_matrix, sep=' ',index_col=0)
-        #print (nucmat)
-        rows = self.fastq_table.getSelectedRows()
-        data = df.iloc[rows]
-        snptable = snp_typing.clade_snps
-        res = snp_typing.type_samples(snpmat)
-        print (res)
         return'''
 
     def rd_analysis(self, progress_callback):

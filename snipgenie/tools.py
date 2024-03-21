@@ -364,7 +364,7 @@ def get_fastq_info(filename):
     rl = get_fastq_read_lengths(filename)
     return int(rl.mean())
 
-def get_fastq_read_lengths(filename):
+def get_fastq_num_reads(filename):
     """Return fastq mean number of reads"""
 
     cmd = 'expr $(zcat "%s" | wc -l) / 4' %filename
@@ -372,15 +372,15 @@ def get_fastq_read_lengths(filename):
     l = int(tmp)
     return l
 
-def get_fastq_read_lengths_alt(filename):
+def get_fastq_read_lengths(filename, size=2000):
     """Return fastq read lengths"""
 
-    df = fastq_to_dataframe(filename, size=2000)
+    df = fastq_to_dataframe(filename, size=size)
     name = os.path.basename(filename).split('.')[0]
     return df.length
 
 def get_file_size(filename):
-    """Get file size in MB"""
+    """Get a file size in MB"""
 
     stats1 = os.stat(filename)
     return round(stats1.st_size / (1024 * 1024),2)
@@ -1019,9 +1019,9 @@ def plot_fastq_qualities(filename, ax=None, limit=20000,
     rect = patches.Rectangle((0,28),l,12,linewidth=0,facecolor='g',alpha=.4)
     ax.add_patch(rect)
     df.mean().plot(ax=ax,c='black')
-    boxprops = dict(linestyle='-', linewidth=1, color='black')
-    df.plot(kind='box', ax=ax, grid=False, showfliers=False,
-            color=dict(boxes='black',whiskers='black')  )
+    boxprops = dict(linestyle='-', linewidth=.5, color='black')
+    df.plot(kind='box', ax=ax, grid=False, showfliers=False, boxprops=boxprops,
+            color=dict(boxes='black',whiskers='black'))
     n = int(l/10)
     ax.set_xticks(np.arange(0, l, n))
     ax.set_xticklabels(np.arange(0, l, n))
@@ -1041,11 +1041,19 @@ def normpdf(x, mean, sd):
     num = math.exp(-(float(x)-float(mean))**2/(2*var))
     return num/denom
 
-def get_gc(filename, limit=1e4):
+def get_fasta_gc(fasta_file, limit=1e4):
     """Find gc content across sequence file"""
 
     from Bio.SeqUtils import gc_fraction
-    df = fastq_to_dataframe(filename, size=limit)
+    seq = SeqIO.read(fasta_file, format='fasta')
+    gc = gc_fraction(seq)*100
+    return gc
+
+def get_fastq_gc(fastq_file, limit=1e4):
+    """Find gc content across sequence file"""
+
+    from Bio.SeqUtils import gc_fraction
+    df = fastq_to_dataframe(fastq_file, size=limit)
     gc = df.seq.apply(lambda x: gc_fraction(x)*100)
     return gc
 
@@ -1054,20 +1062,50 @@ def plot_fastq_gc_content(filename, ax=None, limit=50000):
 
     import pylab as plt
     from Bio.SeqUtils import gc_fraction
-    if ax==None:
+    if ax == None:
         f,ax=plt.subplots(figsize=(12,5))
     plt.style.use('bmh')
     df = fastq_to_dataframe(filename, size=limit)
     gc = df.seq.apply(lambda x: gc_fraction(x)*100)
     gc.hist(ax=ax,bins=80,color='black',grid=False,histtype='step',lw=1)
     ax.set_xlim((0,100))
-    x=np.arange(1,100,.1)
+    x = np.arange(1,100,.1)
     meangc = round(gc.mean(),2)
     f = [normpdf(i, meangc, gc.std()) for i in x]
-    ax2=ax.twinx()
+    ax2 = ax.twinx()
     ax2.plot(x,f)
     ax2.set_ylim(0,max(f))
     ax.set_title('GC content. Mean=%s' %meangc,size=12)
+    return
+
+def get_instrument(fastq_file):
+
+    import gzip, re
+    instrumentIDs = {"HWI-M[0-9]{4}" : "MiSeq",
+            "HWUSI" : "Genome Analyzer IIx",
+            "M[0-9]{5}" : "MiSeq",
+            "HWI-C[0-9]{5}" : "HiSeq 1500",
+            "C[0-9]{5}" : "HiSeq 1500",
+            "HWI-D[0-9]{5}" : "HiSeq 2500",
+            "D[0-9]{5}" : "HiSeq 2500",
+            "J[0-9]{5}" : "HiSeq 3000",
+            "K[0-9]{5}" : "HiSeq 3000/HiSeq 4000",
+            "E[0-9]{5}" : "HiSeq X",
+            "NB[0-9]{6}": "NextSeq",
+            "NS[0-9]{6}" : "NextSeq",
+            "MN[0-9]{5}" : "MiniSeq",
+            "VH[0-9]{5}" : "NextSeq",
+            "H[A-Z,0-9]{4}": "NovaSeq S4"}
+
+    with gzip.open(fastq_file) as f:
+        head = ""
+        line = str(f.readline())
+    #print (line)
+    for pattern,iid in instrumentIDs.items():
+        s = re.search(pattern, line)
+        if s != None:
+            #print (iid)
+            return iid
     return
 
 def fastq_quality_report(filename, figsize=(7,5), **kwargs):

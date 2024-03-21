@@ -774,10 +774,15 @@ class SampleTableModel(DataFrameModel):
             #color warnings
             if colname == 'meandepth':
                 if value < 20:
-                    color = QColor('#ff704d')
+                    color = QColor('#E57A6D')
+                    #color.setAlpha(200)
             elif colname == 'coverage':
                 if value < 98:
-                    color = QColor('#ff704d')
+                    color = QColor('#E08560')
+                    #color.setAlpha(200)
+            elif colname == 'quality':
+                if value == 'pass':
+                    color = QColor('#94DA60')
             elif self.rowcolors != None:
                 clr = self.rowcolors[i]
                 color = QColor(clr)

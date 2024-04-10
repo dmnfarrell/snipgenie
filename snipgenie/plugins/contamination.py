@@ -18,7 +18,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 
-import sys,os,platform,time,tempfile,glob
+import sys,os,platform,time
+import shutil,tempfile,glob
 import pickle, gzip, subprocess
 import random
 from collections import OrderedDict
@@ -231,14 +232,20 @@ class ContaminationCheckerPlugin(Plugin):
                                         filter="Fasta Files(*.fa *.fasta);;All Files(*.*)")
         if not filename:
             return
-        #header = self.read_fasta_header(filename)
-        #print (header)
-        recs = list(SeqIO.parse(filename, format='fasta'))
+
+        #copy file to contam folder if it's not too large, otherwise use in place
+        if tools.get_file_size(filename)<100:
+            new = os.path.join(index_path, os.path.basename(filename))
+            shutil.copy(filename, new)
+        else:
+            new = filename
+
+        recs = list(SeqIO.parse(new, format='fasta'))
         rec = recs[0]
 
         d = rec.description
         species = '_'.join(d.split()[1:3])
-        self.refs.loc[rec.id] = [rec.id, rec.description, filename, species]
+        self.refs.loc[rec.id] = [rec.id, rec.description, new, species]
         self.update_treelist()
         #print (self.refs)
         self.refs.to_csv(self.ref_table)

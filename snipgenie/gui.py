@@ -277,7 +277,7 @@ class App(QMainWindow):
             toolbar.addAction(btn)
         return
 
-    def add_dock(self, widget, name):
+    def add_dock(self, widget, name, side='left'):
         """Add a dock widget"""
 
         dock = QDockWidget(name)
@@ -286,7 +286,13 @@ class App(QMainWindow):
         area.setWidgetResizable(True)
         dock.setWidget(area)
         area.setWidget(widget)
-        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
+        if side == 'left':
+            self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
+        elif side == 'right':
+            self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock)
+        elif side == 'bottom':
+            self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, dock)
+            #self.resizeDocks([dock], [self.width()], Qt.Horizontal)
         self.docks['options'] = dock
         return
 
@@ -366,9 +372,9 @@ class App(QMainWindow):
         l2.addWidget(self.right_tabs)
         self.info = widgets.Editor(right, readOnly=True, fontsize=11)
         self.right_tabs.addTab(self.info, 'log')
+        #new log position?
+        #self.add_dock(self.info, 'log', 'bottom')
         self.info.append("Welcome\n")
-
-        #self.right_tabs.addTab(self.plotview, 'plots')
 
         self.m.setSizes([200,150])
         self.m.setStretchFactor(1,0)
@@ -960,7 +966,9 @@ class App(QMainWindow):
             return
         outfile = os.path.join(self.ref_genome+'_mask.bed')
         print (outfile)
-        tools.make_mask_file(self.ref_gb, outfile)
+        out = tools.make_mask_file(self.ref_gb, outfile)
+        if out is None:
+            return
         f = open(outfile,'r')
         s = ''.join(f.readlines())
         w = widgets.TextViewer(self, s, title='mask file')

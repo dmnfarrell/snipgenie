@@ -423,6 +423,7 @@ def worker(args):
 
 def mpileup_multiprocess(bam_files, ref, outpath, threads=4, callback=None):
     """Run mpileup in parallel over multiple files and make separate bcfs.
+    The bcf files can then be merged to create a single file.
     Assumes alignment to a bacterial reference with a single chromosome."""
 
     bcftoolscmd = tools.get_cmd('bcftools')

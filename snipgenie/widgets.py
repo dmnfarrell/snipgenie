@@ -1202,7 +1202,7 @@ class PlotViewer(QWidget):
         return
 
     def heatmap(self, df, ax, cmap='Blues', alpha=0.9, lw=1,
-                colorbar=True, cscale=None):
+                colorbar=True, cscale=None, grid=False):
         """Plot heatmap"""
 
         X = df._get_numeric_data()
@@ -1223,6 +1223,7 @@ class PlotViewer(QWidget):
         ax.set_yticklabels(X.index, minor=False)
         ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
         ax.set_ylim(0, len(X.index))
+        ax.grid(grid)
         return
 
     def violinplot(self, df, ax, kwds):
@@ -1329,6 +1330,8 @@ class PlotViewer(QWidget):
             ax.set_xlabel(cols[0])
             if grid == 1:
                 ax.grid(True, linestyle='--')
+            else:
+                ax.grid(False)
             if axes_layout == 'multiple':
                 ax.set_title(cols[i])
             if colormap is not None and kwds['colorbar'] == True:

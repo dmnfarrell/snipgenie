@@ -34,6 +34,31 @@ index_path = os.path.join(app.config_path, 'contam')
 if not os.path.exists(index_path):
     os.makedirs(index_path, exist_ok=True)
 
+def calculate_N50(list_of_lengths):
+    """Calculate N50 for a sequence of numbers.
+    Args:
+        list_of_lengths (list): List of numbers.
+    Returns:
+        float: N50 value.
+    """
+    tmp = []
+    for tmp_number in set(list_of_lengths):
+            tmp += [tmp_number] * list_of_lengths.count(tmp_number) * tmp_number
+    tmp.sort()
+    if (len(tmp) % 2) == 0:
+        median = (tmp[int(len(tmp) / 2) - 1] + tmp[int(len(tmp) / 2)]) / 2
+    else:
+        median = tmp[int(len(tmp) / 2)]
+    return median
+
+def get_sequence_lengths(fasta_file):
+    """Get sequence lengths from fasta"""
+
+    lengths = []
+    for record in SeqIO.parse(fasta_file, "fasta"):
+        lengths.append(len(record.seq))
+    return lengths
+
 class AssemblyPlugin(Plugin):
     """Genome assembly plugin for SNiPgenie"""
 
@@ -63,10 +88,14 @@ class AssemblyPlugin(Plugin):
         kwds = self.parent.opts.kwds
         threads = kwds['threads']
         path = os.path.join(self.parent.outputdir, 'assembly')
+        #path for final files
+        fastapath = os.path.join(self.parent.outputdir, 'assembled')
+        if not os.path.exists(fastapath):
+            os.makedirs(fastapath,exist_ok=True)
 
         if data is None or len(data) == 0:
             return
-        msg = 'This will likely take some time. Are you sure?\n'              
+        msg = 'This will de novo assemble the reads.\nIt may take some time. Are you sure?\n'
         reply = QMessageBox.question(self.parent, 'Warning!', msg,
                                             QMessageBox.No | QMessageBox.Yes )
         if reply == QMessageBox.No:
@@ -78,9 +107,12 @@ class AssemblyPlugin(Plugin):
             cols = ['sample','spotype','sb']
             for i,r in data.iterrows():
                 name = r['sample']
+                outfile = os.path.join(fastapath,'%s.fa') %name
                 tools.spades(r.filename1,r.filename2, os.path.join(path,name),
-                              os.path.join(path,'%s.fa') %name, threads)
-                df.loc[i,'assembly'] = [path]
+                              outfile, threads)
+                df.loc[i,'assembly'] = outfile
+                lengths = get_sequence_lengths(outfile)
+                df.loc[i,'N50'] = calculate_N50(lengths)
             return
 
         self.parent.run_threaded_process(func, self.parent.processing_completed)

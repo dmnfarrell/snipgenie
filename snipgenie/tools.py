@@ -547,6 +547,7 @@ def fasta_to_dataframe(infile, header_sep=None, key='name', seqkey='sequence'):
     if header_sep not in ['',None]:
         df[key] = df[key].apply(lambda x: x.split(header_sep)[0],1)
     df[key] = df[key].str.replace('|','_',regex=False)
+    df['length'] = df.sequence.str.len()
     return df
 
 def fastq_random_seqs(filename, size=50):
@@ -680,8 +681,8 @@ def records_to_dataframe(records, cds=False, nucl_seq=False):
             keys += [i for i in quals.keys() if i not in keys]
         quals = keys+['id','start','end','strand','feat_type','sequence']
         df = pd.DataFrame(allfeat,columns=quals)
-        if 'translation' in df.keys():
-            df['length'] = df.translation.astype('str').str.len()
+        if 'sequence' in df.keys():
+            df['length'] = df.sequence.astype('str').str.len()
         res.append(df)
     res = pd.concat(res)
     if cds == True:
@@ -892,7 +893,7 @@ def get_vcf_positions(vcf_file):
     res = pd.DataFrame(res,columns=cols)
     return res
 
-def bcftools_query(bcf_file, positions=[], field='AD'):
+def bcftools_query(bcf_file, positions=[], field='AD', show_cmd=False):
     """Query a vcf/bcf file for specific field over given positions.
         Args:
             positions: list of sites you want to query
@@ -907,7 +908,8 @@ def bcftools_query(bcf_file, positions=[], field='AD'):
     cmd = "{bc} query -f '%CHROM %POS %REF %ALT [%{f} ]\\n' -i '{p}' {b}".format(b=bcf_file,
             bc=bcftoolscmd,f=field,p=pstr)
     tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
-    print (cmd)
+    if show_cmd == True:
+        print (cmd)
     from io import StringIO
     df = pd.read_csv(StringIO(tmp),sep=' ',header=None)
     df = df.rename(columns={0:'chrom',1:'pos',2:'ref',3:'alt'})
@@ -1464,6 +1466,7 @@ def make_mask_file(gb_file, outfile):
     g['gene'] = g.gene.fillna('')
     g = g[((g.gene.str.contains('PE') | g.gene.str.contains('PPE')) & (g.feat_type=='CDS')) | (g.feat_type=='repeat_region')]
     if len(g)==0:
+        print ('no regions found to mask')
         return
     lines = []
     #get chromosome/genome name (assumes only one)

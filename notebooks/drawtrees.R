@@ -8,34 +8,39 @@ library(tidytree)
 library(ggnewscale)
 #library(ggstar)
 
+plot_tree <- function(tree,samples,type='phylogram',title='',colorcol=NULL,
+						tiplabelcol=NULL,showtip=TRUE,cex=1.2,
+						cmap="Set1") {
 
-plot_tree <- function(tree,samples,type='phylogram',title='',column='SB',cmap="Set1") {
-    labels <- samples[tree$tip.label,][[column]]
-    #print(labels)
-    #print (samples[mltree$tip.label,])
-    labels[is.na(labels)] <- "Other"  
-    leglabels <- levels(as.factor(labels))
-    n<-length(leglabels)
-    colors <- brewer.pal(n = n, name = cmap)
-    cols<-setNames(colors[1:length(leglabels)],leglabels)
-    #print (cols)
+    if (!is.null(colorcol)){
+        labels <- samples[tree$tip.label,][[colorcol]]
+        #print(labels)
+        #labels[is.na(labels)] <- "Other"
+        leglabels <- levels(as.factor(labels))
+        n<-length(leglabels)
+        colors <- brewer.pal(n = n, name = cmap)
+        clrs <- setNames(colors[1:length(leglabels)],leglabels)
+        tiplabels(pie=to.matrix(labels, levels(as.factor(labels))),cex=cex,size=2,piecol=clrs)
+
+        legcolors <- cols[leglabels]
+        legend("topright", legend=names(cols), pch=22, pt.bg=cols, pt.cex=2.0, cex=1.2,
+             bty="n",ncol=1,x.intersp=.3)
+    }
     l<-length(labels)
     w<- max(dist.nodes(tree))*.8
 
-    if (l<70){
-      showtip=TRUE
-      }
-    else {
-      showtip=FALSE
-    }
-    plot(tree,type=type,cex=.5,label.offset=10, edge.width=.6,show.tip.label=showtip)
+    #plot tree
+    plot(tree,type=type,cex=.8,label.offset=.2, edge.width=.6,show.tip.label=showtip)
     title(title,cex.main= 2)
     cex<-(.3/l*100)
-    tiplabels(pie=to.matrix(labels, levels(as.factor(labels))),cex=cex,size=2,piecol=cols)
+    if (!is.null(tiplabelcol)){
+        tl <- samples[tree$tip.label,][[tiplabelcol]]
+        #print(tl)
+        #tiplabels(tl,type=2,cex=.8,size=1)
+        #sub.taxa.label(tree, tl)
+        dotTree(tree,labels,colors=cols)
+    }
     add.scale.bar(x=100,lwd=2, cex=1)
-    legcolors <- cols[leglabels]
-    legend("topright", legend=names(cols), pch=22, pt.bg=cols, pt.cex=2.0, cex=1.2, 
-         bty="n",ncol=1,x.intersp=.3)
 }
 
 gettreedata <- function(tree, meta){
@@ -47,10 +52,10 @@ gettreedata <- function(tree, meta){
 }
 
 get_color_mapping <- function(data, col, cmap){
-    labels <- (data[[col]])  
-    names <- levels(as.factor(labels)) 
+    labels <- (data[[col]])
+    names <- levels(as.factor(labels))
     n <- length(names)
-    if (n<10){      
+    if (n<10){
         colors <- suppressWarnings(c(brewer.pal(n, cmap)))[1:n]
     }
     else {
@@ -60,56 +65,77 @@ get_color_mapping <- function(data, col, cmap){
     return (colors)
 }
 
-ggplottree <- function(tree, meta, cols=NULL, cmaps=NULL, layout="rectangular",
-                       offset=10, tiplabel=FALSE, tipsize=3, tipalign=FALSE, labelsize=5) {
-    
+ggplottree <- function(tree, meta, cols=NULL, colors=NULL, cmaps=NULL, layout="rectangular",
+                       offset=10, tiplabel=FALSE, tipsize=3, tiplabelsize=5, tiplabelcol=NULL,
+					   align=FALSE) {
+
     y <- gettreedata(tree, meta)
-    p <- ggtree(y, layout=layout)   
-    if (is.null(cols)){
+    p <- ggtree(y, layout=layout)
+
+    if (is.null(cols)) {
+        if (tiplabel){
+            p <- p + geom_tiplab(size=tiplabelsize)
+        }
         return (p)
     }
-    
     col <- cols[1]
-    cmap <- cmaps[1] 
-    df<-meta[tree$tip.label,][col]
-    colors <- get_color_mapping(df, col, cmap)
-        
-    #tip formatting    
-    p1 <- p + new_scale_fill() +    
-          geom_tippoint(mapping=aes(fill=.data[[col]]),size=tipsize,shape=21,stroke=0) +
-          scale_fill_manual(values=colors, na.value="white")
-        
-    p2 <- p1
+    if (!is.null(colors)) {
+        #use predefined colors
+        clrs <- colors
+    }
+    else {
+        #calculate colors from cmap
+        cmap <- cmaps[1]
+        df <- meta[tree$tip.label,][col]
+        clrs <- get_color_mapping(df, col, cmap)
+    }
+    #print (clrs)
+    p <- p + new_scale_fill() +
+            geom_tippoint(mapping=aes(fill=.data[[col]]),size=tipsize,shape=21,stroke=0) +
+            scale_fill_manual(values=clrs, na.value="black")
+
+    p2 <- p
     if (length(cols)>1){
         for (i in 2:length(cols)){
             col <- cols[i]
-            cmap <- cmaps[i]
-            df <- meta[tree$tip.label,][col]            
-            colors <- get_color_mapping(df, col, cmap)       
+            if (length(cmaps)>=i){
+                cmap <- cmaps[i]
+            }
+            else {
+                cmap = 'Greys'
+            }
+            df <- meta[tree$tip.label,][col]
+            type <- class(df[col,])
             p2 <- p2 + new_scale_fill()
-            p2 <- gheatmap(p2, df, offset=i*offset, width=.05,
-                      colnames_angle=0, colnames_offset_y = .05)  +
-                  scale_fill_manual(values=colors, name=col)
-          
+            p2 <- gheatmap(p2, df, offset=i*offset, width=.08,
+                      colnames_angle=0, colnames_offset_y = .05)
+            if (type == 'numeric'){
+				p2 <- p2 + scale_fill_gradient(low='#F8F699',high='#06A958')
+            }
+            else {
+                colors <- get_color_mapping(df, col, cmap)
+                p2 <- p2 + scale_fill_manual(values=colors, name=col)
+            }
         }
     }
-    
-    p2 <- p2 + theme_tree2(legend.text = element_text(size=18), legend.key.size = unit(1, 'cm'), 
-                        legend.position="left", plot.title = element_text(size=40))     
-            guides(color = guide_legend(override.aes = list(size=14))) 
-    if (tiplabel == TRUE){
-        p2 <- p2 + geom_tiplab(size=labelsize,align=tipalign,hjust=-.2) +
-                 scale_x_continuous(expand = expansion(mult = 0.1))
-        }
-    else if (is.character(tiplabel)){
-        p2 <- p2 + geom_tiplab(aes(label=.data[[tiplabel]]),align=tipalign,size=labelsize, hjust=-.2) +
-                 scale_x_continuous(expand = expansion(mult = 0.1))
+
+    p2 <- p2 + theme_tree2(legend.text = element_text(size=20), legend.key.size = unit(1, 'cm'),
+                        legend.position="left", plot.title = element_text(size=40))
+            guides(color = guide_legend(override.aes = list(size=10)))
+    if (tiplabel) {
+		if (!is.null(tiplabelcol)) {
+			p2 <- p2 + geom_tiplab(mapping=aes(label=.data[[tiplabelcol]]),
+								size=tiplabelsize, align=align)
+		}
+		else {
+        	p2 <- p2 + geom_tiplab(size=tiplabelsize, align=align)
+		}
     }
     return(p2)
 }
 
-labelclades <- function(p, labels){    
-    for(l in names(labels)){        
+labelclades <- function(p, labels){
+    for(l in names(labels)){
         p <- p + geom_cladelab(node=labels[[l]], label=l, angle=0, offset=30, fontsize=9)
     }
     return(p)
@@ -122,14 +148,14 @@ highlightclades <- function(p){
 }
 
 ggtreefruit <- function(tree, meta, layout='c', col1=NULL){
-    y <- gettreedata(tree, meta)    
+    y <- gettreedata(tree, meta)
     p <- ggtree(y, layout=layout) +
-            geom_tippoint( mapping=aes( shape=NULL, color=.data[[col1]])) 
-    
+            geom_tippoint( mapping=aes( shape=NULL, color=.data[[col1]]),size=3)
+
     p <- p +
-         geom_fruit(             
+         geom_fruit(
              geom = geom_tile,
-             mapping = aes( x=node, 
+             mapping = aes( x=node,
                          group=RDWicklow,
                          fill=SB1),size=2,
             axis.params=list(
@@ -140,6 +166,6 @@ ggtreefruit <- function(tree, meta, layout='c', col1=NULL){
                          nbreak     = 3,
                      ),
          grid.params=list())
-    
+
     return(p)
 }

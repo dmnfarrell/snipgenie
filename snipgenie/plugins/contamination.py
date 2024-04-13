@@ -96,10 +96,14 @@ class ContaminationCheckerPlugin(Plugin):
         item = self.tree.itemAt( pos )
         menu = QMenu(self.tree)
         propsAction = menu.addAction("Properties")
+        saveAction = menu.addAction("Save As")
         deleteAction = menu.addAction("Delete")
+
         action = menu.exec_(self.tree.mapToGlobal(pos))
         if action == propsAction:
             self.edit_sequence_properties()
+        elif action == saveAction:
+            self.save_sequence_file()
         elif action == deleteAction:
             self.remove_sequence()
         return
@@ -257,9 +261,28 @@ class ContaminationCheckerPlugin(Plugin):
         item = self.tree.selectedItems()[0]
         row = self.tree.selectedIndexes()[0].row()
         name = item.text(0)
+        #delete file also
+        filename = self.refs.loc[name].filename
+        reply = QMessageBox.question(self.parent, 'Remove file?',
+                                'Also remove the sequence file?',
+                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes and os.path.exists(filename):
+            os.remove(filename)
         self.refs = self.refs.drop(name)
         self.refs.to_csv(self.ref_table)
         self.tree.takeTopLevelItem(row)
+        return
+
+    def save_sequence_file(self):
+        """Save a copy of a sequence file"""
+
+        item = self.tree.selectedItems()[0]
+        row = self.tree.selectedIndexes()[0].row()
+        name = item.text(0)
+        filename = self.refs.loc[name].filename
+        #choose dir
+
+        #shutil.copy(filename, newfile)
         return
 
     def edit_sequence_properties(self):

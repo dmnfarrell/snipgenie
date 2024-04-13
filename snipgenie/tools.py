@@ -1047,7 +1047,9 @@ def get_fasta_gc(fasta_file, limit=1e4):
     """Find gc content across sequence file"""
 
     from Bio.SeqUtils import gc_fraction
-    seq = SeqIO.read(fasta_file, format='fasta')
+    #seq = SeqIO.read(fasta_file, format='fasta')
+    recs = list(SeqIO.parse(fasta_file, "fasta"))
+    seq = recs[0]
     gc = gc_fraction(seq)*100
     return gc
 
@@ -1154,12 +1156,12 @@ def concatenate_fasta(input_files, output_file, max_length=1e7):
                 SeqIO.write(record, output_handle, 'fasta')
     return
 
-def core_alignment_from_vcf(vcf_file, callback=None, uninformative=False, missing=False, omit=None):
+def core_alignment_from_vcf(vcf_file, uninformative_sites=False, missing=False, omit=None, callback=None):
     """
     Get core SNP site calls as sequences from a multi sample vcf file.
     Args:
         vcf_file: multi-sample vcf (e.g. produced by app.variant_calling)
-        uninformative: whether to include uninformative sites
+        uninformative_sites: whether to include uninformative sites
         missing: whether to include sites with one or more missing samples (ie. no coverage)
         omit: list of samples to exclude if required
     """
@@ -1167,7 +1169,7 @@ def core_alignment_from_vcf(vcf_file, callback=None, uninformative=False, missin
     import vcf
     from collections import defaultdict
     vcf_reader = vcf.Reader(open(vcf_file, 'rb'))
-    #print (vcf_reader.samples)
+    print ('uninformative_sites', uninformative_sites)
     def default():
         return []
     result = defaultdict(default)
@@ -1187,7 +1189,7 @@ def core_alignment_from_vcf(vcf_file, callback=None, uninformative=False, missin
             if missing == False:
                 continue
         #ignore uninformative sites
-        if uninformative == False and len(S)>1:
+        if uninformative_sites == False and len(S)>1:
             u = set(S.values())
             if len(u) == 1:
                 uninf_sites.append(record.POS)
@@ -1204,7 +1206,7 @@ def core_alignment_from_vcf(vcf_file, callback=None, uninformative=False, missin
     sites = sorted(list(set(sites)))
     print ('found %s sites for core snps' %len(sites))
     print ('%s sites with at least one missing sample' %len(missing_sites))
-    if uninformative == False:
+    if uninformative_sites == False:
         print ('%s uninformative sites' %len(uninf_sites))
     if len(sites)==0:
         print ('no sites found may mean:\n'

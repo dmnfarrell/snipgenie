@@ -869,6 +869,7 @@ class App(QMainWindow):
         new = app.get_samples(filenames, sep=kwds['labelsep'])
         #pivoted
         new = app.get_pivoted_samples(new)
+        print (new)
         print ('getting fastq read lengths..')
         new['read_length'] = new.filename1.apply(lambda x: tools.get_fastq_info(x))
 
@@ -1222,7 +1223,8 @@ class App(QMainWindow):
         kwds = self.opts.kwds
         vcf_file = os.path.join(self.outputdir, 'snps.vcf.gz')
         print('Making SNP alignment')
-        result, smat = tools.core_alignment_from_vcf(vcf_file)
+        uninformative_sites = kwds['uninformative_sites']
+        result, smat = tools.core_alignment_from_vcf(vcf_file, uninformative_sites)
         #print (result)
         outfasta = os.path.join(self.outputdir, 'core.fa')
         SeqIO.write(result, outfasta, 'fasta')
@@ -2252,8 +2254,7 @@ class AppOptions(widgets.BaseOptions):
         self.groups = {'general':['threads','labelsep','overwrite'],
                         #'trimming':['quality'],
                         'aligners':['aligner','platform','unmapped'],
-                        'variant calling':['filters','proximity'],
-                        #'blast':['db','identity','coverage']
+                        'variant calling':['filters','proximity','uninformative_sites']
                        }
         self.opts = {'threads':{'type':'spinbox','default':4,'range':(1,cpus)},
                     'overwrite':{'type':'checkbox','default':False},
@@ -2266,11 +2267,8 @@ class AppOptions(widgets.BaseOptions):
                     'unmapped': {'type':'checkbox','default':0,'label':'save unmapped'},
                     'filters':{'type':'entry','default':app.default_filter},
                     'proximity': {'type':'checkbox','default':0},
+                    'uninformative_sites' : {'type':'checkbox','default':0, 'label':'uninformative sites'},
                     #'quality':{'type':'spinbox','default':30}
-                    #'db':{'type':'combobox','default':'card',
-                    #'items':[],'label':'database'},
-                    #'identity':{'type':'entry','default':90},
-                    #'coverage':{'type':'entry','default':50},
                     }
         return
 

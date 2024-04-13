@@ -88,7 +88,18 @@ class RegionDiffPlugin(Plugin):
         button = QPushButton("Clean Files")
         button.clicked.connect(self.clean_files)
         vbox.addWidget(button)
+        w = QLabel('Cutoff Ratio:')
+        vbox.addWidget(w)
+        self.cutoffw = w = QDoubleSpinBox()
+        w.setRange(0,1)
+        w.setSingleStep(0.01)
+        w.setValue(0.13)
+        vbox.addWidget(w)
+        button = QPushButton("Recalculate Matrix")
+        button.clicked.connect(self.update_results)
+        vbox.addWidget(button)
         button = QPushButton("Run")
+        button.setStyleSheet("background-color: red")
         button.clicked.connect(self.run)
         vbox.addWidget(button)
         return bw
@@ -115,7 +126,6 @@ class RegionDiffPlugin(Plugin):
         self.outpath = path
         self.update_folders()
         return
-
 
     def subset_reads(self, filename, path='/tmp', numreads=10000, overwrite=False):
         """Subset of reads"""
@@ -148,7 +158,7 @@ class RegionDiffPlugin(Plugin):
             self.parent.opts.applyOptions()
             kwds = self.parent.opts.kwds
             threads = kwds['threads']
-
+            cutoff = self.cutoffw.value()
             rdiff.create_rd_index()
             data = self.parent.get_selected()
             if data is None or len(data) == 0:
@@ -156,34 +166,45 @@ class RegionDiffPlugin(Plugin):
             out = self.outpath
             res = rdiff.run_samples(data, out, threads=kwds['threads'])
 
-            X = rdiff.get_matrix(res, cutoff=0.15)
-            X['species'] = X.apply(rdiff.apply_rules,1)
-            self.rd_result = X
+            #X = rdiff.get_matrix(res, cutoff=cutoff)
+            #X['species'] = X.apply(rdiff.apply_rules,1)
+            self.result = res
+            #self.result_matrix = X
 
         self.parent.run_threaded_process(func, self.run_completed)
         return
 
     def run_completed(self):
+
         self.parent.processing_completed()
-        self.get_results()
+        self.update_results()
         return
 
-    def get_results(self):
+    def update_results(self):
         """Reuslts from mapping"""
 
-        print ('getting results..')
-
-        self.result_table.setDataFrame(self.rd_result)
+        print ('getting presence/absence matrix..')
+        cutoff = self.cutoffw.value()
+        X = rdiff.get_matrix(self.result, cutoff=cutoff)
+        #X['species'] = X.apply(rdiff.apply_rules,1)
+        self.result_table.setDataFrame(X)
         return
 
     def save_data(self):
         """Return save data"""
 
         data = {}
+        data['cutoff'] = self.cutoffw.value()
+        data['result'] = self.result
         return data
 
     def load_data(self, data):
         """Load any saved data from project.
         Run when plugin is initially launched."""
 
+        if 'cutoff' in data:
+            self.cutoffw.setValue(data['cutoff'])
+        if 'result' in data:
+            self.result = data['result']
+            self.update_results()
         return

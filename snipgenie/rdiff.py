@@ -74,6 +74,7 @@ def run_samples(df, path, threads=4):
     return res
 
 def get_average_depth(ref, f1):
+
     from pyfaidx import Fasta
     rg = Fasta(ref)
     k = list(rg.keys())[0]
@@ -113,8 +114,10 @@ def find_regions(f1, f2, path, name, threads=4, avdepth=None):
     return s
 
 def get_matrix(res, cutoff=0.15):
-    """Get presence/absence matrix for RDs. Cutoff is ratio of reads to region vs
-    mean depth. and is arbitrary."""
+    """
+    Get presence/absence matrix for RDs. Cutoff is ratio of reads to region vs
+    mean depth and is somewhat arbitrary.
+    """
 
     X = pd.pivot_table(res,index='name',columns=['#rname'],values='ratio')
     X=X.clip(lower=cutoff).replace(cutoff,0)

@@ -68,7 +68,7 @@ def bwa_align(file1, file2, idx, out, threads=4, overwrite=False,
     else:
         keepmapped = ''
 
-    if file2 == None or file2 == '':
+    if file2 in ['',None,np.nan]:
         filestr = '"{f}"'.format(f=file1)
     else:
         filestr = '"{f1}" "{f2}"'.format(f1=file1,f2=file2)
@@ -88,7 +88,10 @@ def bwa_align(file1, file2, idx, out, threads=4, overwrite=False,
         #write out unmapped reads
         if unmapped != None:
             f1 = os.path.join(unmapped,os.path.basename(file1))
-            f2 = os.path.join(unmapped,os.path.basename(file2))
+            if file1 in [None,'',np.nan]:
+                f2 = os.path.join(unmapped,os.path.basename(file2))
+            else:
+                f2 = ''
             cmd = '{s} view -b -f12 {o} | {s} fastq -1 {f1} -2 {f2}'.format(
                     s=samtoolscmd,o=out,f1=f1,f2=f2)
             print (cmd)

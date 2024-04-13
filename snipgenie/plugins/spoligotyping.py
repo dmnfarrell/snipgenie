@@ -68,7 +68,7 @@ class SpoligotypingPlugin(Plugin):
 
         def func(progress_callback):
             res=[]
-            cols = ['sample','spotype','sb']
+            cols = ['sample','spotype','SB']
             for i,r in data.iterrows():
                 name = r['sample']
                 s = tools.get_spoligotype(r.filename1, threads=kwds['threads'])

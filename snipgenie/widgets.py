@@ -1019,7 +1019,7 @@ class PlotOptions(BaseOptions):
                     'linestyle':{'type':'combobox','default':'-','items': linestyles},
                     'linewidth':{'type':'doublespinbox','default':1.0,'range':(0,20),'interval':.2,'label':'line width'},
                     'ms':{'type':'spinbox','default':30,'range':(1,120),'interval':1,'label':'marker size'},
-                    'colormap':{'type':'combobox','default':'Spectral','items':colormaps},
+                    'colormap':{'type':'combobox','default':'GnBu','items':colormaps},
                     'alpha':{'type':'doublespinbox','default':0.9,'range':(.1,1),'interval':.1,'label':'alpha'},
                     'style':{'type':'combobox','default':core.PLOTSTYLE,'items': style_list},
                     'title':{'type':'entry','default':''},

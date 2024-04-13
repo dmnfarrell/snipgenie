@@ -84,6 +84,7 @@ defaults = {'threads':4, 'labelsep':'_', 'labelindex':0,
             'trim':False, 'unmapped':False, 'quality':25,
             'aligner': 'bwa', 'platform': 'illumina', 'species': None,
             'filters': default_filter, 'custom_filters': False, 'mask': None,
+            'uninformative_sites': False,
             'reference': None, 'gb_file': None, 'overwrite':False,
             'omit_samples': [], 'get_stats':False,
             'buildtree':False, 'bootstraps':100}
@@ -358,11 +359,13 @@ def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform
             file1 = r.filename1
             if 'filename2' in df.columns:
                 file2 = r.filename2
+                #print (file2, type(file2))
             else:
                 file2 = None
 
         out = os.path.join(outdir,name+'.bam')
         print (name)
+
         if aligner == 'bwa':
             aligners.bwa_align(file1, file2, idx=idx, out=out, unmapped=unmapped, **kwargs)
         elif aligner == 'bowtie':
@@ -1001,7 +1004,7 @@ class WorkFlow(object):
         print ()
         print ('making SNP matrix')
         print ('-----------------')
-        snprecs, smat = tools.core_alignment_from_vcf(self.vcf_file)
+        snprecs, smat = tools.core_alignment_from_vcf(self.vcf_file, self.uninformative_sites)
         outfasta = os.path.join(self.outdir, 'core.fa')
         SeqIO.write(snprecs, outfasta, 'fasta')
         #write out sites matrix as txt file

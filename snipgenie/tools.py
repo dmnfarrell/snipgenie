@@ -923,12 +923,13 @@ def bcftools_count_sites(vcf_file):
     tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
     return len(tmp)
 
-def bcftools_call(bcf_file, vcfout):
+def bcftools_call(bcf_file, vcfout, show_cmd=False):
     """Run bcftools call"""
 
     bcftoolscmd = get_cmd('bcftools')
-    cmd = '{bc} call --ploidy 1 -m -o {o} {raw}'.format(bc=bcftoolscmd,o=vcfout,raw=bcf_file)
-    print (cmd)
+    cmd = '{bc} call --ploidy 1 -mv -o {o} {raw}'.format(bc=bcftoolscmd,o=vcfout,raw=bcf_file)
+    if show_cmd == True:
+        print (cmd)
     tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
     return
 
@@ -1179,6 +1180,7 @@ def core_alignment_from_vcf(vcf_file, uninformative_sites=False, missing=False, 
     uninf_sites = []
     for record in vcf_reader:
         S = {sample.sample: sample.gt_bases for sample in record.samples}
+        #print (record.POS,S)
         if omit != None:
             for o in omit:
                 del S[o]

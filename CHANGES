@@ -2,6 +2,20 @@
 CHANGES
 =======
 
+0.7.0
+-----
+
+* changed calling step to now run mpileup and call separately
+* now merge called vcfs at end, allows re-running pipeline much easier
+
+0.6.1
+-----
+
+* fixes to RD plugin
+* fixes to contam plugin
+* added assembly plugin
+* quality check in gui
+
 0.6.0
 -----
 

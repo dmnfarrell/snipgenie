@@ -424,7 +424,7 @@ def mpileup_region(region,out,bam_files,callback=None):
 def worker(args):
     mpileup(args[0], args[1], args[2])
 
-def mpileup_multiprocess(bam_files, ref, outpath, threads=4, callback=None):
+'''def mpileup_multiprocess(bam_files, ref, outpath, threads=4, callback=None):
     """Run mpileup in parallel over multiple files and make separate bcfs.
     The bcf files can then be merged to create a single file.
     Assumes alignment to a bacterial reference with a single chromosome."""
@@ -459,7 +459,7 @@ def mpileup_multiprocess(bam_files, ref, outpath, threads=4, callback=None):
     cmd = '{bc} merge --threads {t} -o {r} {b}'.format(b=bcf_files,r=rawbcf, bc=bcftoolscmd,t=threads)
     print (cmd)
     subprocess.check_output(cmd, shell=True)
-    return rawbcf
+    return rawbcf'''
 
 def mpileup_parallel(bam_files, ref, outpath, threads=4, callback=None, tempdir=None):
     """Run mpileup in over multiple regions with GNU parallel on linux or rush on Windows

@@ -1616,9 +1616,9 @@ class App(QMainWindow):
         """Use metrics to estimate a pass/fail quality measure"""
 
         df = self.fastq_table.model.df
-        data = self.get_selected()
+        #data = self.get_selected()
 
-        for i,r in data.iterrows():
+        for i,r in df.iterrows():
             val = ''
             #gc difference to ref
             if self.ref_gc!=None and abs(r.meanGC-self.ref_gc)>3:
@@ -1634,6 +1634,9 @@ class App(QMainWindow):
             else:
                 val = 'pass'
             df.loc[i, 'quality'] = val
+
+        failed = df[df.quality.str.contains('fail')]
+        failed.to_csv(os.path.join(self.outputdir,'failed.csv'))
         return
 
     def get_consensus_sequences(self):

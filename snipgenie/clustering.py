@@ -33,166 +33,11 @@ snp200_cmap = {0:'darkgreen',1:'coral',2:'dodgerblue',3:'crimson',4:'lightgreen'
                 11:'brown',12:'gray',13:'blue',14:'green',15:'Aquamarine',
                 16:'DarkCyan',17:'red',18:'IndianRed'}
 
-def prep(tree, support, resolve_polytomies=True, suppress_unifurcations=True):
 
-    if resolve_polytomies:
-        tree.resolve_polytomies()
-    if suppress_unifurcations:
-        tree.suppress_unifurcations()
-    leaves = set()
-    for node in tree.traverse_postorder():
-        if node.edge_length is None:
-            node.edge_length = 0
-        node.DELETED = False
-        if node.is_leaf():
-            leaves.add(str(node))
-        else:
-            try:
-                node.confidence = float(str(node))
-            except:
-                node.confidence = 100. # give edges without support values support 100
-            if node.confidence < support: # don't allow low-support edges
-                node.edge_length = float('inf')
-    return leaves
-
-def cut(node):
-    """cut out the current node's subtree (by setting all nodes' DELETED to True)
-    and return list of leaves"""
-
-    from queue import PriorityQueue,Queue
-    cluster = list()
-    descendants = Queue(); descendants.put(node)
-    while not descendants.empty():
-        descendant = descendants.get()
-        if descendant.DELETED:
-            continue
-        descendant.DELETED = True
-        descendant.left_dist = 0; descendant.right_dist = 0; descendant.edge_length = 0
-        if descendant.is_leaf():
-            cluster.append(str(descendant))
-        else:
-            for c in descendant.children:
-                descendants.put(c)
-    return cluster
-
-def single_linkage_cut(tree,threshold,support):
-    """single-linkage clustering using Metin's cut algorithm"""
-
-    leaves = prep(tree,support)
-    clusters = list()
-
-	# find closest leaf below (dist,leaf)
-    for node in tree.traverse_postorder():
-        if node.is_leaf():
-            node.min_below = (0,node.label)
-        else:
-            node.min_below = min((c.min_below[0]+c.edge_length,c.min_below[1]) for c in node.children)
-
-    # find closest leaf above (dist,leaf)
-    for node in tree.traverse_preorder():
-        node.min_above = (float('inf'),None)
-        if node.is_root():
-            continue
-        # min distance through sibling
-        for c in node.parent.children:
-            if c != node:
-                dist = node.edge_length + c.edge_length + c.min_below[0]
-                if dist < node.min_above[0]:
-                    node.min_above = (dist,c.min_below[1])
-        # min distance through grandparent
-        if not c.parent.is_root():
-            dist = node.edge_length + node.parent.min_above[0]
-            if dist < node.min_above[0]:
-                node.min_above = (dist,node.parent.min_above[1])
-
-    # find clusters
-    for node in tree.traverse_postorder(leaves=False):
-        # assume binary tree here (prep function guarantees this)
-        l_child,r_child = node.children
-        l_dist = l_child.min_below[0] + l_child.edge_length
-        r_dist = r_child.min_below[0] + r_child.edge_length
-        a_dist = node.min_above[0]
-        bad = [0,0,0] # left, right, up
-        if l_dist + r_dist > threshold:
-            bad[0] += 1; bad[1] += 1
-        if l_dist + a_dist > threshold:
-            bad[0] += 1; bad[2] += 1
-        if r_dist + a_dist > threshold:
-            bad[1] += 1; bad[2] += 1
-        # cut either (or both) children
-        for i in [0,1]:
-            if bad[i] == 2:
-                cluster = cut(node.children[i])
-                if len(cluster) != 0:
-                    clusters.append(cluster)
-                    for leaf in cluster:
-                        leaves.remove(leaf)
-        # cut above (equals cutting me)
-        if bad[2] == 2: # if cutting above, just cut me
-            cluster = cut(node)
-            if len(cluster) != 0:
-                clusters.append(cluster)
-                for leaf in cluster:
-                    leaves.remove(leaf)
-    if len(leaves) != 0:
-        clusters.append(list(leaves))
-    return clusters
-
-# min_clusters_threshold_max, but all clusters must define a clade
-def min_clusters_threshold_max_clade(tree,threshold,support):
-    leaves = prep(tree, support, resolve_polytomies=False)
-
-    # compute leaf distances and max pairwise distances
-    for node in tree.traverse_postorder():
-        if node.is_leaf():
-            node.leaf_dist = 0; node.max_pair_dist = 0
-        else:
-            node.leaf_dist = float('-inf'); second_max_leaf_dist = float('-inf')
-            for c in node.children: # at least 2 children because of suppressing unifurcations
-                curr_dist = c.leaf_dist + c.edge_length
-                if curr_dist > node.leaf_dist:
-                    second_max_leaf_dist = node.leaf_dist; node.leaf_dist = curr_dist
-                elif curr_dist > second_max_leaf_dist:
-                    second_max_leaf_dist = curr_dist
-            node.max_pair_dist = max([c.max_pair_dist for c in node.children] + [node.leaf_dist + second_max_leaf_dist])
-
-    # perform clustering
-    q = Queue(); q.put(tree.root); roots = list()
-    while not q.empty():
-        node = q.get()
-        if node.max_pair_dist <= threshold:
-            roots.append(node)
-        else:
-            for c in node.children:
-                q.put(c)
-
-    # if verbose, print the clades defined by each cluster
-    #if VERBOSE:
-    #    for root in roots:
-    #        print("%s;" % root.newick(), file=stderr)
-    return [[str(l) for l in root.traverse_leaves()] for root in roots]
-
-def get_treecluster_labels(clusters, label='label'):
-
-    labels = []
-    cluster_num = 1
-    for cluster in clusters:
-        if len(cluster) == 1:
-            l = list(cluster)[0]
-            labels.append([l,-1])
-        else:
-            for l in cluster:
-                labels.append([l,cluster_num])
-            cluster_num += 1
-
-    cl = pd.DataFrame(labels,columns=['id',label])
-    return cl
-
-def treecluster(filename):
+'''def treecluster(filename, threshold=12):
     """Run treecluster methods on newick tree"""
 
     from treeswift import read_tree_newick
-
     infile = open(filename)
     for line in infile:
             if isinstance(line,bytes):
@@ -201,9 +46,41 @@ def treecluster(filename):
                 l = line.strip()
 
     tree = read_tree_newick(l)
-    clusters = min_clusters_threshold_max_clade(tree,18,0)
+    clusters = min_clusters_threshold_max_clade(tree,threshold,0)
     cl = get_treecluster_labels(clusters)
-    return cl
+    return cl.set_index('id')'''
+
+def treecluster(filename, threshold=12, method='avg_clade'):
+    """Run treecluster methods on newick tree"""
+
+    cmd = f'TreeCluster.py -i {filename} -t {threshold} -m {method}'
+    tmp = subprocess.check_output(cmd, shell=True)
+    from io import StringIO
+    s=str(tmp,'utf-8')
+    data = StringIO(s)
+    cl = pd.read_csv(data, sep='\t')
+    cl.ClusterNumber+=1
+    cl.ClusterNumber.replace(-1,0)
+    return cl.set_index('SequenceName')
+
+def get_treecluster_levels(tree, levels=None, method='avg_clade'):
+    """Cluster a distance matrix at different threshold levels.
+    Args:
+        tree: newick tree file
+        levels: threshold levels, a list of 1 or more levels, optional
+    returns:
+        a dataframe of cluster labels for each sample n the matrix
+    """
+
+    if levels == None:
+        levels = [500,200,100,50,20,12,7,3]
+    df = pd.DataFrame()#index=S.index)
+    for t in levels:
+        cl = treecluster(tree, t, method)
+        #print (cl)
+        df['snp'+str(t)] = cl
+        cl['level'] = t
+    return df
 
 def hdbscan_cluster(distance_matrix, min_cluster_size=1, min_samples=None, alpha=1.0):
     """
@@ -239,7 +116,7 @@ def hdbscan_cluster(distance_matrix, min_cluster_size=1, min_samples=None, alpha
 
     return list(cluster_labels), clusters
 
-def dm_cluster(distance_matrix, t, prev_clusters=None, linkage='single'):
+def dm_cluster(distance_matrix, t, prev_clusters=None, linkage='average'):
     """
     Given a Pandas dataframe distance matrix and a distance threshold t, finds the clusters of the
     samples such that all members of a cluster are within t of each other.
@@ -248,7 +125,7 @@ def dm_cluster(distance_matrix, t, prev_clusters=None, linkage='single'):
         distance_matrix (pandas.DataFrame): N x N distance matrix where N is the number of samples
         t (float): distance threshold
         previous_clusters (dataframe): previous cluster labels (optional)
-        linkage: linkage method - 'single', 'complete', 'ward'
+        linkage: linkage method - 'single', 'complete', 'average'
 
     Returns:
         list: a list of cluster labels for each sample
@@ -274,7 +151,7 @@ def reassign_clusters(clusters, labels, prevclusters):
     for c,g in clusters.groupby('cluster'):
         #print (g)
         #most common cluster number from prev - in case they are mixed
-        f = df.loc[df.index.isin(g.index)]        
+        f = df.loc[df.index.isin(g.index)]
         if len(f)>0:
             #nc = f.iloc[0].cluster_y
             nc = f.cluster_y.value_counts().index[0]
@@ -293,7 +170,7 @@ def reassign_clusters(clusters, labels, prevclusters):
     newlabels=list(final.cluster)
     return newlabels, final
 
-def get_cluster_levels(S, cluster_members=None, linkage='single',
+def get_cluster_levels(S, cluster_members=None, linkage='average',
                        levels=None):
     """Cluster a distance matrix at different threshold levels.
     Args:
@@ -302,12 +179,12 @@ def get_cluster_levels(S, cluster_members=None, linkage='single',
         linkage: linkage method - 'single', 'complete', 'ward'
         levels: threshold levels, a list of 1 or more levels, optional
     returns:
-        a dataframe of cluster labels for each sample n the matrix and 
+        a dataframe of cluster labels for each sample n the matrix and
         a dataframe of cluster labels in long form
     """
 
     if levels == None:
-        levels = [1000,500,200,50,20,12,7,3]
+        levels = [500,200,100,50,20,12,7,3]
     df = pd.DataFrame(index=S.index)
     clusts=[]
     for t in levels:

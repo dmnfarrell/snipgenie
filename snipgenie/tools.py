@@ -163,6 +163,46 @@ def colormap_from_labels(colormap_name, labels):
     colors = {labels[i]: mpl.colors.rgb2hex(colormap(i)) for i in range(n)}
     return colors
 
+def df_html(df, fontsize='8pt'):
+    """Create df html enclosed in some css"""
+
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Styled DataFrame</title>
+        <style>
+            body {{
+                font-family: monospace;
+                font-size: {fontsize};
+                margin: 0;
+                padding: 0;
+            }}
+            table {{
+                border-collapse: collapse;
+                width: 100%;
+            }}
+            th, td {{
+                border: 1px solid #ddd;
+                padding: 8px;
+            }}
+            th {{
+                background-color: white;
+                text-align: left;
+                position: sticky;
+                top: 0;
+            }}
+
+        </style>
+    </head>
+    <body>
+        {df.to_html()}
+    </body>
+    </html>
+    """
+    return html
+
 def diffseqs(seq1,seq2):
     """Diff two sequences"""
 
@@ -172,31 +212,42 @@ def diffseqs(seq1,seq2):
             c+=1
     return c
 
-def snp_dist_matrix(aln):
+def compute_snp_count(args):
+    i, j, seq1, seq2 = args
+    return i, j, np.sum(np.fromiter((c1 != c2 for c1, c2 in zip(seq1, seq2)), dtype=int))
+
+def snp_dist_matrix(aln, threads=4):
     """
     Compute the number of Single Nucleotide Polymorphisms (SNPs)
     between sequences in a Biopython alignment.
     Args:
         aln:
             Biopython multiple sequence alignment object.
-    returns:
-        a matrix as pandas dataframe
+    Returns:
+        A matrix as pandas dataframe.
     """
 
-    names=[s.id for s in aln]
+    from multiprocessing import Pool
+    names = [s.id for s in aln]
     num_sequences = len(aln)
-    matrix = np.zeros((num_sequences, num_sequences))
+    matrix = np.zeros((num_sequences, num_sequences), dtype=int)
+    sequences = [str(s.seq) for s in aln]
 
+    args_list = []
     for i in range(num_sequences):
-        seq1 = str(aln[i].seq)
+        seq1 = sequences[i]
         for j in range(i + 1, num_sequences):
-            seq2 = str(aln[j].seq)
-            # Calculate the number of SNPs
-            snp_count = sum(c1 != c2 for c1, c2 in zip(seq1, seq2))
-            matrix[i, j] = snp_count
-            matrix[j, i] = snp_count
+            seq2 = sequences[j]
+            args_list.append((i, j, seq1, seq2))
 
-    m = pd.DataFrame(matrix,index=names,columns=names).astype(int)
+    with Pool(processes=threads) as pool:
+        results = pool.map(compute_snp_count, args_list)
+
+    for i, j, snp_count in results:
+        matrix[i, j] = snp_count
+        matrix[j, i] = snp_count
+
+    m = pd.DataFrame(matrix, index=names, columns=names)
     return m
 
 def update_snp_dist_matrix(aln, snpdist=None):
@@ -297,28 +348,71 @@ def get_within_distance(distance_matrix, row_index, n):
     x = row[row<n]
     return x
 
-def dist_matrix_to_mst(distance_matrix, ax):
+def dist_matrix_to_mst(distance_matrix, df=None, colorcol=None, labelcol=None, colormap=None,
+                       cmap='Set1', node_size=4, font_size=6, with_labels=False,
+                       edge_labels=False, legend_loc=(1, .7), ax=None):
+    """Dist matrix to minimum spanning tree"""
 
-    import networkx as nx
+    from . import plotting
     import pylab as plt
+    if ax == None:
+        fig,ax=plt.subplots()
+    import networkx as nx
+    from networkx.drawing.nx_agraph import graphviz_layout
+
     G = nx.Graph()
 
     for i, row in distance_matrix.iterrows():
         for j, weight in row.items():
             G.add_edge(i, j, weight=weight)
 
-    T = nx.minimum_spanning_tree(G)
+    T = nx.minimum_spanning_tree(G, algorithm='kruskal')
     # Compute edge lengths based on distances
     edge_lengths = [T[u][v]['weight'] for u, v in T.edges()]
     # Plot the minimum spanning tree with edge lengths proportional to distances
-    pos = nx.spring_layout(T)#, weight='weight', scale=10, seed=42)
+    pos = graphviz_layout(T)
     labels = nx.get_edge_attributes(T, 'weight')
+    if df is not None:
+        l = [label for label in T.nodes if label in df.index]
+        df = df.loc[l]
+        if colormap is None:
+            colors,cmap = plotting.get_color_mapping(df, colorcol, cmap)
+        else:
+            #custom colormap if provided
+            colors = [colormap[i] if i in colormap else 'black' for i in df[colorcol]]
+            cmap = colormap
+        #print (cmap)
+        C = dict(zip(df.index, colors))
+        node_colors = [C[node] if node in C else 'Black' for node in T.nodes()]
+        #checks that colormap matches nodes so legend doesn't have crap in it
+        cmap = check_keys(cmap, df[colorcol].unique())
+        #add legend for node colors
+        p = plotting.make_legend(ax.figure, cmap, loc=legend_loc, title=colorcol,fontsize=9)
 
-    nx.draw_networkx(T, pos, node_color='lightblue',font_size=8, ax=ax)
-    nx.draw_networkx_edge_labels(T, pos, edge_labels=labels, font_size=7, ax=ax)
-    #nx.draw_networkx_edges(T, pos, width=edge_lengths)
+    else:
+        node_colors = 'black'
+    nx.draw_networkx(T, pos, node_color=node_colors, node_size=node_size,
+                     font_size=font_size, with_labels=with_labels, ax=ax)
+    if edge_labels == True:
+        nx.draw_networkx_edge_labels(T, pos, edge_labels=labels, font_size=font_size*.7, ax=ax)
+
+    if labelcol not in [None,'']:
+        node_labels = {node:df.loc[node][labelcol] if node in df.index else '' for node in T.nodes()}
+        #print (node_labels)
+        nx.draw_networkx_labels(T, pos, labels=node_labels, font_size=font_size,
+                 horizontalalignment='right',verticalalignment='top')
     ax.axis('off')
-    return
+    return T, pos
+
+def check_keys(d, vals):
+    """Remove dict keys not in vals"""
+
+    new = d.copy()
+    keys = list(d.keys())
+    for key in keys:
+        if not key in vals:
+            new.pop(key, None)
+    return new
 
 def get_unique_snps(names, df, present=True):
     """Get snps unique to one or more samples from a SNP matrix.
@@ -424,10 +518,10 @@ def get_blast_results(filename):
     cols = ['qseqid','sseqid','qseq','sseq','pident','qcovs','length','mismatch','gapopen',
             'qstart','qend','sstart','send','evalue','bitscore','stitle']
     res = pd.read_csv(filename, names=cols, sep='\t')
-    #res = res[res['pident']>=ident]
+    #res['perc_qcov'] = res.length/len(res.qseq)*100
     return res
 
-def local_blast(database, query, output=None, maxseqs=50, evalue=0.001,
+def local_blast(database, query, output=None, maxseqs=100, evalue=0.001,
                     compress=False, cmd='blastn', threads=4, show_cmd=False, **kwargs):
     """Blast a local database.
     Args:
@@ -464,9 +558,10 @@ def remote_blast(db, query, maxseqs=50, evalue=0.001, **kwargs):
     stdout, stderr = cline()
     return
 
-def blast_fasta(database, filename, **kwargs):
+def blast_fasta(database, filename, pident=90, **kwargs):
     """
-    Blast a fasta file
+    Args:
+        pident: percent identity cutoff       
     """
 
     remotedbs = ['nr','refseq_protein','pdb','swissprot']
@@ -475,6 +570,8 @@ def blast_fasta(database, filename, **kwargs):
     else:
         outfile = local_blast(database, filename, **kwargs)
     df = get_blast_results(filename=outfile)
+    #filter with cutoffs
+    df = df[(df.pident>=pident)]# & (df.perc_cov>=perc_cov)]
     return df
 
 def blast_sequences(database, seqs, labels=None, **kwargs):
@@ -1304,15 +1401,22 @@ def get_chrom_names(bam_file):
     df = pd.read_csv(StringIO(tmp),sep='\t',names=['chrom','start','end','xx'])
     return df.iloc[0].chrom
 
-def fetch_sra_reads(df,path):
+def fetch_sra_reads(df, path, key='Run', test=False, sample_size=None, omit=[]):
     """Download a set of reads from SRA using dataframe with runs"""
 
+    if sample_size != None:
+        df = df.sample(sample_size)
     for i,r in df.iterrows():
-        files = glob.glob(os.path.join(path,r.Run+'*'))
-        if len(files)==0:
-            cmd = 'fastq-dump --split-files {n} --outdir {o}'.format(n=r.Run,o=path)
+        name = r[key]
+        if name in omit: continue
+        files = glob.glob(os.path.join(path,name+'*'))
+        #if files exist we don't download
+        if len(files) == 0:
+            cmd = 'fastq-dump --split-files {n} --outdir {o}'.format(n=r[key],o=path)
             print (cmd)
-            subprocess.check_output(cmd,shell=True)
+            if test == False:
+                subprocess.check_output(cmd,shell=True)
+    return
 
 def gff_bcftools_format(in_file, out_file):
     """Convert a genbank file to a GFF format that can be used in bcftools csq.

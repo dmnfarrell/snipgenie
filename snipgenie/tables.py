@@ -831,8 +831,8 @@ class SampleTable(DataFrameTable):
         normalisefastqaction = menu.addAction('Normalise Fastq')
         removeAction = menu.addAction("Remove Selected")
         removebamAction = menu.addAction("Delete Bam Files")
+        #copyAction = menu.addAction("Copy Row Text")
         exportAction = menu.addAction("Export Table")
-        #colorbyAction = menu.addAction("Color By Column")
         action = menu.exec_(self.mapToGlobal(event.pos()))
         # Map the logical row index to a real index for the source model
         #model = self.model
@@ -907,6 +907,8 @@ class SampleTable(DataFrameTable):
             if answer == QMessageBox.No:
                 return
         df = self.model.df
+        if not 'bam_file' in df.columns:
+            return
         idx = df.index[rows]
         for file in df.loc[idx].bam_file:
             if pd.isnull(file):
@@ -1362,6 +1364,7 @@ class VCFTable(DataFrameTable):
         loadAction = menu.addAction("Load VCF")
         zoominAction = menu.addAction("Zoom in")
         zoomoutAction = menu.addAction("Zoom out")
+        exportAction = menu.addAction("Export")
         action = menu.exec_(event.globalPos())
 
         if action == loadAction:
@@ -1375,3 +1378,5 @@ class VCFTable(DataFrameTable):
             self.zoomOut()
         elif action == zoominAction:
             self.zoomIn()
+        elif action == exportAction:
+            self.exportTable()

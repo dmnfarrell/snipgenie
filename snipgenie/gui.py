@@ -1158,9 +1158,11 @@ class App(QMainWindow):
         proximity = kwds['proximity']
         df = self.fastq_table.model.df
         path = self.outputdir
-
-        gff_file = os.path.join(path, self.ref_gb+'.gff')
-        tools.gff_bcftools_format(self.ref_gb, gff_file)
+        if self.ref_gb != None:
+            gff_file = os.path.join(path, self.ref_gb+'.gff')
+            tools.gff_bcftools_format(self.ref_gb, gff_file)
+        else:
+            gff_file = None
 
         bam_files = list(df.bam_file.dropna().unique())
         samples = self.fastq_table.model.df
@@ -1416,7 +1418,7 @@ class App(QMainWindow):
         """Show annotation in table"""
 
         gb_file = self.ref_gb
-        df = tools.genbank_to_dataframe(gb_file)
+        df = tools.genbank_to_dataframe(gb_file, cds=True)
         t = tables.DataFrameTable(self.tabs, dataframe=df)
         i = self.tabs.addTab(t, 'ref_annotation')
         self.tabs.setCurrentIndex(i)
@@ -1559,7 +1561,7 @@ class App(QMainWindow):
             else:
                 total = None
             if pd.isna(total) or total is None:
-                total = tools.get_fastq_num_reads()
+                total = tools.get_fastq_num_reads(r.filename1)
                 df.loc[i,'reads'] = total
             df.loc[i,'perc_mapped'] = round(s['primary']/(total*2)*100,2)
             #print (s['mapped'],total)

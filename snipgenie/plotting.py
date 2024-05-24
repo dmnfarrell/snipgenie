@@ -33,7 +33,6 @@ from pyfaidx import Fasta
 import pylab as plt
 import matplotlib as mpl
 import matplotlib.colors as colors
-from . import tools
 
 def make_legend(fig, colormap, loc=(1.05, .6), title='',fontsize=12):
     """Make a figure legend wth provided color mapping"""
@@ -378,6 +377,7 @@ def plot_bam_alignment(bam_file, chr, xstart, xend, ystart=0, yend=100,
 
 def plot_features(rec, ax, rows=3, xstart=0, xend=30000):
 
+    from . import tools
     h=1
     df = tools.records_to_dataframe([rec])
     df = df[(df.feat_type!='region') & (df['feat_type']!='source')]

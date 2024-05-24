@@ -1097,6 +1097,8 @@ def main():
                         help="supply mask regions from a bed file" )
     parser.add_argument("-c", "--custom", dest="custom_filters", action="store_true", default=False,
                         help="apply custom filters" )
+    parser.add_argument("-u", "--uninformative", dest="uninformative_sites", action="store_true", default=False,
+                        help="keep uninformative sites when calling variants" )
     parser.add_argument("-p", "--platform", dest="platform", default='illumina',
                         help="sequencing platform, change to ont if using oxford nanopore")
     parser.add_argument("-a", "--aligner", dest="aligner", default='bwa',

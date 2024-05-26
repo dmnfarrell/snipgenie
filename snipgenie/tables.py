@@ -314,6 +314,13 @@ class DataFrameTable(QTableView):
         rows = list(dict.fromkeys(rows).keys())
         return rows
 
+    def getSelectedIndexes(self):
+        """Get selected row indexes"""
+
+        rows = self.getSelectedRows()
+        idx = self.model.df.index[rows]
+        return idx
+
     def getSelectedColumns(self):
         """Get selected column indexes"""
 
@@ -1028,6 +1035,7 @@ class SNPTable(DataFrameTable):
         tm = SNPTableModel(df)
         self.setModel(tm)
         self.model = tm
+        self.refresh()
         return
 
     def addActions(self, event, row):

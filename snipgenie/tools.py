@@ -500,6 +500,22 @@ def clustal_alignment(filename=None, seqs=None, command="clustalw"):
     align = AlignIO.read(name+'.aln', 'clustal')
     return align
 
+def seqrecords_from_alignment(alignment):
+    """
+    Remove gaps from sequences in a MultipleSeqAlignment
+     object and return SeqRecord objects.
+    """
+
+    original_seqrecords = []    
+    for record in alignment:
+        # Remove gaps from the sequence
+        ungapped_seq = str(record.seq).replace('-', '')
+        # Create a new SeqRecord with the ungapped sequence
+        ungapped_record = SeqRecord(Seq(ungapped_seq), id=record.id, name=record.name, description=record.description)
+        original_seqrecords.append(ungapped_record)
+    
+    return original_seqrecords
+
 def make_blast_database(filename, dbtype='nucl'):
     """Create a blast db from fasta file"""
 
@@ -561,7 +577,7 @@ def remote_blast(db, query, maxseqs=50, evalue=0.001, **kwargs):
 def blast_fasta(database, filename, pident=90, **kwargs):
     """
     Args:
-        pident: percent identity cutoff       
+        pident: percent identity cutoff
     """
 
     remotedbs = ['nr','refseq_protein','pdb','swissprot']

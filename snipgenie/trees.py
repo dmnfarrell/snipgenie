@@ -172,14 +172,13 @@ def draw_tree(filename, df=None, col=None, cmap=None, tiplabelcol=None, tipsize=
         df = df.loc[idx]
         tip_colors = list(df.color)
         node_colors = [cmap[df.loc[n][col]] if n in df.index else 'black' for n in tre.get_node_values('name', True, True)]
-        node_sizes=[0 if i else 8 for i in tre.get_node_values(None, 1, 0)]
+        node_sizes=[0 if i else tipsize for i in tre.get_node_values(None, 1, 0)]
     else:
         tip_colors = None
         node_colors = 'black'
-        node_sizes = tipsize
+        node_sizes = [0 if i else tipsize for i in tre.get_node_values(None, 1, 0)]
         tip_labels = None
     if tiplabelcol not in [None, '']:
-        #tip_labels = list(df[tiplabelcol].astype(str))
         tip_labels = [df.loc[n][tiplabelcol] if n in df.index else n for n in idx]
     else:
         tip_labels = None

@@ -25,9 +25,11 @@ import random
 from collections import OrderedDict
 from snipgenie.qt import *
 import pandas as pd
-from Bio import Phylo, SeqIO
-
-from snipgenie import app, widgets, tables, tools, trees
+from Bio import AlignIO, SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from Bio import Phylo
+from snipgenie import app, core, widgets, tables, tools, trees
 from snipgenie.plugin import Plugin
 
 #location for sequences to align against
@@ -48,12 +50,12 @@ def get_blast_coverage(bl, fasta):
 def blast_16S(filename, hits=100, pident=99.5):
     """blast 16S genes"""
 
-    bl=tools.blast_fasta('16S_ncbi.fa',filename,maxseqs=hits)
-    bl = get_blast_coverage(bl, '16S_ncbi.fa')
+    bl = tools.blast_fasta(ref_file, filename, maxseqs=hits)
+    bl = get_blast_coverage(bl, ref_file)
     #bl['genus'] = bl.stitle.apply(lambda x: x.split()[1])
     bl['species'] = bl.stitle.apply(lambda x: ' '.join(x.split()[1:3]))
     cols = ['sseqid','sslen','length','perc_cov','pident','stitle','species']
-    bl = bl[(bl.pident>=pident) & (bl.perc_cov>=80)].sort_values('pident',ascending=False)
+    bl = bl[(bl.pident>=pident) & (bl.perc_cov>=80)].sort_values(['pident','perc_cov'],ascending=False)
     return bl
 
 def extract_sequences_by_ids(input_fasta, output_fasta, ids_to_extract):
@@ -94,7 +96,7 @@ class SpeciesCheckerPlugin(Plugin):
     #uncomment capabilities list to appear in menu
     capabilities = ['gui','docked']
     requires = ['']
-    menuentry = 'Species Check'
+    menuentry = '16S Species Check'
     name = '16S Species Check'
     iconfile = '16S.svg'
     side = 'right' #dock location to load plugin
@@ -112,10 +114,11 @@ class SpeciesCheckerPlugin(Plugin):
         if not os.path.exists(self.outpath):
             os.makedirs(self.outpath, exist_ok=True)
 
-        self.numreads = 100000
-        self.mismatches = 4
+        self.numhits = 20
+        self.pident = 95
         self.create_widgets()
         self.fetch_sequence()
+        self.results = {}
         return
 
     def fetch_sequence(self):
@@ -152,27 +155,26 @@ class SpeciesCheckerPlugin(Plugin):
         bw = QWidget(parent)
         vbox = QVBoxLayout(bw)
 
-        w = QLabel('Read limit:')
+        w = QLabel('Max Hits:')
         vbox.addWidget(w)
-        self.readsentry = w = QSpinBox()
-        w.setRange(10000,1e6)
-        #w.setMaximum(max)
-        #w.setMinimum(min)
-        w.setSingleStep(10000)
-        w.setValue(self.numreads)
+        self.hitsentry = w = QSpinBox()
+        w.setRange(10,2e3)
+        w.setSingleStep(10)
+        w.setValue(self.numhits)
         vbox.addWidget(w)
-        w = QLabel('Use percentage:')
+        w = QLabel('Min Percent Identity:')
         vbox.addWidget(w)
-        self.percbox = w = QCheckBox()
+        self.pidententry = w = QSpinBox()
+        w.setValue(self.pident)
+        vbox.addWidget(w)
+        w = QLabel('Overwrite:')
+        vbox.addWidget(w)
+        self.overwritebox = w = QCheckBox()
         w.setChecked(0)
         vbox.addWidget(w)
-        #w = QLabel('Mismatches:')
-        vbox.addWidget(w)
-        #self.mismatchentry = w = QSpinBox()
-        #w.setValue(self.mismatches)
-        #vbox.addWidget(w)
-        button = QPushButton("Clean Files")
-        button.clicked.connect(self.clean_files)
+
+        button = QPushButton("Show Detailed Results")
+        button.clicked.connect(self.show_blast_result)
         vbox.addWidget(button)
         button = QPushButton("Run")
         button.setStyleSheet("background-color: red")
@@ -188,30 +190,34 @@ class SpeciesCheckerPlugin(Plugin):
                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.No:
             return False
-        files = glob.glob(os.path.join(self.outpath,'*.*'))
-        for f in files:
-            os.remove(f)
         return
 
     def run(self):
         """Run against selected genomes"""
 
-        self.results = []
+        self.parent.opts.applyOptions()
+        kwds = self.parent.opts.kwds
+        threads = kwds['threads']
+        outdir = self.outpath
+        hits = self.hitsentry.value()
+        pident = self.pidententry.value()
+        overwrite = self.overwritebox.isChecked()
+
         def func(progress_callback):
             table = self.parent.fastq_table
             df = table.model.df.copy()
             rows = table.getSelectedRows()
             new = df.iloc[rows] #subset of sample table to run
-            self.parent.opts.applyOptions()
-            kwds = self.parent.opts.kwds
-            threads = kwds['threads']
-            outdir = self.outpath
             for i,r in new.iterrows():
-                if not os.path.exists(r.assembly):
+                if r.assembly is None or not os.path.exists(r.assembly):
+                    print ('no assembly found')
                     continue
-                bl = blast_16S(f{r.assembly},pident=90,hits=200)
-                print (bl)
-
+                sample = r['sample']
+                if sample in self.results and overwrite == False:
+                    continue
+                bl = blast_16S(r.assembly, pident=pident, hits=hits)
+                #print (bl)
+                self.results[sample] = bl
         self.parent.run_threaded_process(func, self.run_completed)
         return
 
@@ -221,23 +227,76 @@ class SpeciesCheckerPlugin(Plugin):
         return
 
     def get_results(self):
-        """Reuslts from mapping"""
+        """Reuslts from blast tables"""
 
         print ('getting results..')
-        bamfiles = glob.glob(os.path.join(self.outpath,'*.bam'))
-        results = []
+        cols = ['sseqid','perc_cov','pident','stitle','species']
+        res=[]
+        for sample in self.results:
+            bl = self.results[sample]
+            x=bl.iloc[0][cols]
+            x.name = sample
+            res.append(x)
 
-        #df = self.results = pd.DataFrame(results, columns=['sample','ref','species','total','perc'])
-  
+        df = pd.DataFrame(res)
+        self.result_table.setDataFrame(df)
+        return
 
-        #p = pd.pivot_table(df, index='sample',columns='species',values=valcol)
-        #self.result_table.setDataFrame(p)
+    def get_tree(self, bl, name):
+        """Get a tree from the top blast results"""
+
+        targetseq = SeqRecord(Seq(bl.iloc[0].qseq), id=name)
+        m=bl[:50]
+        names = list(m.sseqid)
+        #extract relevant sequences from ref fasta
+        extract_sequences_by_ids(ref_file, 'temp.fa', names)
+        #add target sequence to tree also
+        append_sequences_to_fasta('temp.fa',targetseq)
+        treefile = get_tree('temp.fa')
+        return treefile, m
+
+    def show_blast_result(self):
+        """Show detailed results for a sample"""
+
+        idx = self.result_table.getSelectedIndexes()
+        sample = idx[0]
+        if sample not in self.results:
+            return
+        cols = ['species','sseqid','perc_cov','pident','length','evalue','bitscore','stitle']
+        bl = self.results[sample]
+        #print (bl.columns)
+        w = QDialog(self.main)
+        tabs = QTabWidget(w)
+        l = QVBoxLayout()
+        w.setLayout(l)
+        l.addWidget(tabs)
+
+        t = tables.DataFrameWidget(w, font=core.FONT, fontsize=core.FONTSIZE)
+        t.table.setDataFrame(bl[cols])
+        idx = tabs.addTab(t, 'Blast Result')
+
+        treefile, m = self.get_tree(bl, sample)
+        tv = widgets.TreeViewer(w)
+        tv.draw(treefile, df=m.set_index('sseqid'), tiplabelcol='species')
+        idx = tabs.addTab(tv, 'Tree')
+
+        sv = widgets.SequencesViewer(w)
+        #sv.load_fasta('temp.fa')
+        sv.load_alignment('temp.aln')
+        #sv.load_records(recs)
+        idx = tabs.addTab(sv, 'Sequences')
+
+        w.setGeometry(QtCore.QRect(100, 100, 900, 600))
+        w.setWindowTitle(f'{sample} 16S results')
+        w.show()
+        w.activateWindow()
         return
 
     def save_data(self):
         """Return save data"""
 
-        data = {}    
+        data = {}
+        data['results'] = self.results
         #data['checked'] = self.get_checked()
         return data
 
@@ -245,15 +304,9 @@ class SpeciesCheckerPlugin(Plugin):
         """Load any saved data from project.
         Run when plugin is initially launched."""
 
-        self.numreads = data['numreads']
-        self.readsentry.setValue(self.numreads)
-        checked = data['checked']
-        #print (checked)
-        for i in range(self.tree.topLevelItemCount()):
-            item = self.tree.topLevelItem(i)
-            if item.text(0) in checked:
-                item.setCheckState(0, QtCore.Qt.Checked)
         #get previous results if present
+        if 'results' in data:
+            self.results = data['results']
         self.get_results()
         return
 

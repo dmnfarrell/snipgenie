@@ -108,8 +108,9 @@ class AssemblyPlugin(Plugin):
             for i,r in data.iterrows():
                 name = r['sample']
                 outfile = os.path.join(fastapath,'%s.fa') %name
-                tools.spades(r.filename1,r.filename2, os.path.join(path,name),
-                              outfile, threads)
+                if not os.path.exists(outfile):
+                    tools.spades(r.filename1,r.filename2, os.path.join(path,name),
+                                  outfile, threads)
                 df.loc[i,'assembly'] = outfile
                 lengths = get_sequence_lengths(outfile)
                 df.loc[i,'N50'] = calculate_N50(lengths)

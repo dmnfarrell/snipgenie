@@ -43,6 +43,26 @@ from . import core, tools, plotting
 module_path = os.path.dirname(os.path.abspath(__file__))
 iconpath = os.path.join(module_path, 'icons')
 
+def create_button(parent, name, function, iconname=None, iconsize=20,
+                 tooltip=None):
+    """Create a button for a function and optional icon.
+        Returns:
+            the button widget
+    """
+
+    button = QPushButton(parent)
+    #button.setGeometry(QtCore.QRect(40,40,40,40))
+    button.setText(name)
+    iconfile = os.path.join(iconpath,iconname)
+    icon = QIcon(iconfile)
+    button.setIcon(QIcon(icon))
+    button.setIconSize(QtCore.QSize(iconsize,iconsize))
+    button.clicked.connect(function)
+    #button.setMinimumWidth(20)
+    if tooltip != None:
+        button.setToolTip(tooltip)
+    return button
+
 def dialogFromOptions(parent, opts, sections=None,
                       wrap=2, section_wrap=4,
                       style=None):
@@ -1496,7 +1516,6 @@ class BrowserViewer(QDialog):
         # set the url to the browser
         self.browser.setUrl(q)
 
-
     def update_urlbar(self, q):
         """method for updating url
            this method is called by the QWebEngineView object
@@ -1511,6 +1530,96 @@ class BrowserViewer(QDialog):
         zoom = self.zoomslider.value()/10
         self.browser.setZoomFactor(zoom)
 
+class TreeViewer(QWidget):
+    def __init__(self, parent=None):
+
+        super(TreeViewer, self).__init__()
+        self.parent = parent
+        self.setMinimumSize(400,300)
+        self.setGeometry(QtCore.QRect(200, 200, 600, 600))
+        self.setWindowTitle("Tree View")
+        self.add_widgets()
+        self.width=600
+        self.height=500
+        self.treefile = None
+        return
+
+    def add_widgets(self):
+
+        layout = QVBoxLayout(self)
+        self.browser = QWebEngineView()
+        layout.addWidget(self.browser)
+        toolswidget = QWidget()
+        layout.addWidget(toolswidget)
+        toolswidget.setMaximumHeight(120)
+        l2 = QVBoxLayout(toolswidget)
+
+        self.zoomslider = w = QSlider(QtCore.Qt.Horizontal)
+        w.setSingleStep(3)
+        w.setMinimum(2)
+        w.setMaximum(20)
+        w.setValue(10)
+        l2.addWidget(w)
+        w.valueChanged.connect(self.zoom)
+
+        w = QLabel('vscale')
+        l2.addWidget(w)
+        self.heightslider = w = QSlider(QtCore.Qt.Horizontal)
+        w.setSingleStep(10)
+        w.setMinimum(20)
+        w.setMaximum(1200)
+        w.setValue(500)
+        l2.addWidget(w)
+        w.valueChanged.connect(self.vscale)
+
+        w = QLabel('hscale')
+        l2.addWidget(w)
+        self.widthslider = w = QSlider(QtCore.Qt.Horizontal)
+        w.setSingleStep(10)
+        w.setMinimum(20)
+        w.setMaximum(2000)
+        w.setValue(600)
+        l2.addWidget(w)
+        w.valueChanged.connect(self.hscale)
+        return
+
+    def draw(self, treefile, df, **kwargs):
+        """Show phylogeny"""
+
+        import toyplot
+        from . import trees
+        self.treefile = treefile
+        self.df = df
+        canvas = trees.draw_tree(treefile,  df,
+                             width=self.width, height=self.height, **kwargs)
+        toyplot.html.render(canvas, "temp.html")
+        with open('temp.html', 'r') as f:
+            html = f.read()
+            self.browser.setHtml(html)
+        return
+
+    def update(self):
+
+        if self.treefile == None:
+            return
+        self.draw(self.treefile, self.df, tiplabelcol='species')
+        return
+
+    def zoom(self):
+        zoom = self.zoomslider.value()/10
+        self.browser.setZoomFactor(zoom)
+        return
+
+    def hscale(self):
+        self.width = self.widthslider.value()
+        self.update()
+        return
+
+    def vscale(self):
+        self.height = self.heightslider.value()
+        self.update()
+        return
+
 class TableViewer(QDialog):
     """View row of data in table"""
     def __init__(self, parent=None, dataframe=None, **kwargs):
@@ -1521,6 +1630,252 @@ class TableViewer(QDialog):
         self.table = tables.DataFrameTable(self, dataframe=dataframe, **kwargs)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.grid.addWidget(self.table)
+        return
+
+class AlignmentWidget(QWidget):
+    """Widget for showing sequence alignments"""
+    def __init__(self, parent=None):
+        super(AlignmentWidget, self).__init__(parent)
+        l = QHBoxLayout(self)
+        self.setLayout(l)
+        self.m = QSplitter(self)
+        l.addWidget(self.m)
+        self.left = PlainTextEditor(self.m, readOnly=True)
+        self.right = PlainTextEditor(self.m, readOnly=True)
+        self.left.setLineWrapMode(QPlainTextEdit.NoWrap)
+        self.right.setLineWrapMode(QPlainTextEdit.NoWrap)
+        self.m.setSizes([200,300])
+        self.m.setStretchFactor(1,2)
+        return
+
+class SequencesViewer(QWidget):
+    """Viewer for sequences and alignments"""
+
+    def __init__(self, parent=None, filename=None):
+        super(SequencesViewer, self).__init__(parent)
+
+        #self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        self.setGeometry(QtCore.QRect(200, 200, 1000, 600))
+        self.setMinimumHeight(150)
+        self.recs = None
+        self.aln = None
+        self.add_widgets()
+        self.show()
+        return
+
+    def add_widgets(self):
+        """Add widgets"""
+
+        #self.main = QWidget(self)
+        #self.setCentralWidget(self.main)
+        l = QHBoxLayout(self)
+        self.setLayout(l)
+        self.tabs = QTabWidget(self)
+        l.addWidget(self.tabs)
+
+        self.ed = ed = PlainTextEditor(self, readOnly=True)
+        self.ed.setLineWrapMode(QPlainTextEdit.NoWrap)
+        self.tabs.addTab(self.ed, 'fasta')
+
+        self.alnview = AlignmentWidget(self)
+        self.tabs.addTab(self.alnview, 'alignment')
+
+        sidebar = QWidget()
+        sidebar.setFixedWidth(180)
+        l.addWidget(sidebar)
+        l2 = QVBoxLayout(sidebar)
+        l2.setSpacing(5)
+        l2.setAlignment(QtCore.Qt.AlignTop)
+        btn = create_button(self, None, self.zoom_out,
+                                    'zoom-out', core.ICONSIZE, 'zoom out')
+        l2.addWidget(btn)
+        btn = create_button(self, None, self.zoom_in,
+                                    'zoom-in', core.ICONSIZE, 'zoom in')
+        l2.addWidget(btn)
+        lbl = QLabel('Format')
+        l2.addWidget(lbl)
+        w = QComboBox()
+        w.addItems(['no color','color by residue','color by difference'])
+        w.setCurrentIndex(1)
+        w.activated.connect(self.show_alignment)
+        self.formatchoice = w
+        l2.addWidget(w)
+        lbl = QLabel('Set Reference')
+        l2.addWidget(lbl)
+        w = QComboBox()
+        w.activated.connect(self.set_reference)
+        self.referencechoice = w
+        l2.addWidget(w)
+        lbl = QLabel('Aligner')
+        l2.addWidget(lbl)
+        w = QComboBox()
+        w.setCurrentIndex(1)
+        w.addItems(['clustal','muscle'])
+        self.alignerchoice = w
+        l2.addWidget(w)
+        #self.create_menu()
+        return
+
+    def create_menu(self):
+        """Create the menu bar for the application. """
+
+        self.file_menu = QMenu('&File', self)
+        self.menuBar().addMenu(self.file_menu)
+        self.file_menu.addAction('&Load Fasta File', self.load_fasta,
+                QtCore.Qt.CTRL + QtCore.Qt.Key_F)
+        self.file_menu.addAction('&Save Alignment', self.save_alignment,
+                QtCore.Qt.CTRL + QtCore.Qt.Key_S)
+        return
+
+    def scroll_top(self):
+        vScrollBar = self.ed.verticalScrollBar()
+        vScrollBar.triggerAction(QScrollBar.SliderToMinimum)
+        return
+
+    def zoom_out(self):
+        self.ed.zoom(-1)
+        self.alnview.left.zoom(-1)
+        self.alnview.right.zoom(-1)
+        return
+
+    def zoom_in(self):
+        self.ed.zoom(1)
+        self.alnview.left.zoom(1)
+        self.alnview.right.zoom(1)
+        return
+
+    def load_fasta(self, filename=None):
+        """Load fasta file"""
+
+        if filename == None:
+            filename, _ = QFileDialog.getOpenFileName(self, 'Open File', './',
+                            filter="Fasta Files(*.fa *.fna *.fasta);;All Files(*.*)")
+        if not filename:
+            return
+        from Bio import AlignIO, SeqIO
+        recs = list(SeqIO.parse(filename, 'fasta'))
+        self.load_records(recs)
+        return
+
+    def load_records(self, recs):
+        """Load seqrecords list"""
+
+        from Bio import AlignIO, SeqIO
+        self.recs = recs
+        self.reference = self.recs[0]
+        rdict = SeqIO.to_dict(recs)
+        self.show_fasta()
+        self.show_alignment()
+        self.referencechoice.addItems(list(rdict.keys()))
+        return
+
+    def load_alignment(self, aln_file):
+        """Load alignment directly from a fasta file"""
+
+        from Bio import AlignIO, SeqIO
+        self.aln = AlignIO.read(aln_file, 'fasta')
+        recs = tools.seqrecords_from_alignment(self.aln)
+        self.load_records(recs)
+        #self.show_alignment()
+        return
+
+    def set_reference(self):
+        ref = self.referencechoice.currentText()
+        return
+
+    def show_fasta(self):
+        """Show records as fasta"""
+
+        recs = self.recs
+        if recs == None:
+            return
+        self.ed.clear()
+        for rec in recs:
+            s = rec.format('fasta')
+            self.ed.insertPlainText(s)
+        self.scroll_top()
+        return
+
+    def align(self):
+        """Align current sequences"""
+
+        from Bio import AlignIO, SeqIO
+        if self.aln == None:
+            outfile = 'temp.fa'
+            SeqIO.write(self.recs, outfile, 'fasta')
+            self.aln = tools.clustal_alignment(outfile)
+        return
+
+    def show_alignment(self):
+
+        format = self.formatchoice.currentText()
+        self.draw_alignment(format)
+        return
+
+    def draw_alignment(self, format='color by residue'):
+        """Show alignment with colored columns"""
+
+        left = self.alnview.left
+        right = self.alnview.right
+        chunks=0
+        offset=0
+        diff=False
+        self.align()
+        aln = self.aln
+        left.clear()
+        right.clear()
+        self.scroll_top()
+
+        #colors = tools.get_protein_colors()
+        colors = {
+            'A': 'lightgreen',
+            'T': 'lightblue',
+            'C': 'lightyellow',
+            'G': 'lightcoral',
+            '-': 'white',
+            'N': 'gray'
+        }
+
+        format = QTextCharFormat()
+        format.setBackground(QBrush(QColor('white')))
+        cursor = right.textCursor()
+
+        ref = aln[0]
+        l = len(aln[0])
+        n=60
+        s=[]
+        if chunks > 0:
+            chunks = [(i,i+n) for i in range(0, l, n)]
+        else:
+            chunks = [(0,l)]
+        for c in chunks:
+            start,end = c
+            lbls = np.arange(start+1,end+1,10)-offset
+            head = ''.join([('%-10s' %i) for i in lbls])
+            cursor.insertText(head)
+            right.insertPlainText('\n')
+            left.appendPlainText(' ')
+            for a in aln:
+                name = a.id
+                seq = a.seq[start:end].upper()
+                left.appendPlainText(name)
+                line = ''
+                for i in seq:
+                    c = colors[i]
+                    #c = 'white'
+                    line += '<span style="background-color:%s;">%s</span>' %(c,i)
+                cursor.insertHtml(line)
+                right.insertPlainText('\n')
+        return
+
+    def save_alignment(self):
+
+        filters = "clustal files (*.aln);;All files (*.*)"
+        filename, _ = QFileDialog.getSaveFileName(self,"Save Alignment",
+                                                  "",filters)
+        if not filename:
+            return
+        SeqIO.write(self.aln,filename,format='clustal')
         return
 
 class SimpleBamViewer(QDialog):

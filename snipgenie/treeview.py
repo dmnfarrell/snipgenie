@@ -136,7 +136,7 @@ class TreeViewer(QWidget):
     def __init__(self, parent=None, filename=None, meta=None):
 
         super(TreeViewer, self).__init__(parent)
-        self.setGeometry(QtCore.QRect(200, 200, 1000, 300))
+        self.setGeometry(QtCore.QRect(200, 200, 800, 800))
         self.setMinimumHeight(150)
         self.parent = parent
         self.tree = None

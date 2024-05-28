@@ -41,7 +41,7 @@ ref_file = os.path.join(ref_path,'16S_ncbi.fa')
 def get_blast_coverage(bl, fasta):
     """Get alignment coverage of blast results from original sequence lengths"""
 
-    df=tools.fasta_to_dataframe('16S_ncbi.fa')
+    df=tools.fasta_to_dataframe(ref_file)
     df=df.rename(columns={'length':'sslen'})
     bl=bl.merge(df,left_on='sseqid',right_on='name',how='left')
     bl['perc_cov'] = bl.apply(lambda x: round(x.length/x.sslen*100,2),1)

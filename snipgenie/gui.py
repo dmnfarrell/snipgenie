@@ -40,12 +40,9 @@ iconpath = os.path.join(module_path, 'icons')
 pluginiconpath = os.path.join(module_path, 'plugins', 'icons')
 settingspath = os.path.join(homepath, '.config','snipgenie')
 
-dockstyle = '''
+default_dockstyle = '''
     QDockWidget {
-        max-width:240px;
-    }
-    QDockWidget::title {
-        background-color: #ccd8f0;
+        max-width:900px;
     }
     QScrollBar:vertical {
          width: 15px;
@@ -277,28 +274,54 @@ class App(QMainWindow):
             toolbar.addAction(btn)
         return
 
-    def add_dock(self, widget, name, side='left'):
+    def add_dock_menu_item(self, name):
+        """Add dock menu item"""
+
+        action = self.docks[name].toggleViewAction()
+        self.dock_menu.addAction(action)
+        action.setCheckable(True)
+        return
+
+    def add_dock(self, widget, name, side='left',
+                 scrollarea=True, tabify=False, color='#B9CEF0'):
         """Add a dock widget"""
 
         dock = QDockWidget(name)
+        cstyle = '''
+            QDockWidget::title {
+                background-color: %s;
+            }
+        '''  %color
+        dockstyle = default_dockstyle + cstyle
         dock.setStyleSheet(dockstyle)
-        area = QScrollArea()
-        area.setWidgetResizable(True)
-        dock.setWidget(area)
-        area.setWidget(widget)
+        if scrollarea == True:
+            area = QScrollArea()
+            area.setWidgetResizable(True)
+            dock.setWidget(area)
+            area.setWidget(widget)
+        else:
+            dock.setWidget(widget)
         if side == 'left':
             self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
-        elif side == 'right':
-            self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock)
         elif side == 'bottom':
             self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, dock)
-            #self.resizeDocks([dock], [self.width()], Qt.Horizontal)
-        self.docks['options'] = dock
-        return
+        else:
+            self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock)
+        if side == 'floating':
+            dock.setFloating(True)
+        if tabify == True:
+            for dock_widget in self.findChildren(QDockWidget):
+                if self.dockWidgetArea(dock_widget) == QtCore.Qt.RightDockWidgetArea:
+                    self.tabifyDockWidget(dock_widget, dock)
+                    break
+        self.docks[name] = dock
+        dock.setSizePolicy( QSizePolicy.Expanding, QSizePolicy.Minimum )
+        return dock
 
     def setup_gui(self):
         """Add all GUI elements"""
 
+        self.setDockNestingEnabled(True)
         self.docks = {}
         #self.m = QSplitter(self.main)
         self.m = self.main
@@ -336,10 +359,10 @@ class App(QMainWindow):
         self.add_dock(dialog, 'options')
 
         #add dock menu items
-        for name in ['options']:
-            action = self.docks[name].toggleViewAction()
-            self.dock_menu.addAction(action)
-            action.setCheckable(True)
+        #for name in ['options']:
+        #    action = self.docks[name].toggleViewAction()
+        #    self.dock_menu.addAction(action)
+        #    action.setCheckable(True)
 
         #general plot window
         #self.plotview = widgets.PlotViewer(self)
@@ -361,20 +384,25 @@ class App(QMainWindow):
         center.addWidget(self.tabs)
         center.setSizes((100,100))
 
-        self.right = right = QWidget()
-        self.m.addWidget(self.right)
-        l2 = QVBoxLayout(right)
+        #self.right = right = QWidget()
+        #self.m.addWidget(self.right)
+        #l2 = QVBoxLayout(right)
         #mainlayout.addWidget(right)
 
-        self.right_tabs = QTabWidget(right)
-        self.right_tabs.setTabsClosable(True)
-        self.right_tabs.tabCloseRequested.connect(self.close_right_tab)
-        l2.addWidget(self.right_tabs)
-        self.info = widgets.Editor(right, readOnly=True, fontsize=11)
-        self.right_tabs.addTab(self.info, 'log')
+        #self.right_tabs = QTabWidget(right)
+        #self.right_tabs.setTabsClosable(True)
+        #self.right_tabs.tabCloseRequested.connect(self.close_right_tab)
+        #l2.addWidget(self.right_tabs)
+        self.info = widgets.Editor(self, readOnly=True, fontsize=11)
+        #self.right_tabs.addTab(self.info, 'log')
         #new log position?
-        #self.add_dock(self.info, 'log', 'bottom')
+        self.add_dock(self.info, 'log', 'left')
         self.info.append("Welcome\n")
+
+        for name in ['log','options','genome']:
+            action = self.docks[name].toggleViewAction()
+            self.dock_menu.addAction(action)
+            action.setCheckable(True)
 
         self.m.setSizes([200,150])
         self.m.setStretchFactor(1,0)
@@ -754,10 +782,10 @@ class App(QMainWindow):
             #for key in data['opentables']:
                 #print (key)
         #load tree view
-        if 'treeviewer' in data.keys():
-            self.tree_viewer()
-            self.treeviewer.loadData(data['treeviewer'])
-        self.right_tabs.setCurrentIndex(0)
+        #if 'treeviewer' in data.keys():
+        #    self.tree_viewer()
+        #    self.treeviewer.loadData(data['treeviewer'])
+        #self.right_tabs.setCurrentIndex(0)
         self.add_recent_file(filename)
         self.check_fastq_table()
         return
@@ -974,7 +1002,7 @@ class App(QMainWindow):
         s = ''.join(f.readlines())
         w = widgets.TextViewer(self, s, title='mask file')
         #dlg.exec_()
-        self.right_tabs.addTab(w, 'mask')
+        self.tabs.addTab(w, 'mask')
         return
 
     def add_meta_data(self):
@@ -996,8 +1024,8 @@ class App(QMainWindow):
         """Show meta data table"""
 
         if self.meta is not None:
-            mw = tables.DataFrameTable(self.right_tabs, dataframe=self.meta)
-            self.right_tabs.addTab(mw, 'metadata')
+            mw = tables.DataFrameTable(self.tabs, dataframe=self.meta)
+            self.tabs.addTab(mw, 'metadata')
         return
 
     def merge_meta_data(self):
@@ -1340,20 +1368,12 @@ class App(QMainWindow):
 
         from . import treeview
         if not hasattr(self, 'treeviewer'):
-            self.treeviewer = treeview.TreeViewer(self)
-        if not 'phylogeny' in self.get_right_tabs():
-            idx = self.right_tabs.addTab(self.treeviewer, 'phylogeny')
-            self.right_tabs.setCurrentIndex(idx)
-        return
-
-    def show_map(self):
-
-        from . import gis
-        if not hasattr(self, 'gisviewer'):
-            self.gisviewer = gis.GISViewer()
-        if not 'map' in self.get_right_tabs():
-            idx = self.right_tabs.addTab(self.gisviewer, 'map')
-            self.right_tabs.setCurrentIndex(idx)
+            self.treeviewer = treeview.TreeViewer()
+        #if not 'phylogeny' in self.get_right_tabs():
+            #idx = self.right_tabs.addTab(self.treeviewer, 'phylogeny')
+        self.treeviewer.activateWindow()
+        self.treeviewer.show()
+        #self.right_tabs.setCurrentIndex(idx)
         return
 
     def get_tabs(self):
@@ -1434,8 +1454,8 @@ class App(QMainWindow):
         #print (pd.DataFrame(data))
         #print ()
         w = widgets.TableViewer(self, pd.DataFrame(data))
-        i = self.right_tabs.addTab(w, data['sample'])
-        self.right_tabs.setCurrentIndex(i)
+        i = self.tabs.addTab(w, data['sample'])
+        self.tabs.setCurrentIndex(i)
         return
 
     def quality_summary(self, row):
@@ -1471,8 +1491,9 @@ class App(QMainWindow):
         fig.suptitle('Qualities: %s' %sample, fontsize=12)
         plt.tight_layout()
         #w.set_figure(fig)
-        idx = self.right_tabs.addTab(w, label)
-        self.right_tabs.setCurrentIndex(idx)
+        #idx = self.tabs.addTab(w, label)
+        #self.tabs.setCurrentIndex(idx)
+        self.add_dock(w, label, 'right')
         return
 
     def read_distributon(self, row):
@@ -1704,8 +1725,8 @@ class App(QMainWindow):
         name = 'seqs:'+data['sample']
         w = widgets.Editor(self, readOnly=True, fontsize=11)
         w.append(fastafmt)
-        i = self.right_tabs.addTab(w, name)
-        self.right_tabs.setCurrentIndex(i)
+        i = self.tabs.addTab(w, name)
+        self.tabs.setCurrentIndex(i)
         return
 
     def normalise_fastq(self, row):
@@ -1785,8 +1806,8 @@ class App(QMainWindow):
         plt.tight_layout()
         w = widgets.PlotViewer(self)
         w.set_figure(fig)
-        idx = self.right_tabs.addTab(w, 'SNP dist')
-        self.right_tabs.setCurrentIndex(idx)
+        idx = self.tabs.addTab(w, 'SNP dist')
+        self.tabs.setCurrentIndex(idx)
         return
 
     def show_scratchpad(self):
@@ -1812,8 +1833,8 @@ class App(QMainWindow):
         url = QUrl.fromUserInput(link)
         bw.browser.setUrl(url)
 
-        idx = self.right_tabs.addTab(bw, name)
-        self.right_tabs.setCurrentIndex(idx)
+        idx = self.tabs.addTab(bw, name)
+        self.tabs.setCurrentIndex(idx)
         return
 
     '''def check_heterozygosity(self):
@@ -2035,35 +2056,12 @@ class App(QMainWindow):
 
         c = plugin.capabilities
         if 'docked' in c:
-            self.add_plugin_dock(plugin)
+            #self.add_plugin_dock(plugin)
+            self.add_dock(plugin.main, plugin.name, 'right', color='#C5E5B6')
         else:
             plugin.main.show()
             plugin.main.setWindowTitle(plugin.name)
         self.comms.newproj.connect(plugin.project_closed)
-        return
-
-    def add_plugin_dock(self, plugin):
-        """Add plugin as dock widget"""
-
-        dockstyle = '''
-            QDockWidget::title {
-                background-color: #EDC6B3;
-            }
-        '''
-        dock = QDockWidget(plugin.name)
-        dock.setStyleSheet(dockstyle)
-        area = QScrollArea()
-        area.setWidgetResizable(True)
-        dock.setWidget(area)
-        area.setWidget(plugin.main)
-        if plugin.side == 'left':
-            self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
-        else:
-            self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock)
-        if plugin.side == 'floating':
-            dock.setFloating(True)
-            #dock.setGeometry(100, 0, 200, 30)
-        self.docks[plugin.name] = dock
         return
 
     def update_plugin_menu(self):

@@ -349,9 +349,21 @@ def get_within_distance(distance_matrix, row_index, n):
     return x
 
 def dist_matrix_to_mst(distance_matrix, df=None, colorcol=None, labelcol=None, colormap=None,
-                       cmap='Set1', node_size=4, font_size=6, with_labels=False,
+                       cmap_name='Set1', node_size=4, font_size=6, with_labels=False,
                        edge_labels=False, legend_loc=(1, .7), ax=None):
-    """Dist matrix to minimum spanning tree"""
+    """
+    Dist matrix to minimum spanning tree
+    Args:
+        distance_matrix: matrix as dataframe
+        df: meta data with index corresponding to node names of tree
+        colorcol: column in meta table to color nodes by
+        labelcol: column in meta table to label nodes by
+        colormap: a mapping of node names to colors
+        cmap_name: name of an mpl colormap to apply instead of providing colormap
+        node_size: size of nodes
+        with_labels: whether to plot labels on nodes
+        legend_loc: location of legend
+    """
 
     from . import plotting
     import pylab as plt
@@ -376,7 +388,7 @@ def dist_matrix_to_mst(distance_matrix, df=None, colorcol=None, labelcol=None, c
         l = [label for label in T.nodes if label in df.index]
         df = df.loc[l]
         if colormap is None:
-            colors,cmap = plotting.get_color_mapping(df, colorcol, cmap)
+            colors,cmap = plotting.get_color_mapping(df, colorcol, cmap_name)
         else:
             #custom colormap if provided
             colors = [colormap[i] if i in colormap else 'black' for i in df[colorcol]]
@@ -479,6 +491,21 @@ def get_file_size(filename):
     stats1 = os.stat(filename)
     return round(stats1.st_size / (1024 * 1024),2)
 
+def mafft_alignment(filename, outfile):
+    """
+    Align 2 sequences with mafft.
+    Args:
+        filename: fasta file with sequences to align
+        seqs: sequences as list if no filename
+    Returns:
+        alignment object
+    """
+
+    cmd = f'mafft --auto {filename} > {outfile}'
+    subprocess.check_output(cmd, shell=True)
+    aln = AlignIO.read(outfile, 'fasta')
+    return aln
+
 def clustal_alignment(filename=None, seqs=None, command="clustalw"):
     """
     Align 2 sequences with clustal.
@@ -506,14 +533,14 @@ def seqrecords_from_alignment(alignment):
      object and return SeqRecord objects.
     """
 
-    original_seqrecords = []    
+    original_seqrecords = []
     for record in alignment:
         # Remove gaps from the sequence
         ungapped_seq = str(record.seq).replace('-', '')
         # Create a new SeqRecord with the ungapped sequence
         ungapped_record = SeqRecord(Seq(ungapped_seq), id=record.id, name=record.name, description=record.description)
         original_seqrecords.append(ungapped_record)
-    
+
     return original_seqrecords
 
 def make_blast_database(filename, dbtype='nucl'):

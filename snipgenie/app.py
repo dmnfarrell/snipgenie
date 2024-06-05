@@ -1030,7 +1030,8 @@ class WorkFlow(object):
                 print ('Cannot build tree, too few samples.')
                 return
             if platform.system() == 'Windows':
-                treefile = trees.run_fasttree(outfasta, self.outdir)
+                outfile = os.path.join(self.outdir, 'tree.newick')
+                treefile = trees.run_fasttree(outfasta, outfile)
             else:
                 treefile = trees.run_RAXML(outfasta, threads=self.threads,
                             bootstraps=self.bootstraps, outpath=self.outdir)

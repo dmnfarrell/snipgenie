@@ -25,6 +25,7 @@ import random
 from collections import OrderedDict
 from snipgenie.qt import *
 import pandas as pd
+import pylab as plt
 from Bio import AlignIO, SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
@@ -36,26 +37,30 @@ from snipgenie.plugin import Plugin
 ref_path = os.path.join(app.config_path, 'species_16S')
 if not os.path.exists(ref_path):
     os.makedirs(ref_path, exist_ok=True)
-ref_file = os.path.join(ref_path,'16S_ncbi.fa')
+ncbi16S_url = 'https://github.com/dmnfarrell/snipgenie/raw/master/extra/16S_ncbi.fa.gz'
+silva_url = 'https://ftp.arb-silva.de/release_138/Exports/SILVA_138_SSURef_NR99_tax_silva.fasta.gz'
 
 def get_blast_coverage(bl, fasta):
     """Get alignment coverage of blast results from original sequence lengths"""
 
-    df=tools.fasta_to_dataframe(ref_file)
+    df=tools.fasta_to_dataframe(fasta)
     df=df.rename(columns={'length':'sslen'})
     bl=bl.merge(df,left_on='sseqid',right_on='name',how='left')
     bl['perc_cov'] = bl.apply(lambda x: round(x.length/x.sslen*100,2),1)
     return bl
 
-def blast_16S(filename, hits=100, pident=99.5):
-    """blast 16S genes"""
+def blast_16S(filename, database='16S_ncbi.fa', hits=100, pident=99.5):
 
-    bl = tools.blast_fasta(ref_file, filename, maxseqs=hits)
-    bl = get_blast_coverage(bl, ref_file)
-    #bl['genus'] = bl.stitle.apply(lambda x: x.split()[1])
-    bl['species'] = bl.stitle.apply(lambda x: ' '.join(x.split()[1:3]))
+    bl=tools.blast_fasta(database, filename, maxseqs=hits)
+    bl = get_blast_coverage(bl, database)
+    bl = bl.drop_duplicates('sseqid')
+    if '16S_ncbi' in database:
+        bl['species'] = bl.stitle.apply(lambda x: ' '.join(x.split()[1:3]))
+    elif 'SILVA' in database:
+        bl['species'] = bl.stitle.apply(lambda x: x.split(';')[-1])
+    bl['genus'] = bl.species.apply(lambda x: x.split(' ')[0])
     cols = ['sseqid','sslen','length','perc_cov','pident','stitle','species']
-    bl = bl[(bl.pident>=pident) & (bl.perc_cov>=80)].sort_values(['pident','perc_cov'],ascending=False)
+    bl = bl[(bl.pident>=pident) & (bl.perc_cov>=80)].sort_values('pident',ascending=False)
     return bl
 
 def extract_sequences_by_ids(input_fasta, output_fasta, ids_to_extract):
@@ -77,8 +82,6 @@ def append_sequences_to_fasta(fasta_file, seqs):
     #with open(fasta_file, "w") as output_handle:
     SeqIO.write(existing_seqs, fasta_file, "fasta")
     return
-
-#extract_sequences_by_ids('16S_ncbi.fa', 'temp.fa',  ['NR_115676.1','NR_179517.1'])
 
 def get_tree(fasta_file):
     """get phylo tree from fasta_file with fasttree"""
@@ -117,22 +120,35 @@ class SpeciesCheckerPlugin(Plugin):
         self.numhits = 20
         self.pident = 95
         self.create_widgets()
+        self.ref_file = os.path.join(ref_path,'16S_ncbi.fa')
         self.fetch_sequence()
         self.results = {}
         return
 
-    def fetch_sequence(self):
+    def fetch_sequence(self, url=ncbi16S_url):
         """Get 16S sequences"""
 
-        if os.path.exists(ref_file):
+        ref = self.ref_file
+        if os.path.exists(self.ref_file):
             return
         print ('fetching 16S sequence data..')
-        url = 'https://github.com/dmnfarrell/snipgenie/raw/master/extra/16S_ncbi.fa.gz'
-        infile = ref_file+'.gz'
+        infile = ref+'.gz'
         import urllib.request
         urllib.request.urlretrieve(url, infile)
-        tools.gunzip(infile, ref_file)
-        tools.make_blast_database(ref_file)
+        tools.gunzip(infile, ref)
+        tools.make_blast_database(ref)
+        return
+
+    def set_database(self):
+        """Set current database"""
+
+        name = self.databasew.currentText()
+        if name == 'NCBI':
+            self.ref_file = os.path.join(ref_path,'16S_ncbi.fa')
+            self.fetch_sequence(ncbi16S_url)
+        elif name == 'SILVA':
+            self.ref_file = os.path.join(ref_path,'SILVA_138_SSURef_NR99_tax_silva.fasta')
+            self.fetch_sequence(silva_url)
         return
 
     def create_widgets(self):
@@ -155,6 +171,12 @@ class SpeciesCheckerPlugin(Plugin):
         bw = QWidget(parent)
         vbox = QVBoxLayout(bw)
 
+        w = QLabel('Database:')
+        vbox.addWidget(w)
+        self.databasew = w = QComboBox()
+        w.addItems(['NCBI','SILVA'])
+        vbox.addWidget(w)
+        w.activated.connect(self.set_database)
         w = QLabel('Max Hits:')
         vbox.addWidget(w)
         self.hitsentry = w = QSpinBox()
@@ -215,7 +237,7 @@ class SpeciesCheckerPlugin(Plugin):
                 sample = r['sample']
                 if sample in self.results and overwrite == False:
                     continue
-                bl = blast_16S(r.assembly, pident=pident, hits=hits)
+                bl = blast_16S(r.assembly, self.ref_file, pident=pident, hits=hits)
                 #print (bl)
                 self.results[sample] = bl
         self.parent.run_threaded_process(func, self.run_completed)
@@ -230,7 +252,7 @@ class SpeciesCheckerPlugin(Plugin):
         """Reuslts from blast tables"""
 
         print ('getting results..')
-        cols = ['sseqid','perc_cov','pident','stitle','species']
+        cols = ['sseqid','perc_cov','pident','stitle','species','genus']
         res=[]
         for sample in self.results:
             bl = self.results[sample]
@@ -249,7 +271,7 @@ class SpeciesCheckerPlugin(Plugin):
         m=bl[:50]
         names = list(m.sseqid)
         #extract relevant sequences from ref fasta
-        extract_sequences_by_ids(ref_file, 'temp.fa', names)
+        extract_sequences_by_ids(self.ref_file, 'temp.fa', names)
         #add target sequence to tree also
         append_sequences_to_fasta('temp.fa',targetseq)
         treefile = get_tree('temp.fa')
@@ -285,6 +307,12 @@ class SpeciesCheckerPlugin(Plugin):
         sv.load_alignment('temp.aln')
         #sv.load_records(recs)
         idx = tabs.addTab(sv, 'Sequences')
+
+        fig,ax = plt.subplots(1,1)
+        pw = widgets.PlotWidget(figure=fig)
+        bl.genus.value_counts().plot(kind='barh',ax=ax)
+        plt.tight_layout()
+        idx = tabs.addTab(pw, 'Genus Distribution')
 
         w.setGeometry(QtCore.QRect(100, 100, 900, 600))
         w.setWindowTitle(f'{sample} 16S results')

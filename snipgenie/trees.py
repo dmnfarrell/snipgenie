@@ -56,17 +56,16 @@ def get_colormap(values):
     clrs = dict(list(zip(labels,colors)))
     return clrs
 
-def run_fasttree(infile, outpath='', bootstraps=100):
+def run_fasttree(infile, outfile, bootstraps=100):
     """Run fasttree on fasta alignment"""
 
-    fc = tools.get_cmd('fasttreeMP')
-    out = os.path.join(outpath,'tree.newick')
-    cmd = '{fc} -nt {i} > {o}'.format(fc=fc,b=bootstraps,i=infile,o=out)
+    fc = tools.get_cmd('fasttreeMP')    
+    cmd = '{fc} -nt {i} > {o}'.format(fc=fc,b=bootstraps,i=infile,o=outfile)
     try:
         tmp = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
     except Exception as e:
         print(e)
-    return out
+    return
 
 def run_RAXML(infile, name='variants', threads=8, bootstraps=100, outpath='.'):
     """Run Raxml pthreads.

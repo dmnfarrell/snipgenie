@@ -309,14 +309,26 @@ class App(QMainWindow):
             self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock)
         if side == 'floating':
             dock.setFloating(True)
+        #tabify
         if tabify == True:
-            for dock_widget in self.findChildren(QDockWidget):
-                if self.dockWidgetArea(dock_widget) == QtCore.Qt.RightDockWidgetArea:
-                    self.tabifyDockWidget(dock_widget, dock)
-                    break
+            current = self.get_dock_widgets()
+            if len(current)>0:
+                for d in current:
+                    if d!= dock:
+                        self.tabifyDockWidget(d, dock)
+
         self.docks[name] = dock
         dock.setSizePolicy( QSizePolicy.Expanding, QSizePolicy.Minimum )
         return dock
+
+    def get_dock_widgets(self, side='right'):
+        """Get list of dock widgets on a specific side"""
+
+        l=[]
+        for dock_widget in self.findChildren(QDockWidget):
+            if self.dockWidgetArea(dock_widget) == QtCore.Qt.RightDockWidgetArea:
+                l.append(dock_widget)
+        return l
 
     def setup_gui(self):
         """Add all GUI elements"""
@@ -384,22 +396,12 @@ class App(QMainWindow):
         center.addWidget(self.tabs)
         center.setSizes((100,100))
 
-        #self.right = right = QWidget()
-        #self.m.addWidget(self.right)
-        #l2 = QVBoxLayout(right)
-        #mainlayout.addWidget(right)
-
-        #self.right_tabs = QTabWidget(right)
-        #self.right_tabs.setTabsClosable(True)
-        #self.right_tabs.tabCloseRequested.connect(self.close_right_tab)
-        #l2.addWidget(self.right_tabs)
-        self.info = widgets.Editor(self, readOnly=True, fontsize=11)
-        #self.right_tabs.addTab(self.info, 'log')
-        #new log position?
+        self.info = widgets.Editor(self.tabs, readOnly=True, fontsize=11)
+        #self.tabs.addTab(self.info, 'log')
         self.add_dock(self.info, 'log', 'left')
         self.info.append("Welcome\n")
 
-        for name in ['log','options','genome']:
+        for name in ['options','genome','log']:
             action = self.docks[name].toggleViewAction()
             self.dock_menu.addAction(action)
             action.setCheckable(True)
@@ -434,17 +436,9 @@ class App(QMainWindow):
 
         #index = self.tabs.currentIndex()
         name = self.tabs.tabText(index)
-        self.tabs.removeTab(index)
-        return
-
-    @Slot(int)
-    def close_right_tab(self, index):
-        """Close right tab"""
-
-        name = self.right_tabs.tabText(index)
         if name == 'log':
             return
-        self.right_tabs.removeTab(index)
+        self.tabs.removeTab(index)
         return
 
     def create_menu(self):
@@ -1339,7 +1333,8 @@ class App(QMainWindow):
         if method == 'raxml':
             treefile = trees.run_RAXML(corefasta, bootstraps=bootstraps, outpath=self.outputdir)
         elif method == 'fasttree':
-            treefile = trees.run_fasttree(corefasta, bootstraps=bootstraps, outpath=self.outputdir)
+            outfile = os.path.join(self.outputdir, 'tree.newick')
+            treefile = trees.run_fasttree(corefasta, bootstraps=bootstraps, outfile=outfile)
         outfile = os.path.join(self.outputdir,'tree.newick')
         snpmat = pd.read_csv(self.snp_matrix, sep=' ',index_col=0)
         ls = len(snpmat)
@@ -2035,7 +2030,6 @@ class App(QMainWindow):
                 #track which plugin is running
                 openplugins[plugin.name] = p
                 #load data if any saved in project
-                #print (self.plugindata)
             except Exception as e:
                 QMessageBox.information(self, "Plugin error", str(e))
                 print(traceback.format_exc())
@@ -2056,8 +2050,7 @@ class App(QMainWindow):
 
         c = plugin.capabilities
         if 'docked' in c:
-            #self.add_plugin_dock(plugin)
-            self.add_dock(plugin.main, plugin.name, 'right', color='#C5E5B6')
+            self.add_dock(plugin.main, plugin.name, 'right', tabify=True, color='#C5E5B6')
         else:
             plugin.main.show()
             plugin.main.setWindowTitle(plugin.name)

@@ -1861,8 +1861,10 @@ class SequencesViewer(QWidget):
                 left.appendPlainText(name)
                 line = ''
                 for i in seq:
-                    c = colors[i]
-                    #c = 'white'
+                    if i in colors:
+                        c = colors[i]
+                    else:
+                        c = 'white'
                     line += '<span style="background-color:%s;">%s</span>' %(c,i)
                 cursor.insertHtml(line)
                 right.insertPlainText('\n')

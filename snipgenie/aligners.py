@@ -43,7 +43,7 @@ def build_bwa_index(fastafile, path=None, show_cmd=True, overwrite=True):
     print ('indexing..')
     bwacmd = tools.get_cmd('bwa')
     cmd = '{b} index {i}'.format(b=bwacmd,i=fastafile)
-    subprocess.check_output(cmd, shell=True)
+    subprocess.check_output(cmd, shell=True, stderr= subprocess.STDOUT)
     if show_cmd == True:
         print (cmd)
     return
@@ -83,7 +83,7 @@ def bwa_align(file1, file2, idx, out, threads=4, overwrite=False,
                 p=options,k=keepmapped)
     if not os.path.exists(out) or overwrite == True:
         print (cmd)
-        tmp = subprocess.check_output(cmd, shell=True)
+        tmp = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
 
         #write out unmapped reads
         if unmapped != None:

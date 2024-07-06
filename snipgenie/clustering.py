@@ -133,6 +133,8 @@ def dm_cluster(distance_matrix, t, prev_clusters=None, linkage='average'):
     """
 
     from sklearn.cluster import AgglomerativeClustering
+    if t==0: # can't cluster at zero distance
+        t=1e-10
     clustering = AgglomerativeClustering(distance_threshold=t, n_clusters=None,
                                          linkage=linkage, metric='precomputed').fit(distance_matrix)
     labels = clustering.labels_+1

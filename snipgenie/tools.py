@@ -412,7 +412,7 @@ def dist_matrix_to_mst(distance_matrix, df=None, colorcol=None, labelcol=None, c
         node_labels = {node:df.loc[node][labelcol] if node in df.index else '' for node in T.nodes()}
         #print (node_labels)
         nx.draw_networkx_labels(T, pos, labels=node_labels, font_size=font_size,
-                 horizontalalignment='right',verticalalignment='top')
+                 horizontalalignment='left',verticalalignment='bottom')
     ax.axis('off')
     return T, pos
 
@@ -460,7 +460,7 @@ def get_fasta_length(filename):
     return l
 
 def get_chrom(filename):
-    """Get chromosome name from fasta file"""
+    """Get first chromosome name from fasta file"""
 
     rec = list(SeqIO.parse(filename, 'fasta'))[0]
     return rec.id
@@ -646,17 +646,45 @@ def blast_sequences(database, seqs, labels=None, **kwargs):
     df = blast_fasta(database, 'tempseq.fa', **kwargs)
     return df
 
-def kraken(file1, file2='', dbname='STANDARD16', threads=4, outfile='krakenreport.txt'):
-    """Run kraken2 on single/paired end fastq files"""
+def run_kraken(file1, file2='', dbname='STANDARD16', threads=4, outfile='krakenreport.txt'):
+    """
+    Run kraken2 on single/paired end fastq files. Requires that the dbname is set in
+    your environment.
+    """
 
     os.environ['KRAKEN2_DB_PATH'] = '/local/kraken2'
-    cmd = 'kraken2 -db {db} --report {o} --threads {t} --paired {f1} {f2} > kraken.out'\
+    cmd = 'kraken2 -db {db} --report {o} --threads {t} --confidence 0.1 --paired {f1} {f2} > kraken.out'\
             .format(f1=file1,f2=file2,t=threads,db=dbname,o=outfile)
     print (cmd)
     subprocess.check_output(cmd, shell=True)
     rep=pd.read_csv('krakenreport.txt',sep='\t',names=['perc_frag','n_frags_root','n_frags','rank_code','taxid','name'])
     rep['name'] = rep.name.str.lstrip()
     return rep
+
+def kraken_run_samples(samples, dbname, found=pd.DataFrame({'sample':[]})):
+    """
+    Run a set of samples with kraken.
+    """
+
+    res=[]
+    for i,r in samples.iterrows():
+        name = r['sample']
+        print (name)
+        if name in list(found['sample']):
+            continue
+        try:
+            rep = run_kraken(r.filename1,r.filename2, threads=12, dbname='STANDARD16')
+        except Exception as e:
+            print (e)
+            pass
+        rep = rep[rep.perc_frag>=0.1]
+        rep['sample'] = name
+        res.append(rep)
+
+    if len(res)>0:
+        df=pd.concat(res)
+        found = pd.concat([found,df])
+    return found
 
 def dataframe_to_fasta(df, seqkey='translation', idkey='locus_tag',
                      descrkey='description',
@@ -977,6 +1005,13 @@ def vcf_to_dataframe(vcf_file):
     ext = os.path.splitext(vcf_file)[1]
     if ext == '.gz':
         file = gzopen(vcf_file, "rt")
+    elif ext == '.bcf':
+        # Convert BCF to VCF first
+        bcftoolscmd = get_cmd('bcftools')
+        cmd = '{bc} view {f} -O v -o temp.vcf'.format(bc=bcftoolscmd,f=vcf_file)
+        tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
+        vcf_file = 'temp.vcf'
+        file = open(vcf_file)
     else:
         file = open(vcf_file)
     vcf_reader = vcf.Reader(file,'r')
@@ -1455,7 +1490,7 @@ def fetch_sra_reads(df, path, key='Run', test=False, sample_size=None, omit=[]):
         files = glob.glob(os.path.join(path,name+'*'))
         #if files exist we don't download
         if len(files) == 0:
-            cmd = 'fastq-dump --split-files {n} --outdir {o}'.format(n=r[key],o=path)
+            cmd = 'fastq-dump --split-files {n} -O {o}'.format(n=r[key],o=path)
             print (cmd)
             if test == False:
                 subprocess.check_output(cmd,shell=True)

@@ -477,15 +477,19 @@ class DataFrameTable(QTableView):
             self.exportTable()
         elif action == transposeAction:
             self.transpose()
-
         return
 
     def setIndex(self):
         return
 
     def copy(self):
+        """Copy selected cells"""
 
-        self.model.df
+        df = self.getSelectedDataFrame()
+        if len(df.columns==1):
+            df.to_clipboard(index=False, header=False)
+        else:
+            df.to_clipboard(index=False, header=True)
         return
 
     def refresh(self):
@@ -826,6 +830,7 @@ class SampleTable(DataFrameTable):
         return
 
     def addActions(self, event, row):
+        """Table actions"""
 
         menu = self.menu
         detailsAction = menu.addAction("Sample Details")
@@ -838,7 +843,7 @@ class SampleTable(DataFrameTable):
         normalisefastqaction = menu.addAction('Normalise Fastq')
         removeAction = menu.addAction("Remove Selected")
         removebamAction = menu.addAction("Delete Bam Files")
-        #copyAction = menu.addAction("Copy Row Text")
+        copyAction = menu.addAction("Copy")
         exportAction = menu.addAction("Export Table")
         action = menu.exec_(self.mapToGlobal(event.pos()))
         # Map the logical row index to a real index for the source model
@@ -866,6 +871,8 @@ class SampleTable(DataFrameTable):
             self.deleteRows(rows)
         elif action == removebamAction:
             self.deleteBamFiles(rows)
+        elif action == copyAction:
+            self.copy()
         elif action == exportAction:
             self.exportTable()
         #elif action == colorbyAction:

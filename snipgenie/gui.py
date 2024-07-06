@@ -553,6 +553,7 @@ class App(QMainWindow):
         self.settings_menu.addAction('Create Mask File', self.create_mask)
         self.settings_menu.addAction('Add Sample Meta Data', self.add_meta_data)
         self.settings_menu.addAction('View Meta Data', self.view_meta_data)
+        self.settings_menu.addAction('Merge Meta Data', self.merge_meta_data)
         self.settings_menu.addAction('Clean Up Files', self.clean_up)
 
         self.presets_menu = QMenu('Preset Genomes', self)
@@ -642,7 +643,7 @@ class App(QMainWindow):
         fname = os.path.abspath(fname)
         if fname and fname not in self.recent_files:
             self.recent_files.insert(0, fname)
-            if len(self.recent_files) > 5:
+            if len(self.recent_files) > 8:
                 self.recent_files.pop()
         self.recent_files_menu.setEnabled(len(self.recent_files))
         return
@@ -1025,7 +1026,7 @@ class App(QMainWindow):
     def merge_meta_data(self):
         """Add sample meta data by merging with file table"""
 
-        dlg = widgets.MergeDialog(self, self.fastq_table, meta)
+        dlg = widgets.MergeDialog(self, self.fastq_table, self.meta)
         dlg.exec_()
         if not dlg.accepted:
             return

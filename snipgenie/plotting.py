@@ -114,6 +114,12 @@ def show_colors(colors):
     plt.axis('off')
     return
 
+def colors_from_mapping(df, col, colormap):
+    """Colors from a pre-defined color mapping dict"""
+
+    newcolors =  [colormap[i] if i in colormap else 'Black' for i in df[col]]
+    return newcolors
+
 def get_color_mapping(df, col, cmap=None, seed=1):
     """Get random color map for categorcical dataframe column"""
 

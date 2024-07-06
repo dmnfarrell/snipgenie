@@ -128,11 +128,15 @@ class HeteroCheckerPlugin(Plugin):
             rows = table.getSelectedRows()
             data = df.iloc[rows]
             samples = list(data['sample'].unique())
-            vcf_file = os.path.join(self.parent.outputdir, 'snps.vcf.gz')
+            #old way
+            vcf_file = os.path.join(self.parent.outputdir, 'merged.vcf.gz')
             vdf = tools.vcf_to_dataframe(vcf_file)
 
             i=0
             for s in samples:
+                print (s)
+                #vcf_file = os.path.join(self.parent.outputdir, 'variant_calling', s, 'snps.bcf')
+                #vdf = tools.vcf_to_dataframe(vcf_file)
                 x = vdf[vdf['sample']==s].copy()
                 x['het'] = x.apply(het,1)
                 i+=1

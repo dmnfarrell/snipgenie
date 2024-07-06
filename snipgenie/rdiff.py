@@ -34,12 +34,14 @@ home = os.path.expanduser("~")
 config_path = os.path.join(home,'.config','pathogenie')
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
 datadir = os.path.join(module_path, 'data')
-mtbref = os.path.join(datadir, 'MTB-H37Rv.fa')
+#set these to something different for another genome
+ref_genome = os.path.join(datadir, 'MTB-H37Rv.fa')
+ref_table = os.path.join(datadir,'RD.csv')
 
 def create_rd_index(names=None):
     """Get RD region sequence from reference and make bwa index"""
 
-    RD = pd.read_csv(os.path.join(datadir,'RD.csv'))
+    RD = pd.read_csv(ref_table)
     df = RD.set_index('RD_name')
     if names!= None:
         df=df.loc[names]
@@ -47,30 +49,49 @@ def create_rd_index(names=None):
     for name, row in df.iterrows():
         #print (name,row.Start, row.Stop, row.Rv)
         from pyfaidx import Fasta
-        rg = Fasta(mtbref)
-        sseq = rg['NC_000962.3'][row.Start:row.Stop].seq
+        rg = Fasta(ref_genome)
+        chrom = tools.get_chrom(ref_genome)
+        sseq = rg[chrom][row.Start:row.Stop].seq
         #refname = '%s.fa' %name
         seqs.append(SeqRecord(Seq(sseq),id=name))
     SeqIO.write(seqs, 'RD.fa', 'fasta')
     aligners.build_bwa_index('RD.fa')
+    return
 
-def run_samples(df, path, threads=4):
-    """Run a set of samples
+def run_samples(df, outpath, threads=4, prev=None):
+    """Run a region of difference detection on a set of samples.
     Args:
-        df: a samples dataframe from snpgenie
-        path: folder with raw reads
+        df: a samples dataframe from snipgenie
+        outpath: folder to save bam output
+        prev: previous results dataframe if needed
     """
 
     res = []
     df=df.fillna('')
+    if prev is not None:
+        done = prev['name'].unique()
+        print ('found %s prev samples' %len(done))
+    else:
+        done = []
     for i,r in df.iterrows():
         name = r['sample']
+        if name in done:
+            continue
         print (name)
         f1 = r.filename1
         f2 = r.filename2
-        s = find_regions(f1, f2, path, name, threads)
+        s = find_regions(f1, f2, outpath, name, threads)
         res.append(s)
-    res = pd.concat(res)
+    if len(res)>0:
+        res = pd.concat(res)
+    else:
+        res = None
+    #add to previous
+    if prev is not None:
+        if res is not None:
+            res = pd.concat([prev,res])
+        else:
+            res = prev
     return res
 
 def get_average_depth(ref, f1):
@@ -95,8 +116,7 @@ def find_regions(f1, f2, path, name, threads=4, avdepth=None):
     from io import StringIO
     from pyfaidx import Fasta
     ref = 'RD.fa'
-    #rg = Fasta(mtbref)
-    #k = list(rg.keys())[0]
+
     if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)
     out = os.path.join(path,name+'.bam')
@@ -104,7 +124,7 @@ def find_regions(f1, f2, path, name, threads=4, avdepth=None):
         aligners.bwa_align(f1, f2, ref, out, threads=threads, overwrite=False)
     #get the average sequencing depth
     if avdepth == None:
-        avdepth = get_average_depth(mtbref, f1)
+        avdepth = get_average_depth(ref_genome, f1)
     #print (avdepth)
     cmd = 'samtools coverage --min-BQ 0 %s' %out
     tmp = subprocess.check_output(cmd,shell=True)
@@ -120,6 +140,7 @@ def get_matrix(res, cutoff=0.15):
     """
 
     X = pd.pivot_table(res,index='name',columns=['#rname'],values='ratio')
+
     X=X.clip(lower=cutoff).replace(cutoff,0)
     X=X.clip(upper=cutoff).replace(cutoff,1)
     #invert so 1 means RD is present
@@ -160,8 +181,9 @@ def _get_coverage(bam_file, chr, start, end, ref,  minq=10):
     cmd = 'samtools mpileup {b} --min-MQ {m} -f {r} -r {c}:{s}-{e}'.format(c=chr,
             s=start,e=end,b=bam_file,r=ref,m=minq)
     #print(cmd)
-    temp = subprocess.check_output(cmd, shell=True)
+    temp = subprocess.check_output(cmd, shell=True)#, stderr= subprocess.STDOUT)
     df = pd.read_csv(io.BytesIO(temp), sep='\t', names=['chr','pos','base','coverage','q','c'])
+    df['pos'] = df.pos.astype(int)
 
     if len(df)==0:
         df['pos'] = range(start,end)
@@ -173,7 +195,7 @@ def _get_coverage(bam_file, chr, start, end, ref,  minq=10):
              .reset_index())
     return df
 
-def get_coverage(bam_file, chr, start, end, ref, minq=10, n_cores=8):
+def get_coverage(bam_file, chr, start, end, ref, minq=10, threads=8):
     """Get coverage from a bam file - parallelized.
     Args:
         bam_file: input bam file, should be indexed
@@ -184,8 +206,8 @@ def get_coverage(bam_file, chr, start, end, ref, minq=10, n_cores=8):
 
     from multiprocessing import  Pool
 
-    pool = Pool(n_cores)
-    x = np.linspace(start,end,n_cores,dtype=int)
+    pool = Pool(threads)
+    x = np.linspace(start,end,threads,dtype=int)
     blocks=[]
     for i in range(len(x)):
         if i < len(x)-1:
@@ -208,7 +230,7 @@ def get_coverage(bam_file, chr, start, end, ref, minq=10, n_cores=8):
          .reset_index())
     return result
 
-def show_coverage(samples, chr, start, end, ref_fasta, ref_gb, minq=10, clip=None,
+def show_coverage(samples, chrom, start, end, ref_fasta, ref_gb, minq=10, clip=None,
                     margin=None, labelcol=None, title=None, colors={},
                     grid=False):
     """
@@ -216,7 +238,7 @@ def show_coverage(samples, chr, start, end, ref_fasta, ref_gb, minq=10, clip=Non
     RD region comparison. Uses dna_features_viewer.
     Args:
         samples: dataframe of samples with bam_file column
-        chr: chromosome name
+        chrom: chromosome name, use None to guess first chromosome
         start, end: start/end location of region
         ref_fasta: reference genome
         ref_gb: reference genbank annotation
@@ -227,6 +249,8 @@ def show_coverage(samples, chr, start, end, ref_fasta, ref_gb, minq=10, clip=Non
     from matplotlib.gridspec import GridSpec
     import matplotlib.ticker as ticker
 
+    if chrom == None:
+        chrom = tools.get_chrom(ref_fasta)
     rec = list(SeqIO.parse(ref_gb,format='gb'))[0]
     rec.features = [f for f in rec.features if f.type!='gene']
     rd = rec[start:end]
@@ -250,7 +274,7 @@ def show_coverage(samples, chr, start, end, ref_fasta, ref_gb, minq=10, clip=Non
     for n,r in samples.iterrows():
         name=r['sample']
         ax=fig.add_subplot(gs[i,0])
-        df = _get_coverage(r.bam_file,chr,start-margin,end+margin,ref_fasta,minq)
+        df = _get_coverage(r.bam_file,chrom,start-margin,end+margin,ref_fasta,minq)
         df=df.set_index('pos')
         #print (df)
         #bins=range(0,max(df.coverage),int(max(df.coverage)/5))
@@ -277,7 +301,7 @@ def show_coverage(samples, chr, start, end, ref_fasta, ref_gb, minq=10, clip=Non
     ax.xaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
     plt.subplots_adjust(left=.3,right=.9,wspace=0, hspace=0)
     if title==None:
-        title='%s:%s-%s' %(chr,start,end)
+        title='%s:%s-%s' %(chrom,start,end)
     fig.suptitle(title,fontsize=25)
     return
 
@@ -343,7 +367,7 @@ def filter_regions(df, mask_file):
     return df
 
 def get_deletions(samples, ref_fasta, gb_file=None, mask_file=None,
-                  label='sample', dist=100, min_coverage=0, n_cores=4):
+                  label='sample', dist=100, min_coverage=0, threads=4, prev=None):
     """
     Get deletions for multiple aligned samples.
     Args:
@@ -351,11 +375,17 @@ def get_deletions(samples, ref_fasta, gb_file=None, mask_file=None,
         ref_fasta: fasta file of genome aligned to
         gb_file: genbank with annotation
         mask_file: mask bed for excluding regions
-        dist: threshold distance to group by close start locations -
-        may avoid the same deletion being detected multiple times
+        dist: threshold distance to merge close start locations together,
+        helps to avoid the same deletion being detected multiple times
         min_coverage: minimum coverage to consider a deletion point
+        prev: previous results dataframe if needed
     """
 
+    if prev is not None:
+        done = prev['name'].unique()
+        print ('found %s prev samples' %len(done))
+    else:
+        done = []
     from pyfaidx import Fasta
     rg = Fasta(ref_fasta)
     #start/end of genome
@@ -365,13 +395,27 @@ def get_deletions(samples, ref_fasta, gb_file=None, mask_file=None,
     regions = []
     for i,r in samples.iterrows():
         print (r.bam_file)
+        if not os.path.exists(r.bam_file):
+            continue
+        name = r[label]
+        if name in done:
+            continue
         #minq 0 allows multimappers to reduce false positives
-        df = get_coverage(r.bam_file,chrom,s,e,ref_fasta,minq=0,n_cores=n_cores)
-        ss = detect_deletions(df, min_coverage)
+        try:
+            df = get_coverage(r.bam_file,chrom,s,e,ref_fasta,minq=0,threads=threads)
+            ss = detect_deletions(df, min_coverage)
+        except Exception as e:
+            print (e)
+            continue
         if label != None:
-            ss['name'] = r[label]
-
+            ss['name'] = name
         regions.append(ss)
+    if len(regions) == 0:
+        if prev is not None:
+            return prev
+        else:
+            return None
+
     regions = pd.concat(regions)
     #group deletions into start regions
     regions = group_deletions(regions, dist)
@@ -381,4 +425,7 @@ def get_deletions(samples, ref_fasta, gb_file=None, mask_file=None,
         regions['genes'] = regions.apply(lambda x: get_genes_region(x.start, x.end, annot),1)
     if mask_file != None:
         regions = filter_regions(regions, mask_file)
+    if prev is not None:
+        regions = pd.concat([prev,regions])
+
     return regions

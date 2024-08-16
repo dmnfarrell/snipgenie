@@ -30,9 +30,9 @@ from snipgenie import app, widgets, tables, aligners, tools
 from snipgenie.plugin import Plugin
 
 #location for sequences to align against
-index_path = os.path.join(app.config_path, 'contam')
-if not os.path.exists(index_path):
-    os.makedirs(index_path, exist_ok=True)
+#index_path = os.path.join(app.config_path, 'contam')
+#if not os.path.exists(index_path):
+#    os.makedirs(index_path, exist_ok=True)
 
 class SpoligotypingPlugin(Plugin):
     """Contam checker plugin for SNiPgenie"""

@@ -129,7 +129,7 @@ class HeteroCheckerPlugin(Plugin):
             data = df.iloc[rows]
             samples = list(data['sample'].unique())
             #old way
-            vcf_file = os.path.join(self.parent.outputdir, 'merged.vcf.gz')
+            vcf_file = os.path.join(self.parent.outputdir, 'snps.vcf.gz')
             vdf = tools.vcf_to_dataframe(vcf_file)
 
             i=0
@@ -140,7 +140,7 @@ class HeteroCheckerPlugin(Plugin):
                 x = vdf[vdf['sample']==s].copy()
                 x['het'] = x.apply(het,1)
                 i+=1
-                h = x[x['het']>0.1]
+                h = x[x['het']>0.05]
                 #sites.append(h)
                 result.append(h)
             #print (sites)

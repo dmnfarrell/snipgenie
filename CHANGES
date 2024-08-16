@@ -7,6 +7,11 @@ CHANGES
 
 * changed calling step to now run mpileup and call separately
 * now merge called vcfs at end, allows re-running pipeline much easier
+* 16S plugin
+* added calling_method option to use old method
+* changed proximity filter to number, now default unless value is 0
+* check for duplicates tool allows dups to be marked
+* move fastq file option
 
 0.6.1
 -----

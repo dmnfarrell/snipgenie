@@ -468,6 +468,9 @@ def get_chrom(filename):
 def get_fastq_info(filename):
 
     rl = get_fastq_read_lengths(filename)
+    #print (filename,rl.mean())
+    if rl.mean() == np.nan:
+        return
     return int(rl.mean())
 
 def get_fastq_num_reads(filename):
@@ -482,7 +485,7 @@ def get_fastq_read_lengths(filename, size=2000):
     """Return fastq read lengths"""
 
     df = fastq_to_dataframe(filename, size=size)
-    name = os.path.basename(filename).split('.')[0]
+    #name = os.path.basename(filename).split('.')[0]
     return df.length
 
 def get_file_size(filename):
@@ -992,12 +995,13 @@ def get_vcf_samples(filename):
     c = pd.read_csv(StringIO(tmp),sep='\t',names=['name'])
     return c.name
 
-def vcf_to_dataframe(vcf_file):
+def vcf_to_dataframe(vcf_file, limit=1e5):
     """
     Convert a multi sample bcf/vcf to dataframe. Records each samples FORMAT fields.
     May use a lot of memory for large vcfs!
     Args:
         vcf_file: input multi sample vcf
+        limit: limit to first n lines, avoids loading huge files
     Returns: pandas DataFrame
     """
 
@@ -1020,8 +1024,8 @@ def vcf_to_dataframe(vcf_file):
             'sub_type','pos','start','end','QUAL']
     i=0
     for rec in vcf_reader:
-        #if i>50:
-        #    break
+        if i>limit:
+            break
         x = [rec.CHROM, rec.var_type, rec.var_subtype, rec.POS, rec.start, rec.end, rec.QUAL]
         for sample in rec.samples:
             if sample.gt_bases == None:
@@ -1037,6 +1041,7 @@ def vcf_to_dataframe(vcf_file):
                 cdata = sample.data
                 row = [sample.sample, rec.REF, sample.gt_bases, mut, cdata[2], cdata[4] ,cdata[5], cdata[6]] + x
             res.append(row)
+        i+=1
 
     res = pd.DataFrame(res,columns=cols)
     res = res[~res.start.isnull()]
@@ -1582,7 +1587,7 @@ def get_spoligotype(filename, reads_limit=3000000, threshold=2, threads=4):
     Get spoligotype from WGS reads. Blasts to known DR spacers.
     Args:
         reads_limit: limit of subset of reads to blast
-        threshold: minimum number of hits to spacer
+        threshold: minimum number of hits to a spacer to consider it present
     """
 
     ref = os.path.join(datadir, 'dr_spacers.fa')

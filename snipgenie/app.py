@@ -83,10 +83,11 @@ defaults = {'threads':4, 'labelsep':'_', 'labelindex':0,
             'manifest': None,
             'trim':False, 'unmapped':False, 'quality':25,
             'aligner': 'bwa', 'platform': 'illumina', 'species': None,
-            'filters': default_filter, 'custom_filters': False, 'mask': None,
+            'filters': default_filter, 'proximity': 10, 'mask': None,
             'uninformative_sites': False,
             'reference': None, 'gb_file': None, 'overwrite':False,
             'omit_samples': [], 'get_stats':False,
+            'calling_method': 'new',
             'buildtree':False, 'bootstraps':100}
 
 def check_platform():
@@ -274,6 +275,21 @@ def mapping_stats(samples):
         samples.loc[i,'perc_mapped'] = round(s['primary']/(total*2)*100,2)
     return samples
 
+def clean_folders(samples, path):
+    """Clean folders from variant_calling dir that are not in samples.
+    Use with caution."""
+
+    samplenames = list(samples['sample'])
+    folders = (glob.glob(path+'/*'))
+    for f in folders:
+        if not os.path.isdir(f):
+            continue
+        name = os.path.basename(f)
+        if name not in samplenames:
+            print (name)
+            shutil.rmtree(f)
+    return
+
 def clean_bam_files(samples, path, remove=False):
     """Check if any bams in output not in samples and remove. Not used in workflow."""
 
@@ -424,44 +440,7 @@ def mpileup_region(region,out,bam_files,callback=None):
 def worker(args):
     mpileup(args[0], args[1], args[2])
 
-'''def mpileup_multiprocess(bam_files, ref, outpath, threads=4, callback=None):
-    """Run mpileup in parallel over multiple files and make separate bcfs.
-    The bcf files can then be merged to create a single file.
-    Assumes alignment to a bacterial reference with a single chromosome."""
-
-    bcftoolscmd = tools.get_cmd('bcftools')
-    #size = len(bam_files)
-    #pool = mp.Pool(threads)
-    outfiles = []
-    st = time.time()
-    bcfpath = os.path.join(outpath,'bcf')
-    if not os.path.exists(bcfpath):
-        os.mkdir(bcfpath)
-    for bam_file in bam_files:
-        name = os.path.splitext(os.path.basename(bam_file))[0]
-        out = '{o}/{f}.bcf'.format(o=bcfpath,f=name)
-        outfiles.append(out)
-
-    refs = [ref] * len(outfiles)
-    data = list(zip(bam_files,refs,outfiles))
-    #print (data)
-
-    p = mp.Pool(threads)
-    p.map_async(worker, data)
-    p.close()
-    p.join()
-
-    t=time.time()-st
-    print ('took %s seconds' %str(round(t,3)))
-    rawbcf = os.path.join(outpath,'raw.bcf')
-    print (outfiles)
-    bcf_files = ' '.join(outfiles)
-    cmd = '{bc} merge --threads {t} -o {r} {b}'.format(b=bcf_files,r=rawbcf, bc=bcftoolscmd,t=threads)
-    print (cmd)
-    subprocess.check_output(cmd, shell=True)
-    return rawbcf'''
-
-def mpileup_parallel(bam_files, ref, outpath, threads=4, callback=None, tempdir=None):
+def mpileup_parallel_old(bam_files, ref, outpath, threads=4, callback=None, tempdir=None):
     """Run mpileup in over multiple regions with GNU parallel on linux or rush on Windows
       Separate bcf files are then joined together.
       Assumes alignment to a bacterial reference with a single chromosome.
@@ -516,10 +495,65 @@ def mpileup_parallel(bam_files, ref, outpath, threads=4, callback=None, tempdir=
         os.remove(f)
     return rawbcf
 
-def variant_calling(bam_files, ref, outpath, samples=None, threads=4,
+def mpileup_parallel(bam_file, ref, rawbcf, threads=4, callback=None, tempdir=None):
+    """Run mpileup in over multiple regions with GNU parallel on linux or rush on Windows
+      Separate bcf files are then joined together.
+      Assumes alignment to a bacterial reference with a single chromosome.
+    """
+
+    if tempdir == None:
+        tempdir = tempfile.tempdir
+    #bam_files = ' '.join(bam_files)
+    #rawbcf = os.path.join(outpath,'raw.bcf')
+    chr = tools.get_chrom(ref)
+    length = tools.get_fasta_length(ref)
+    x = np.linspace(1,length,threads+1,dtype=int)
+    print (x)
+
+    #split genome into blocks
+    blocks=[]
+    for i in range(len(x)):
+        if i < len(x)-1:
+            blocks.append((x[i],x[i+1]-1))
+
+    #get temp outfile names
+    outfiles = []
+    regions = []
+    for start,end in blocks:
+        region = '"{c}":{s}-{e}'.format(c=chr,s=start,e=end)
+        regions.append(region)
+        out = os.path.join(tempdir,'{s}-{e}.bcf'.format(s=start,e=end))
+        outfiles.append(out)
+
+    regstr = ' '.join(regions)
+    #print (regstr)
+    filesstr = ' '.join(outfiles)
+    bcftoolscmd = tools.get_cmd('bcftools')
+
+    if platform.system() == 'Windows':
+        rushcmd = tools.get_cmd('rush')
+        cmd = 'echo {reg} | {rc} -D " " "{bc} mpileup -r {{}} -f {r} -a {a} --max-depth 500 --min-MQ 60 {b} -o {p}/{{@[^:]*$}}.bcf"'\
+                .format(rc=rushcmd,bc=bcftoolscmd,reg=regstr,r=ref,b=bam_file,a=annotatestr,p=tempdir)
+    else:
+        cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b --max-depth 500 --min-MQ 60 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
+                .format(r=ref, reg=regstr, b=bam_file, o=filesstr, a=annotatestr)
+    #print (cmd)
+    #if callback != None:
+    #    callback(cmd)
+    subprocess.check_output(cmd, shell=True, stderr=subprocess.PIPE)
+    #concat the separate files
+    cmd = '{bc} concat {i} --threads {t} -O b -o {o}'.format(bc=bcftoolscmd,i=' '.join(outfiles),o=rawbcf,t=threads)
+    print (cmd)
+    subprocess.check_output(cmd, shell=True)
+    #remove temp files
+    for f in outfiles:
+        os.remove(f)
+    return rawbcf
+
+def variant_calling_old(bam_files, ref, outpath, samples=None, threads=4,
                     callback=None, overwrite=False, filters=None, gff_file=None,
                     mask=None, tempdir=None, sep='_',
-                    custom_filters=False, **kwargs):
+                    proximity=10, **kwargs):
     """Call variants with bcftools"""
 
     st = time.time()
@@ -541,7 +575,7 @@ def variant_calling(bam_files, ref, outpath, samples=None, threads=4,
             tmp = subprocess.check_output(cmd, shell=True)
         #or use mpileup in parallel to speed up
         else:
-            rawbcf = mpileup_parallel(bam_files, ref, outpath, threads=threads,
+            rawbcf = mpileup_parallel_old(bam_files, ref, outpath, threads=threads,
                                         tempdir=tempdir, callback=callback)
         #new method
         #rawbcf = mpileup_multiprocess(bam_files, ref, outpath, threads=threads,
@@ -589,16 +623,21 @@ def variant_calling(bam_files, ref, outpath, samples=None, threads=4,
     print (cmd)
     subprocess.check_output(cmd,shell=True)
 
-    #apply mask if required
+    #apply mask if provided
     if mask != None:
         mask_filter(snpsout, mask, outdir=outpath, overwrite=True)
         mask_filter(indelsout, mask, outdir=outpath, overwrite=True)
 
-    #custom filters
-    if custom_filters == True:
-        site_proximity_filter(snpsout, outdir=outpath, overwrite=True)
+    #prox filter
+    site_proximity_filter(snpsout, dist=int(proximity), outdir=outpath, overwrite=True)
+    #consequence_calling
+    consequence_calling(snpsout, indelsout, outpath, gff_file, ref)
+    print ('took %s seconds' %str(round(time.time()-st,0)))
+    return snpsout
 
-    #consequence calling
+def consequence_calling(snpsout, indelsout, outpath, gff_file, ref):
+    """Consequence calling using gff file"""
+
     if gff_file != None:
         print ('consequence calling..')
         try:
@@ -611,8 +650,112 @@ def variant_calling(bam_files, ref, outpath, samples=None, threads=4,
             m.to_csv(os.path.join(outpath,'csq_indels.matrix'))
         except Exception as e:
             print (e)
-    print ('took %s seconds' %str(round(time.time()-st,0)))
+    return
+
+#new code
+
+def run_file(bam_file, ref, outpath, overwrite=False, threads=4):
+    """
+    Run mpileup/snp calling/filtering for one sample.
+    """
+
+    if not os.path.exists(outpath):
+        os.makedirs(outpath, exist_ok=True)
+
+    bcftoolscmd = tools.get_cmd('bcftools')
+    rawbcf = os.path.join(outpath,'raw.bcf')
+
+    if not os.path.exists(rawbcf) or overwrite == True:
+        mpileup_parallel(bam_file, ref, rawbcf, threads=threads)
+        #mpileup(bam_file, rawbcf, ref, threads=threads, overwrite=overwrite)
+
+    #call
+    vcfout = os.path.join(outpath,'calls.vcf')
+    snpsout = os.path.join(outpath,'snps.bcf')
+    #assumes other files are there and returns - improve this
+    if os.path.exists(vcfout) and overwrite == False:
+        return snpsout
+    tools.bcftools_call(rawbcf, vcfout, show_cmd=True)
+
+    #print ('splitting snps and indels..')
+    cmd = '{bc} view -v snps -o {o} -O b {i}'.format(bc=bcftoolscmd,o=snpsout,i=vcfout)
+    #print (cmd)
+    subprocess.check_output(cmd,shell=True)
+    cmd = 'bcftools index {o}'.format(o=snpsout)
+    subprocess.check_output(cmd, shell=True)
+
+    #also get indels only to separate file
+    indelsout = os.path.join(outpath,'indels.bcf')
+    cmd = '{bc} view -v indels -o {o} -O b {i}'.format(bc=bcftoolscmd,o=indelsout,i=vcfout)
+    #print (cmd)
+    subprocess.check_output(cmd,shell=True)
     return snpsout
+
+def write_filelist(files, filename):
+    """Write out sample names only using dataframe from get_samples"""
+
+    df = pd.DataFrame(files)
+    df.to_csv(filename, index=False, header=False)
+    return
+
+def variant_calling(samples, ref, outpath, filters=None, proximity=10, mask=None,
+                    gff_file=None, overwrite=False, threads=4, **kwargs):
+    """
+    Run variant calling for multiple samples.
+    """
+
+    bcftoolscmd = tools.get_cmd('bcftools')
+    vcfoutpath = os.path.join(outpath, 'variant_calling')
+    os.makedirs(vcfoutpath, exist_ok=True)
+    if samples is not None:
+        #write out new samples.txt file for reheader step
+        write_samples(samples[['sample']], outpath)
+        sample_file = os.path.join(outpath,'samples.txt')
+
+    outfiles = []
+    from tqdm import tqdm
+    for i, r in tqdm(samples.iterrows(), total=len(samples)):
+    #for i,r in samples.iterrows():
+        name = r['sample']
+        #print (name)
+        path = os.path.join(vcfoutpath, name)
+        #print (r.bam_file)
+        snpfile = run_file(r.bam_file, ref, path, threads=threads)
+        outfiles.append(snpfile)
+
+    #write file list
+    bcffilelist = os.path.join(outpath, 'bcffiles.txt')
+    write_filelist(outfiles, bcffilelist)
+    merged = os.path.join(outpath, 'merged.vcf.gz')
+    bcf_files = ' '.join(outfiles)
+    #print (outfiles)
+    cmd = '{bc} merge --threads {t} -0 -O z -o {o} --file-list {f}'.format(f=bcffilelist,o=merged, bc=bcftoolscmd,t=threads)
+    print (cmd)
+    subprocess.check_output(cmd, shell=True)
+
+    relabel_vcfheader(merged, sample_file)
+    #filter calls
+    if filters == None:
+        filters = default_filter
+    if filters != '':
+        filtered = os.path.join(outpath,'filtered.vcf.gz')
+        cmd = '{bc} filter -i "{f}" -o {o} -O z {i}'.format(bc=bcftoolscmd,i=merged,o=filtered,f=filters)
+        print (cmd)
+        tmp = subprocess.check_output(cmd,shell=True)
+    else:
+        filtered = merged
+
+    #prox filter
+    site_proximity_filter(filtered, dist=int(proximity), outdir=outpath, overwrite=True)
+
+    #apply mask if required
+    if mask != None:
+        mask_filter(filtered, mask, outdir=outpath, overwrite=True)
+        #mask_filter(indelsout, mask, outdir=outpath, overwrite=True)
+
+    #consequence_calling
+    consequence_calling(filtered, None, outpath, gff_file, ref)
+    return filtered
 
 def csq_call(ref, gff_file, vcf_file, csqout):
     """Consequence calling"""
@@ -655,9 +798,9 @@ def mask_filter(vcf_file, mask_file, overwrite=False, outdir=None):
         if (x.start<=i) & (x.end>=i):
             return 1
     import vcf
+    print (vcf_file)
     vcf_reader = vcf.Reader(open(vcf_file, 'rb'))
     sites = [record.POS for record in vcf_reader]
-    print('%s sites' %len(sites))
     found = []
     for i in sites:
         m = mask.apply( lambda x: do_mask(x,i),1)
@@ -665,7 +808,7 @@ def mask_filter(vcf_file, mask_file, overwrite=False, outdir=None):
         if len(m)>0:
             #print (i)
             found.append(i)
-    print('found %s sites in masked regions' %len(found))
+    print('found %s/%s sites in masked regions' %(len(found),len(sites)))
     new = sorted(list(set(sites) - set(found)))
     if outdir == None:
         outdir = tempfile.gettempdir()
@@ -681,6 +824,8 @@ def site_proximity_filter(vcf_file, dist=10, overwrite=False, outdir=None):
         overwrite: whether to overwrite the vcf
     """
 
+    if dist == 0:
+        return
     print('applying proximity filter..')
     #get vcf positions into dataframe
     df = tools.get_vcf_positions(vcf_file)
@@ -762,7 +907,7 @@ def get_aa_snp_matrix(df):
     return x
 
 def run_bamfiles(bam_files, ref, gff_file=None, mask=None, outdir='.', threads=4,
-                    sep='_', labelindex=0, **kwargs):
+                    sep='_', labelindex=0, calling_method='new', **kwargs):
     """
     Run workflow with bam files from a previous sets of alignments.
     We can arbitrarily combine results from multiple other runs this way.
@@ -783,10 +928,16 @@ def run_bamfiles(bam_files, ref, gff_file=None, mask=None, outdir='.', threads=4
     print ('%s samples were loaded:' %len(bam_files))
 
     samples = get_samples_from_bams(bam_files, sep=sep)
-    vcf_file = variant_calling(bam_files, ref, outdir,
-                                   samples=samples, threads=threads,
-                                   gff_file=gff_file, mask=mask, sep=sep,
-                                   **kwargs)
+    if calling_method == 'old':
+        vcf_file = variant_calling_old(bam_files, ref, outdir,
+                                    samples=samples, threads=threads,
+                                    gff_file=gff_file, mask=mask, sep=sep,
+                                    **kwargs)
+    else:
+        vcf_file = variant_calling(samples, ref, outdir,
+                                    threads=threads,
+                                    gff_file=gff_file, mask=mask, sep=sep,
+                                    **kwargs)
     run_vcf(vcf_file, outdir, threads=threads)
     return
 
@@ -804,9 +955,9 @@ def run_vcf(vcf_file, outdir, threads=8):
     print ('computing snp distance matrix..')
     snp_dist = tools.snp_dist_matrix(aln)
     snp_dist.to_csv(os.path.join(outdir,'snpdist.csv'), sep=',')
-    treefile = trees.run_RAXML(outfasta, outpath=outdir, threads=threads)
-    ls = len(smat)
-    trees.convert_branch_lengths(treefile,os.path.join(outdir,'tree.newick'), ls)
+    #treefile = trees.run_RAXML(outfasta, outpath=outdir, threads=threads)
+    #ls = len(smat)
+    #trees.convert_branch_lengths(treefile,os.path.join(outdir,'tree.newick'), ls)
     return
 
 class Logger(object):
@@ -990,16 +1141,27 @@ class WorkFlow(object):
         print ()
         print ('calling variants')
         print ('----------------')
-        bam_files = list(samples.bam_file)
-        self.vcf_file = variant_calling(bam_files, self.reference, self.outdir,
-                                        samples=samples,
-                                        threads=self.threads,
-                                        gff_file=self.gff_file,
-                                        filters=self.filters,
-                                        mask=self.mask,
-                                        custom_filters=self.custom_filters,
-                                        overwrite=self.overwrite,
-                                        tempdir=self.tempdir)
+        if self.calling_method == 'new':
+            self.vcf_file = variant_calling(samples, self.reference, self.outdir,
+                                            threads=self.threads,
+                                            gff_file=self.gff_file,
+                                            filters=self.filters,
+                                            mask=self.mask,
+                                            proximity=self.proximity,
+                                            overwrite=self.overwrite,
+                                            tempdir=self.tempdir)
+        else:
+            #old variant calling method
+            bam_files = list(samples.bam_file)
+            self.vcf_file = variant_calling_old(bam_files, self.reference, self.outdir,
+                                            samples=samples,
+                                            threads=self.threads,
+                                            gff_file=self.gff_file,
+                                            filters=self.filters,
+                                            mask=self.mask,
+                                            proximity=self.proximity,
+                                            overwrite=self.overwrite,
+                                            tempdir=self.tempdir)
         print (self.vcf_file)
         print ()
         print ('making SNP matrix')
@@ -1096,8 +1258,8 @@ def main():
                         help="variant calling post-filters" )
     parser.add_argument("-m", "--mask", dest="mask", default=None,
                         help="supply mask regions from a bed file" )
-    parser.add_argument("-c", "--custom", dest="custom_filters", action="store_true", default=False,
-                        help="apply custom filters" )
+    parser.add_argument("-pf", "--proximity", dest="proximity", default=10,
+                        help="proximity filter value, set 0 to not apply filter")
     parser.add_argument("-u", "--uninformative", dest="uninformative_sites", action="store_true", default=False,
                         help="keep uninformative sites when calling variants" )
     parser.add_argument("-p", "--platform", dest="platform", default='illumina',
@@ -1110,8 +1272,8 @@ def main():
                         help="number of bootstraps to build tree")
     parser.add_argument("-o", "--outdir", dest="outdir",
                         help="Results folder", metavar="FILE")
-    #parser.add_argument("-O", "--omit", dest="omit_samples",
-    #                    help="List of sample names to omit of required", metavar="FILE")
+    parser.add_argument("-c", "--calling_method", dest="calling_method", default='new',
+                        help="use new or old calling method")
     parser.add_argument("-q", "--qc", dest="qc", action="store_true",
                         help="QC report")
     parser.add_argument("-s", "--stats", dest="get_stats", action="store_true", default=False,

@@ -47,7 +47,7 @@ For Linux installs, you require Python 3 and the following packages. These will 
 * pandas
 * matplotlib
 * biopython
-* pyvcf
+* pyvcf3
 * pyfaidx
 * pyqt5 (GUI only)
 * toytree (GUI only)
@@ -82,24 +82,20 @@ This will run the entire process based on a set of options given at the terminal
   -i FILE, --input FILE
                         input folder(s)
   -M FILE, --manifest FILE
-                        manifest file with samples, optional
-                        overrides input
-  -e LABELSEP, --labelsep LABELSEP
-                        symbol to split the sample labels on
-  -x LABELINDEX, --labelindex LABELINDEX
-                        position to extract label in split filenames
+                        manifest file with samples, optional - overrides input
   -r FILE, --reference FILE
                         reference genome filename
   -S SPECIES, --species SPECIES
-                        set the species reference genome, overrides -r.
-                        possible values are
-                        Mbovis-AF212297, MTB-H37Rv, MAP-K10,
-                        M.smegmatis-MC2155,
-                        Mycoplasmabovis-PG45, Sars-Cov-2
+                        set the species reference genome, overrides -r. possible values are Mbovis-AF212297, MTB-H37Rv, MAP-K10,
+                        M.smegmatis-MC2155, Mycoplasmabovis-PG45, Sars-Cov-2
   -g FILE, --genbank_file FILE
                         annotation file, optional
   -t THREADS, --threads THREADS
                         cpu threads to use
+  -e LABELSEP, --labelsep LABELSEP
+                        symbol to split the sample labels on if parsing filenames
+  -x LABELINDEX, --labelindex LABELINDEX
+                        position to extract label in split filenames
   -w, --overwrite       overwrite intermediate files
   -T, --trim            whether to trim fastq files
   -U, --unmapped        whether to save unmapped reads
@@ -107,11 +103,12 @@ This will run the entire process based on a set of options given at the terminal
                         right trim quality, default 25
   -f FILTERS, --filters FILTERS
                         variant calling post-filters
-  -m MASK, --mask MASK  mask regions from a bed file
-  -c, --custom          apply custom filters
+  -m MASK, --mask MASK  supply mask regions from a bed file
+  -pf PROXIMITY, --proximity PROXIMITY
+                        proximity filter value, set 0 to not apply filter
+  -u, --uninformative   keep uninformative sites when calling variants
   -p PLATFORM, --platform PLATFORM
-                        sequencing platform, change to ont if
-                        using oxford nanopore
+                        sequencing platform, change to ont if using oxford nanopore
   -a ALIGNER, --aligner ALIGNER
                         aligner to use, bwa, subread, bowtie or minimap2
   -b, --buildtree       whether to build a phylogenetic tree, requires RaXML
@@ -119,8 +116,10 @@ This will run the entire process based on a set of options given at the terminal
                         number of bootstraps to build tree
   -o FILE, --outdir FILE
                         Results folder
+  -c CALLING_METHOD, --calling_method CALLING_METHOD
+                        use new or old calling method
   -q, --qc              QC report
-  -s, --stats           Calculate read length and mapping stats, default False
+  -s, --stats           Calculate read length and mapping stats
   -d, --dummy           Check samples but don't run
   -X, --test            Test run
   -v, --version         Get version
@@ -173,6 +172,14 @@ LT708304.1 	 131419 	 132910
 LT708304.1 	 149570 	 151187
 LT708304.1 	 306201 	 307872
 ```
+
+## Proximity filter
+
+By default a filter is run that excludes any variant positions within a given distance of each other. This is to prevent false positives resulting from alignment artifacts. The default value is 10. You can set the value using the -pf option. Use 0 to ignore the filter.
+
+## Variant calling method
+
+The previous method was to split the genome into chunks and run `bcftools mpileup` all samples together, then concatenate the result into one large bcf file. This file was then used for `bcftools call`. This method has been replaced by the more typical approach of running mpileup on individual files, running the calling, then merging the results with `bcftools merge`. The reason for the change is that the old method was inflexible for large numbers of samples because the entire mpileup has to be re-run when new samples are added. The old method is still available by specifying `-c old`.
 
 ## Inputs
 
@@ -241,11 +248,9 @@ W.run()
 
 ## GUI
 
-The package includes a desktop application with additional features like a fastq quality analysis, the ability to view alignments and tree viewing. It requires the installation of either PyQt5 or PySide2 if using the pip install. A windows installer for this application will be available separately.
+The package includes a desktop application with additional features like a fastq quality analysis, the ability to view alignments and tree viewing. It requires the installation of either PyQt5 or PySide2 if using the pip install. 
 
 <img src=doc/source/scr1.png width=600px>
-
-You can view a short video on using the GUI [here](https://www.youtube.com/watch?v=ieljx3NiTqE).
 
 ## FAQ
 

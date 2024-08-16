@@ -524,24 +524,20 @@ class App(QMainWindow):
             lambda: self.run_threaded_process(self.add_gc_mean, self.processing_completed))
         self.tools_menu.addAction('Quality Check',
             lambda: self.run_threaded_process(self.add_quality_test, self.processing_completed))
-        self.tools_menu.addAction('Missing Sites',
-            lambda: self.run_threaded_process(self.missing_sites, self.processing_completed))
+        #self.tools_menu.addAction('Missing Sites',
+        #    lambda: self.run_threaded_process(self.missing_sites, self.processing_completed))
         self.tools_menu.addAction('QC Report', self.fastq_quality_report)
         self.tools_menu.addAction('Consensus Sequences', self.get_consensus_sequences)
 
         self.tools_menu.addAction('Show Annotation', self.show_ref_annotation)
         self.tools_menu.addAction('SNP Dist Matrix', self.show_snpdist)
         self.tools_menu.addAction('SNP Viewer', self.snp_viewer)
-        self.tools_menu.addAction('CSQ Viewer', self.csq_viewer)
+        #self.tools_menu.addAction('CSQ Viewer', self.csq_viewer)
         self.tools_menu.addAction('VCF Viewer', self.vcf_viewer)
         #self.tools_menu.addAction('Map View', self.show_map)
-        self.tools_menu.addAction('Tree Viewer', self.tree_viewer)
+        #self.tools_menu.addAction('Tree Viewer', self.tree_viewer)
         #self.tools_menu.addSeparator()
-        #self.tools_menu.addAction('Check Heterozygosity', self.check_heterozygosity)
-        #self.tools_menu.addAction('RD Analysis (MTBC)',
-        #    lambda: self.run_threaded_process(self.rd_analysis, self.rd_analysis_completed))
-        #self.tools_menu.addAction('M.bovis SNP typing',
-        #    lambda: self.run_threaded_process(self.snp_typing, self.processing_completed))
+        self.tools_menu.addAction('Check Duplicates', self.check_duplicates)
 
         self.settings_menu = QMenu('Settings', self)
         self.menuBar().addMenu(self.settings_menu)
@@ -878,7 +874,7 @@ class App(QMainWindow):
         return
 
     def load_fastq_table(self, filenames):
-        """Append/Load fasta inputs into table"""
+        """Append or Load fasta inputs into table"""
 
         if filenames is None or len(filenames) == 0:
             return
@@ -887,7 +883,7 @@ class App(QMainWindow):
             return
         self.opts.applyOptions()
         kwds = self.opts.kwds
-        print (kwds)
+        #print (kwds)
         df = self.fastq_table.model.df
         new = app.get_samples(filenames, sep=kwds['labelsep'])
         #pivoted
@@ -899,11 +895,13 @@ class App(QMainWindow):
         if len(df)>0:
             new = pd.concat([df,new],sort=False).reset_index(drop=True)
             new = new.drop_duplicates('filename1')
-
+        #check for duplicates using entire table
+        self.check_duplicates()
         self.fastq_table.setDataFrame(new)
         self.fastq_table.resizeColumns()
-        #print (new)
+
         app.write_samples(new[['sample']], self.outputdir)
+        self.fastq_table.refresh()
         return
 
     def load_fastq_folder_dialog(self):
@@ -924,6 +922,22 @@ class App(QMainWindow):
         if not filenames:
             return
         self.load_fastq_table(filenames)
+        return
+
+    def check_duplicates(self):
+        """Check for duplicates"""
+
+        df = self.fastq_table.model.df
+        df['dup'] = df.duplicated(subset='sample')
+        self.fastq_table.refresh()
+        return
+
+    def remove_duplicates(self):
+        """Remove duplicate samples from table"""
+
+        df = self.fastq_table.model.df
+        new = df.drop_duplicates()
+        self.fastq_table.setDataFrame(new)
         return
 
     def set_reference(self, filename=None, ask=True):
@@ -1161,7 +1175,7 @@ class App(QMainWindow):
         """Update table with changed rows"""
 
         df = self.fastq_table.model.df
-        print (new)
+        #print (new)
         cols = new.columns
         df.loc[df['sample'].isin(new['sample']), cols] = new[cols]
         return
@@ -1187,15 +1201,14 @@ class App(QMainWindow):
         else:
             gff_file = None
 
-        bam_files = list(df.bam_file.dropna().unique())
+        #bam_files = list(df.bam_file.dropna().unique())
         samples = self.fastq_table.model.df
-        print ('Calling with %s of %s samples aligned' %(len(bam_files), len(df)))
-        self.results['vcf_file'] = app.variant_calling(bam_files, self.ref_genome, path,
-                                    samples=samples,
-                                    threads=threads, relabel=True,
+        print ('Calling with %s samples' % len(samples))
+        self.results['vcf_file'] = app.variant_calling(samples, self.ref_genome, path,
+                                    threads=threads, #relabel=True,
                                     overwrite=overwrite, filters=filters,
-                                    gff_file=gff_file, mask=self.mask_file,
-                                    custom_filters=proximity,
+                                    mask=self.mask_file, #gff_file=gff_file,
+                                    proximity=proximity,
                                     callback=progress_callback.emit)
         self.snp_alignment()
         return
@@ -1246,7 +1259,7 @@ class App(QMainWindow):
 
         self.opts.applyOptions()
         kwds = self.opts.kwds
-        vcf_file = os.path.join(self.outputdir, 'snps.vcf.gz')
+        vcf_file = self.results['vcf_file']
         print('Making SNP alignment')
         uninformative_sites = kwds['uninformative_sites']
         result, smat = tools.core_alignment_from_vcf(vcf_file, uninformative_sites)
@@ -1316,14 +1329,16 @@ class App(QMainWindow):
     def vcf_viewer(self):
         """Show VCF table"""
 
-        if 'VCF' in self.get_tabs():
-            self.tabs.removeTab(0)
-        vcf_file = os.path.join(self.outputdir, 'snps.vcf.gz')
-        df = tools.vcf_to_dataframe(vcf_file).set_index('sample')
+        vcf_file, _ = QFileDialog.getOpenFileName(self, 'Open vcf', self.outputdir,
+                                     filter="vcf files(*.vcf *.bcf *.vcf.gz);;All Files(*.*)")
+        if not vcf_file:
+            return
+        name = os.path.basename(vcf_file)
+        df = tools.vcf_to_dataframe(vcf_file, limit=1000).set_index('sample')
         table = tables.VCFTable(self.tabs, app=self, dataframe=df)
-        idx = self.tabs.addTab(table, 'VCF')
+        idx = self.tabs.addTab(table, name)
         self.tabs.setCurrentIndex(idx)
-        self.opentables['VCF'] = table
+        self.opentables[name] = table
         return
 
     def make_phylo_tree(self, progress_callback=None, method='raxml'):
@@ -1405,12 +1420,6 @@ class App(QMainWindow):
         self.running = False
         return
 
-    def run(self):
-        """Run all steps"""
-
-        #self.run_threaded_process(self.run_trimming, self.processing_completed)
-        return
-
     def run_threaded_process(self, process, on_complete):
         """Execute a function in the background with a worker"""
 
@@ -1452,6 +1461,37 @@ class App(QMainWindow):
         w = widgets.TableViewer(self, pd.DataFrame(data))
         i = self.tabs.addTab(w, data['sample'])
         self.tabs.setCurrentIndex(i)
+        return
+
+    def movefastq(self):
+        """Move source fastq files to another location.
+        Useful for moving fastq files that are of low quality without deleting them.
+        """
+
+        dest = QFileDialog.getExistingDirectory(self, 'Select New Folder', './')
+        if not dest:
+            return
+
+        df = self.fastq_table.model.df
+        rows = self.fastq_table.getSelectedRows()
+        data = df.iloc[rows]
+        if len(data)==0:
+            return
+        msg = u'This will move {len(data)} files. Are you sure?'
+        reply = QMessageBox.question(self, 'Warning!', msg,
+                                        QMessageBox.No | QMessageBox.Yes )
+        if reply == QMessageBox.No:
+            return
+
+        for i,r in data.iterrows():
+            for col in ['filename1','filename2']:
+                fname = r[col]
+                if not os.path.exists(fname):
+                    continue
+                base = os.path.basename(fname)
+                new = os.path.join(dest,base)
+                df.loc[i,col] = new
+                shutil.move(fname, new)
         return
 
     def quality_summary(self, row):
@@ -1636,13 +1676,17 @@ class App(QMainWindow):
 
         df = self.fastq_table.model.df
         #data = self.get_selected()
-
+        if not 'meandepth' in df.columns:
+            print ('need depth and coverage')
+            return
         for i,r in df.iterrows():
             val = ''
             #gc difference to ref
             if self.ref_gc!=None and abs(r.meanGC-self.ref_gc)>3:
                 val += ':gc'
             #mean depth
+            if np.isnan(r.meandepth) or np.isnan(r.coverage):
+                val = ':metricsnotfound'
             if r.meandepth < 15:
                 val += ':meandepth'
             #coverage
@@ -2263,7 +2307,7 @@ class AppOptions(widgets.BaseOptions):
                     'items':platforms,'label':'platform'},
                     'unmapped': {'type':'checkbox','default':0,'label':'save unmapped'},
                     'filters':{'type':'entry','default':app.default_filter},
-                    'proximity': {'type':'checkbox','default':0},
+                    'proximity': {'type':'spinbox','default':10,'range':(0,100)},
                     'uninformative_sites' : {'type':'checkbox','default':0, 'label':'uninformative sites'},
                     #'quality':{'type':'spinbox','default':30}
                     }

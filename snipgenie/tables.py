@@ -797,6 +797,9 @@ class SampleTableModel(DataFrameModel):
             elif self.rowcolors != None:
                 clr = self.rowcolors[i]
                 color = QColor(clr)
+            elif colname == 'dup':
+                if value == True:
+                    color = QColor('#f5cf7c')
             else:
                 color = QColor(self.bg)
             return color
@@ -843,6 +846,7 @@ class SampleTable(DataFrameTable):
         normalisefastqaction = menu.addAction('Normalise Fastq')
         removeAction = menu.addAction("Remove Selected")
         removebamAction = menu.addAction("Delete Bam Files")
+        movefastqAction = menu.addAction("Move Fastq Files")
         copyAction = menu.addAction("Copy")
         exportAction = menu.addAction("Export Table")
         action = menu.exec_(self.mapToGlobal(event.pos()))
@@ -865,12 +869,13 @@ class SampleTable(DataFrameTable):
         elif action == mappingstatsAction:
             self.app.mapping_stats(row)
         elif action == plotbamAction:
-            #print (row)
             self.app.show_bam_viewer(row)
         elif action == removeAction:
             self.deleteRows(rows)
         elif action == removebamAction:
             self.deleteBamFiles(rows)
+        elif action == movefastqAction:
+            self.app.movefastq()
         elif action == copyAction:
             self.copy()
         elif action == exportAction:

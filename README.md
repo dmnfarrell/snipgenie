@@ -116,8 +116,7 @@ This will run the entire process based on a set of options given at the terminal
                         number of bootstraps to build tree
   -o FILE, --outdir FILE
                         Results folder
-  -c CALLING_METHOD, --calling_method CALLING_METHOD
-                        use new or old calling method
+  -old, --old_method    use old calling method
   -q, --qc              QC report
   -s, --stats           Calculate read length and mapping stats
   -d, --dummy           Check samples but don't run
@@ -179,7 +178,7 @@ By default a filter is run that excludes any variant positions within a given di
 
 ## Variant calling method
 
-The previous method was to split the genome into chunks and run `bcftools mpileup` all samples together, then concatenate the result into one large bcf file. This file was then used for `bcftools call`. This method has been replaced by the more typical approach of running mpileup on individual files, running the calling, then merging the results with `bcftools merge`. The reason for the change is that the old method was inflexible for large numbers of samples because the entire mpileup has to be re-run when new samples are added. The old method is still available by specifying `-c old`.
+The older method was to split the genome into chunks and run `bcftools mpileup` for all samples together, then concatenate the result into one large bcf file. This file was then used for `bcftools call`. This method has been replaced by the more typical approach of running mpileup on individual files, running the calling, then merging the results with `bcftools merge`. In both cases filters are applied at the end. The reason for the change is that the old method was inflexible for very large numbers of samples because the entire mpileup has to be re-run when new samples are added. The old method is still available by specifying `-O` at the command line.
 
 ## Inputs
 

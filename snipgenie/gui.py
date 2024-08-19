@@ -1205,9 +1205,9 @@ class App(QMainWindow):
         samples = self.fastq_table.model.df
         print ('Calling with %s samples' % len(samples))
         self.results['vcf_file'] = app.variant_calling(samples, self.ref_genome, path,
-                                    threads=threads, #relabel=True,
+                                    threads=threads, 
                                     overwrite=overwrite, filters=filters,
-                                    mask=self.mask_file, #gff_file=gff_file,
+                                    mask=self.mask_file, gff_file=gff_file,
                                     proximity=proximity,
                                     callback=progress_callback.emit)
         self.snp_alignment()
@@ -1477,9 +1477,9 @@ class App(QMainWindow):
         data = df.iloc[rows]
         if len(data)==0:
             return
-        msg = u'This will move {len(data)} files. Are you sure?'
+        msg = f'This will move {len(data)} files. Are you sure?'
         reply = QMessageBox.question(self, 'Warning!', msg,
-                                        QMessageBox.No | QMessageBox.Yes )
+                                     QMessageBox.No | QMessageBox.Yes )
         if reply == QMessageBox.No:
             return
 

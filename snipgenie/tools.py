@@ -1516,8 +1516,17 @@ def gff_bcftools_format(in_file, out_file):
     from Bio.SeqFeature import FeatureLocation
     from copy import copy
 
-    prefix = create_locus_tag(in_file)
+    def clean_location(location):
+        """Remove < or > from feature location coordinates."""
+        start = location.start
+        end = location.end
+        # Ensure start and end are integers and remove special characters
+        start = int(str(start).replace("<", "").replace(">", ""))
+        end = int(str(end).replace("<", "").replace(">", ""))
+        return FeatureLocation(start, end, strand=location.strand)
+
     l=1
+    prefix = create_locus_tag(in_file)
     recs = SeqIO.parse(in_file,format='gb')
     for record in recs:
         #make a copy of the record as we will be changing it during the loop
@@ -1526,13 +1535,8 @@ def gff_bcftools_format(in_file, out_file):
         #loop over all features
         for i in range(0,len(record.features)):
             feat = record.features[i]
+            feat.location = clean_location(feat.location)
             q = feat.qualifiers
-            #handle missing locus_tags - hack
-            #if not 'locus_tag' in q and 'gene' in q:
-            #    q['locus_tag'] = '{p}_{l:05d}'.format(p=prefix,l=l)
-            #    l+=1
-            #print (q)
-
             #remove some unecessary qualifiers
             for label in ['note','translation','product','experiment']:
                 if label in q:
@@ -1559,6 +1563,8 @@ def gff_bcftools_format(in_file, out_file):
             elif(record.features[i].type == "gene"):
                 #edit the gene feature
                 q=feat.qualifiers
+                #print(feat.location.start)
+                #print (feat)
                 if 'locus_tag' in q:
                     tag = q['locus_tag'][0]
                 else:

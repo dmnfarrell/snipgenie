@@ -87,7 +87,7 @@ defaults = {'threads':4, 'labelsep':'_', 'labelindex':0,
             'uninformative_sites': False,
             'reference': None, 'gb_file': None, 'overwrite':False,
             'omit_samples': [], 'get_stats':False,
-            'calling_method': 'new',
+            'old_method': False,
             'buildtree':False, 'bootstraps':100}
 
 def check_platform():
@@ -667,7 +667,6 @@ def run_file(bam_file, ref, outpath, overwrite=False, threads=4):
 
     if not os.path.exists(rawbcf) or overwrite == True:
         mpileup_parallel(bam_file, ref, rawbcf, threads=threads)
-        #mpileup(bam_file, rawbcf, ref, threads=threads, overwrite=overwrite)
 
     #call
     vcfout = os.path.join(outpath,'calls.vcf')
@@ -745,13 +744,13 @@ def variant_calling(samples, ref, outpath, filters=None, proximity=10, mask=None
     else:
         filtered = merged
 
-    #prox filter
-    site_proximity_filter(filtered, dist=int(proximity), outdir=outpath, overwrite=True)
-
     #apply mask if required
     if mask != None:
         mask_filter(filtered, mask, outdir=outpath, overwrite=True)
         #mask_filter(indelsout, mask, outdir=outpath, overwrite=True)
+
+    #prox filter
+    site_proximity_filter(filtered, dist=int(proximity), outdir=outpath, overwrite=True)
 
     #consequence_calling
     consequence_calling(filtered, None, outpath, gff_file, ref)
@@ -907,7 +906,7 @@ def get_aa_snp_matrix(df):
     return x
 
 def run_bamfiles(bam_files, ref, gff_file=None, mask=None, outdir='.', threads=4,
-                    sep='_', labelindex=0, calling_method='new', **kwargs):
+                    sep='_', labelindex=0, old_method=False, **kwargs):
     """
     Run workflow with bam files from a previous sets of alignments.
     We can arbitrarily combine results from multiple other runs this way.
@@ -928,7 +927,7 @@ def run_bamfiles(bam_files, ref, gff_file=None, mask=None, outdir='.', threads=4
     print ('%s samples were loaded:' %len(bam_files))
 
     samples = get_samples_from_bams(bam_files, sep=sep)
-    if calling_method == 'old':
+    if old_method == True:
         vcf_file = variant_calling_old(bam_files, ref, outdir,
                                     samples=samples, threads=threads,
                                     gff_file=gff_file, mask=mask, sep=sep,
@@ -1141,17 +1140,9 @@ class WorkFlow(object):
         print ()
         print ('calling variants')
         print ('----------------')
-        if self.calling_method == 'new':
-            self.vcf_file = variant_calling(samples, self.reference, self.outdir,
-                                            threads=self.threads,
-                                            gff_file=self.gff_file,
-                                            filters=self.filters,
-                                            mask=self.mask,
-                                            proximity=self.proximity,
-                                            overwrite=self.overwrite,
-                                            tempdir=self.tempdir)
-        else:
+        if self.old_method == True:
             #old variant calling method
+            print ('using old calling method')
             bam_files = list(samples.bam_file)
             self.vcf_file = variant_calling_old(bam_files, self.reference, self.outdir,
                                             samples=samples,
@@ -1162,6 +1153,16 @@ class WorkFlow(object):
                                             proximity=self.proximity,
                                             overwrite=self.overwrite,
                                             tempdir=self.tempdir)
+        else:
+            self.vcf_file = variant_calling(samples, self.reference, self.outdir,
+                                            threads=self.threads,
+                                            gff_file=self.gff_file,
+                                            filters=self.filters,
+                                            mask=self.mask,
+                                            proximity=self.proximity,
+                                            overwrite=self.overwrite,
+                                            tempdir=self.tempdir)
+
         print (self.vcf_file)
         print ()
         print ('making SNP matrix')
@@ -1272,8 +1273,8 @@ def main():
                         help="number of bootstraps to build tree")
     parser.add_argument("-o", "--outdir", dest="outdir",
                         help="Results folder", metavar="FILE")
-    parser.add_argument("-c", "--calling_method", dest="calling_method", default='new',
-                        help="use new or old calling method")
+    parser.add_argument("-old", "--old_method", dest="old_method", action="store_true",
+                        help="use old calling method")
     parser.add_argument("-q", "--qc", dest="qc", action="store_true",
                         help="QC report")
     parser.add_argument("-s", "--stats", dest="get_stats", action="store_true", default=False,

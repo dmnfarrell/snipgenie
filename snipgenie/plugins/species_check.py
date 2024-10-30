@@ -252,7 +252,7 @@ class SpeciesCheckerPlugin(Plugin):
         """Reuslts from blast tables"""
 
         print ('getting results..')
-        cols = ['sseqid','perc_cov','pident','stitle','species','genus']
+        cols = ['sseqid','perc_cov','pident','stitle','species']#,'genus']
         res=[]
         for sample in self.results:
             bl = self.results[sample]
@@ -308,11 +308,11 @@ class SpeciesCheckerPlugin(Plugin):
         #sv.load_records(recs)
         idx = tabs.addTab(sv, 'Sequences')
 
-        fig,ax = plt.subplots(1,1)
-        pw = widgets.PlotWidget(figure=fig)
-        bl.genus.value_counts().plot(kind='barh',ax=ax)
-        plt.tight_layout()
-        idx = tabs.addTab(pw, 'Genus Distribution')
+        #fig,ax = plt.subplots(1,1)
+        #pw = widgets.PlotWidget(figure=fig)
+        #bl.genus.value_counts().plot(kind='barh',ax=ax)
+        #plt.tight_layout()
+        #idx = tabs.addTab(pw, 'Genus Distribution')
 
         w.setGeometry(QtCore.QRect(100, 100, 900, 600))
         w.setWindowTitle(f'{sample} 16S results')

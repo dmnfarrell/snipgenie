@@ -186,7 +186,7 @@ def get_cluster_levels(S, cluster_members=None, linkage='average',
     """
 
     if levels == None:
-        levels = [500,200,100,50,20,12,7,3]
+        levels = [500,200,100,50,20,12,7,5,3]
     df = pd.DataFrame(index=S.index)
     clusts=[]
     for t in levels:
@@ -234,7 +234,7 @@ def generate_strain_names(cl):
     """
 
     col = 'snp3'
-    col1 = 'snp7'
+    col1 = 'snp7'    
     col2 = 'snp12'
     col2 = 'snp50'
     col3 = 'snp200'

@@ -626,7 +626,7 @@ def variant_calling_old(bam_files, ref, outpath, samples=None, threads=4,
     #apply mask if provided
     if mask != None:
         mask_filter(snpsout, mask, outdir=outpath, overwrite=True)
-        mask_filter(indelsout, mask, outdir=outpath, overwrite=True)
+        #mask_filter(indelsout, mask, outdir=outpath, overwrite=True)
 
     #prox filter
     site_proximity_filter(snpsout, dist=int(proximity), outdir=outpath, overwrite=True)
@@ -645,9 +645,10 @@ def consequence_calling(snpsout, indelsout, outpath, gff_file, ref):
             m = csq_call(ref, gff_file, snpsout, csqout)
             m.to_csv(os.path.join(outpath,'csq.matrix'))
             #indels as well
-            csqout = os.path.join(outpath, 'csq_indels.tsv')
-            m = csq_call(ref, gff_file, indelsout, csqout)
-            m.to_csv(os.path.join(outpath,'csq_indels.matrix'))
+            if indelsout is not None:
+                csqout = os.path.join(outpath, 'csq_indels.tsv')
+                m = csq_call(ref, gff_file, indelsout, csqout)
+                m.to_csv(os.path.join(outpath,'csq_indels.matrix'))
         except Exception as e:
             print (e)
     return
@@ -656,7 +657,7 @@ def consequence_calling(snpsout, indelsout, outpath, gff_file, ref):
 
 def run_file(bam_file, ref, outpath, overwrite=False, threads=4):
     """
-    Run mpileup/snp calling/filtering for one sample.
+    Run mpileup/snp calling for one sample.
     """
 
     if not os.path.exists(outpath):
@@ -671,9 +672,11 @@ def run_file(bam_file, ref, outpath, overwrite=False, threads=4):
     #call
     vcfout = os.path.join(outpath,'calls.vcf')
     snpsout = os.path.join(outpath,'snps.bcf')
+    indelsout = os.path.join(outpath,'indels.bcf')
+
     #assumes other files are there and returns - improve this
     if os.path.exists(vcfout) and overwrite == False:
-        return snpsout
+        return snpsout, indelsout
     tools.bcftools_call(rawbcf, vcfout, show_cmd=True)
 
     #print ('splitting snps and indels..')
@@ -684,11 +687,12 @@ def run_file(bam_file, ref, outpath, overwrite=False, threads=4):
     subprocess.check_output(cmd, shell=True)
 
     #also get indels only to separate file
-    indelsout = os.path.join(outpath,'indels.bcf')
     cmd = '{bc} view -v indels -o {o} -O b {i}'.format(bc=bcftoolscmd,o=indelsout,i=vcfout)
     #print (cmd)
     subprocess.check_output(cmd,shell=True)
-    return snpsout
+    cmd = 'bcftools index {o}'.format(o=indelsout)
+    subprocess.check_output(cmd, shell=True)
+    return snpsout, indelsout
 
 def write_filelist(files, filename):
     """Write out sample names only using dataframe from get_samples"""
@@ -712,6 +716,7 @@ def variant_calling(samples, ref, outpath, filters=None, proximity=10, mask=None
         sample_file = os.path.join(outpath,'samples.txt')
 
     outfiles = []
+    indelfiles = []
     from tqdm import tqdm
     for i, r in tqdm(samples.iterrows(), total=len(samples)):
     #for i,r in samples.iterrows():
@@ -719,26 +724,29 @@ def variant_calling(samples, ref, outpath, filters=None, proximity=10, mask=None
         #print (name)
         path = os.path.join(vcfoutpath, name)
         #print (r.bam_file)
-        snpfile = run_file(r.bam_file, ref, path, threads=threads)
+        snpfile,indfile = run_file(r.bam_file, ref, path, threads=threads)
         outfiles.append(snpfile)
+        indelfiles.append(indfile)
 
     #write file list
     bcffilelist = os.path.join(outpath, 'bcffiles.txt')
     write_filelist(outfiles, bcffilelist)
     merged = os.path.join(outpath, 'merged.vcf.gz')
-    bcf_files = ' '.join(outfiles)
+    #bcf_files = ' '.join(outfiles)
     #print (outfiles)
-    cmd = '{bc} merge --threads {t} -0 -O z -o {o} --file-list {f}'.format(f=bcffilelist,o=merged, bc=bcftoolscmd,t=threads)
+    cmd = '{bc} merge --threads {t} -0 -O z -o {o} --file-list {f}'.format(f=bcffilelist,
+                                                                           o=merged, bc=bcftoolscmd,t=threads)
     print (cmd)
     subprocess.check_output(cmd, shell=True)
-
     relabel_vcfheader(merged, sample_file)
+
     #filter calls
     if filters == None:
         filters = default_filter
     if filters != '':
         filtered = os.path.join(outpath,'filtered.vcf.gz')
-        cmd = '{bc} filter -i "{f}" -o {o} -O z {i}'.format(bc=bcftoolscmd,i=merged,o=filtered,f=filters)
+        cmd = '{bc} filter -i "{f}" -o {o} -O z {i}'.format(bc=bcftoolscmd,i=merged,
+                                                            o=filtered,f=filters)
         print (cmd)
         tmp = subprocess.check_output(cmd,shell=True)
     else:
@@ -748,12 +756,21 @@ def variant_calling(samples, ref, outpath, filters=None, proximity=10, mask=None
     if mask != None:
         mask_filter(filtered, mask, outdir=outpath, overwrite=True)
         #mask_filter(indelsout, mask, outdir=outpath, overwrite=True)
-
-    #prox filter
+    #proximity filter
     site_proximity_filter(filtered, dist=int(proximity), outdir=outpath, overwrite=True)
 
+    #handle indels
+    indelfilelist = os.path.join(outpath, 'indelfiles.txt')
+    write_filelist(indelfiles, indelfilelist)
+    indelsout = os.path.join(outpath, 'indels.vcf.gz')
+    cmd = '{bc} merge --threads {t} -0 -O z -o {o} --file-list {f}'.format(f=indelfilelist,
+                                                                           o=indelsout, bc=bcftoolscmd,t=threads)
+    print (cmd)
+    tmp = subprocess.check_output(cmd,shell=True)
+    relabel_vcfheader(indelsout, sample_file)
     #consequence_calling
-    consequence_calling(filtered, None, outpath, gff_file, ref)
+    consequence_calling(filtered, indelsout, outpath, gff_file, ref)
+    #print ('took %s seconds' %str(round(time.time()-st,0)))
     return filtered
 
 def csq_call(ref, gff_file, vcf_file, csqout):
@@ -1243,7 +1260,7 @@ def main():
                         help="annotation file, optional", metavar="FILE")
     parser.add_argument("-t", "--threads", dest="threads", default=4,
                         help="cpu threads to use")
-    parser.add_argument("-e", "--labelsep", dest="labelsep", default='_',
+    parser.add_argument("-sep", "--labelsep", dest="labelsep", default='_',
                         help="symbol to split the sample labels on if parsing filenames")
     parser.add_argument("-x", "--labelindex", dest="labelindex", default=0,
                         help="position to extract label in split filenames")

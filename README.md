@@ -92,7 +92,7 @@ This will run the entire process based on a set of options given at the terminal
                         annotation file, optional
   -t THREADS, --threads THREADS
                         cpu threads to use
-  -e LABELSEP, --labelsep LABELSEP
+  -sep LABELSEP, --labelsep LABELSEP
                         symbol to split the sample labels on if parsing filenames
   -x LABELINDEX, --labelindex LABELINDEX
                         position to extract label in split filenames

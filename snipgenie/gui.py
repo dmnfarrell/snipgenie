@@ -42,7 +42,7 @@ settingspath = os.path.join(homepath, '.config','snipgenie')
 
 default_dockstyle = '''
     QDockWidget {
-        max-width:900px;
+        max-width:2500px;
     }
     QScrollBar:vertical {
          width: 15px;
@@ -398,7 +398,7 @@ class App(QMainWindow):
 
         self.info = widgets.Editor(self.tabs, readOnly=True, fontsize=11)
         #self.tabs.addTab(self.info, 'log')
-        self.add_dock(self.info, 'log', 'left')
+        self.add_dock(self.info, 'log', 'bottom')
         self.info.append("Welcome\n")
 
         for name in ['options','genome','log']:
@@ -1079,6 +1079,7 @@ class App(QMainWindow):
             elif reply == QMessageBox.Yes:
                 #ensure sample col object type when we import
                 df = pd.read_csv(results_file, dtype={'sample':'object'})
+                df = df.set_index('sample',drop=False)
                 self.fastq_table.model.df = df
                 self.fastq_table.refresh()
         self.outdirLabel.setText(self.outputdir)
@@ -1205,7 +1206,7 @@ class App(QMainWindow):
         samples = self.fastq_table.model.df
         print ('Calling with %s samples' % len(samples))
         self.results['vcf_file'] = app.variant_calling(samples, self.ref_genome, path,
-                                    threads=threads, 
+                                    threads=threads,
                                     overwrite=overwrite, filters=filters,
                                     mask=self.mask_file, gff_file=gff_file,
                                     proximity=proximity,
@@ -1645,7 +1646,7 @@ class App(QMainWindow):
         return
 
     def add_mean_depth(self, progress_callback):
-        """find mean depth for bam file"""
+        """Find mean depth for bam file(s)"""
 
         df = self.fastq_table.model.df
         if 'bam_file' not in df.columns:

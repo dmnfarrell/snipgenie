@@ -6,7 +6,7 @@ with open('snipgenie/description.txt') as f:
 
 setup(
     name = 'snipgenie',
-    version = '0.6.0',
+    version = '0.7.0',
     description = 'variant calling and phylogenies from microbial WGS data',
     long_description = long_description,
     url='https://github.com/dmnfarrell/snipgenie',
@@ -22,7 +22,7 @@ setup(
     install_requires=['numpy>=1.2',
                       'pandas>=0.24',
                       'matplotlib>=3.0',
-                      'biopython>=1.5',
+                      'biopython==1.80',
                       'pyvcf3',
                       'pyfaidx',
                       'bcbio_gff',

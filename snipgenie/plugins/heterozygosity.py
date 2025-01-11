@@ -38,7 +38,7 @@ class HeteroCheckerPlugin(Plugin):
     menuentry = 'Heterozygosity Check'
     name = 'Heterozygosity Check'
     iconfile = 'heterozygosity.svg'
-    side = 'right' #dock location to load plugin
+    side = 'right'
 
     def __init__(self, parent=None):
         """Customise this and/or create_widgets"""
@@ -120,7 +120,7 @@ class HeteroCheckerPlugin(Plugin):
             if sum(x.AD) == 0:
                 return
             return round(min(x.AD)/sum(x.AD),3)
-
+        self.results = None
         result = []
         def func(progress_callback):
             table = self.parent.fastq_table
@@ -129,21 +129,26 @@ class HeteroCheckerPlugin(Plugin):
             data = df.iloc[rows]
             samples = list(data['sample'].unique())
             #old way
-            vcf_file = os.path.join(self.parent.outputdir, 'snps.vcf.gz')
-            vdf = tools.vcf_to_dataframe(vcf_file)
+            #vcf_file = os.path.join(self.parent.outputdir, 'snps.vcf.gz')
+            #vdf = tools.vcf_to_dataframe(vcf_file)
 
             i=0
             for s in samples:
                 print (s)
-                #vcf_file = os.path.join(self.parent.outputdir, 'variant_calling', s, 'snps.bcf')
-                #vdf = tools.vcf_to_dataframe(vcf_file)
-                x = vdf[vdf['sample']==s].copy()
+                vcf_file = os.path.join(self.parent.outputdir, 'variant_calling', s, 'snps.bcf')
+                vdf = tools.vcf_to_dataframe(vcf_file)
+                x = vdf#[vdf['sample']==s].copy()
+                if len(x)==0:
+                    continue
                 x['het'] = x.apply(het,1)
                 i+=1
-                h = x[x['het']>0.05]
+                #h = x#[x['het']>0.05]
+                x['sample'] = s
+                #print (x)
                 #sites.append(h)
-                result.append(h)
-            #print (sites)
+                result.append(x)
+            if len(result)==0:
+                return
             self.results = pd.concat(result)
 
         self.parent.run_threaded_process(func, self.run_completed)
@@ -158,6 +163,8 @@ class HeteroCheckerPlugin(Plugin):
         """Reuslts from mapping"""
 
         print ('getting results..')
+        if self.results is None:
+            return
         df = self.results
         #print (df[:10])
         if self.pivotbox.isChecked():

@@ -9,6 +9,8 @@ _SNiPgenie_ is a tool for microbial variant calling and phylogenetic analysis fr
 
 This software is written in Python. It was developed on Ubuntu linux but can also run on Windows 10 via WSL. The GUI is made using the Qt toolkit using PyQt5/PySide2.
 
+Detailed documentation is in the [wiki](https://github.com/dmnfarrell/snipgenie/wiki/).
+
 ## Current Features
 
 * load multiple fastq files and process together
@@ -16,10 +18,10 @@ This software is written in Python. It was developed on Ubuntu linux but can als
 * trim reads
 * align to reference (fasta file with single chromosome)
 * view bam alignments
-* call variants
+* call snp and indel variants
 * filter variants
 * create SNP core multiple sequence alignment
-* create phylogenetic tree
+* consequence calling if genbank file provided
 
 ## Installation
 
@@ -86,8 +88,9 @@ This will run the entire process based on a set of options given at the terminal
   -r FILE, --reference FILE
                         reference genome filename
   -S SPECIES, --species SPECIES
-                        set the species reference genome, overrides -r. possible values are Mbovis-AF212297, MTB-H37Rv, MAP-K10,
-                        M.smegmatis-MC2155, Mycoplasmabovis-PG45, Sars-Cov-2
+                        set the species reference genome, overrides -r. possible values are
+                         Mbovis-AF212297, MTB-H37Rv, MAP-K10, M.smegmatis-
+                        MC2155, Mycoplasmabovis-PG45, Sars-Cov-2
   -g FILE, --genbank_file FILE
                         annotation file, optional
   -t THREADS, --threads THREADS
@@ -97,7 +100,6 @@ This will run the entire process based on a set of options given at the terminal
   -x LABELINDEX, --labelindex LABELINDEX
                         position to extract label in split filenames
   -w, --overwrite       overwrite intermediate files
-  -T, --trim            whether to trim fastq files
   -U, --unmapped        whether to save unmapped reads
   -Q QUALITY, --quality QUALITY
                         right trim quality, default 25
@@ -120,7 +122,7 @@ This will run the entire process based on a set of options given at the terminal
   -q, --qc              QC report
   -s, --stats           Calculate read length and mapping stats
   -d, --dummy           Check samples but don't run
-  -X, --test            Test run
+  -T, --test            Test run
   -v, --version         Get version
 ```
 
@@ -232,7 +234,7 @@ tree.newick - tree with SNPs branch lengths, if RAxMl used
 
 ## Use from Python
 
-You can run a workflow from within Python by importing the snipgenie package and invoking the `WorkFlow` class. You need to provide the options in a dictionary with the same keywords as the command line. Notice in this example we are loading files from two folders.
+You can run a workflow from within Python by importing the `snipgenie` package and invoking the `WorkFlow` class. You need to provide the options in a dictionary with the same keywords as the command line. Notice in this example we are loading files from two folders.
 
 ```python
 import snipgenie
@@ -247,9 +249,7 @@ W.run()
 
 ## GUI
 
-The package includes a desktop application with additional features like a fastq quality analysis, the ability to view alignments and tree viewing. It requires the installation of either PyQt5 or PySide2 if using the pip install. 
-
-<img src=doc/source/scr1.png width=600px>
+The package includes a desktop application that carries out the same workflow but provides an interactive environment that may be preferred. It is installed with the package and requires and requires the installation of either PyQt5 or PySide2 if using the pip install. Detailed documentation is given in the wiki.
 
 ## FAQ
 
@@ -265,7 +265,7 @@ _I added new files and tried to re-run but it failed._
 
 This is because the samples don't match the previous variant call output. You might see a `different number of samples` warning. By default the results of mpileup are not overwritten as this is the slowest step. You should first delete the file `raw.bcf` in the output folder and run again.
 
-_I have more than 1000 samples and the bcftools mpileup step fails._
+_I have more than 1000 samples and the bcftools mpileup step fails. (applies to old calling method only)_
 
 This is likely due to the limit on the number of files that can be opened at the same time. You can increase this limit on Linux using `ulimit -n 2000` or whatever value you need up to 9999. Note that for many samples this step could take several days to run.
 

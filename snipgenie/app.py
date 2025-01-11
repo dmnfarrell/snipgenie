@@ -81,7 +81,7 @@ if not os.path.exists(config_path):
 
 defaults = {'threads':4, 'labelsep':'_', 'labelindex':0,
             'manifest': None,
-            'trim':False, 'unmapped':False, 'quality':25,
+            'unmapped':False, 'quality':25, #'trim':False
             'aligner': 'bwa', 'platform': 'illumina', 'species': None,
             'filters': default_filter, 'proximity': 10, 'mask': None,
             'uninformative_sites': False,
@@ -1266,8 +1266,8 @@ def main():
                         help="position to extract label in split filenames")
     parser.add_argument("-w", "--overwrite", dest="overwrite", action="store_true", default=False,
                         help="overwrite intermediate files")
-    parser.add_argument("-T", "--trim", dest="trim", action="store_true", default=False,
-                        help="whether to trim fastq files" )
+    #parser.add_argument("-T", "--trim", dest="trim", action="store_true", default=False,
+    #                    help="whether to trim fastq files" )
     parser.add_argument("-U", "--unmapped", dest="unmapped", action="store_true", default=False,
                         help="whether to save unmapped reads" )
     parser.add_argument("-Q", "--quality", dest="quality", default=25,
@@ -1298,7 +1298,7 @@ def main():
                         help="Calculate read length and mapping stats")
     parser.add_argument("-d", "--dummy", dest="dummy",  action="store_true",
                         default=False, help="Check samples but don't run")
-    parser.add_argument("-X", "--test", dest="test",  action="store_true",
+    parser.add_argument("-T", "--test", dest="test",  action="store_true",
                         default=False, help="Test run")
     parser.add_argument("-v", "--version", dest="version", action="store_true",
                         help="Get version")

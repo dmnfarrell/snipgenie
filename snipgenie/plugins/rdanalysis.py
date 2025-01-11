@@ -38,8 +38,9 @@ class RegionDiffPlugin(Plugin):
     menuentry = 'MTBC RD analysis'
     name = 'MTBC RD'
     iconfile = 'rd.svg'
-    side = 'right' #dock location to load plugin
-
+    side = 'right'
+    enabled = False
+    
     def __init__(self, parent=None):
         """Customise this and/or create_widgets"""
 

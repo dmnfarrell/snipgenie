@@ -184,18 +184,6 @@ class TestingPlugin(Plugin):
         parent.load_preset_genome(gm['sequence'], gm['gb'], gm['mask'], ask=False)
         return
 
-    def create_meta_data(self):
-        """Add fake meta data"""
-
-        tree = Phylo.read(newick, "newick")
-        data = {}
-        years = [2019,2020,2021]
-        labels = ['A','B','C']
-        for tip in tree.get_terminals():
-            data[tip.name] = {'year':random.choice(years),'label':random.choice(labels)}
-        df = self.meta = pd.DataFrame(data).T
-        return
-
     def compare_tree(self):
         """Compare result from workflow with test tree"""
 

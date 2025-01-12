@@ -1122,13 +1122,13 @@ class WorkFlow(object):
             print ('no samples found')
             return
 
-        if self.trim == True:
+        '''if self.trim == True:
             print ('trimming fastq files')
             print ('--------------------')
             trimmed_path = os.path.join(self.outdir, 'trimmed')
             samples = trim_files(samples, trimmed_path, self.overwrite,
                                   quality=self.quality, threads=self.threads)
-            print ()
+            print ()'''
         print ('aligning files')
         print ('--------------')
         print ('Using reference genome: %s' %self.reference)
@@ -1224,21 +1224,34 @@ class WorkFlow(object):
 
         return
 
-def test_run():
+def test_run(path='test_run'):
     """Test run"""
 
-    testdatadir = 'testing'
-    out = 'subread_results'
-    args = {'threads':4, 'outdir': out, 'input': testdatadir,
-            'species':'Mbovis-AF212297',
-            'aligner':'subread', 'filters':'QUAL>=40 && DP4>=4',
+    from . import simulate
+    os.makedirs(path,exist_ok=True)
+    ref = sarscov2_genome
+    newick = os.path.join(module_path, 'testing', 'sim.newick')
+    fasta_file = os.path.join(module_path,'testing','phastsim_output1.fasta')
+    #if not os.path.exists(fasta_file):
+        #print ('running phastsim..')
+        #simulate.run_phastsim(path, ref, newick)
+    print (f'found {fasta_file}')
+    print ('simulating fastq files..')
+    simulate.simulate_paired_end_reads(fasta_file, 150, 1e5, path)
+
+    out = 'test_run_results'
+    args = {'threads':4, 'outdir': out, 'input': path,
+            'species':'Sars-Cov-2',
+            'aligner':'bwa', 'filters':'QUAL>=40 && DP4>=4',
             'reference': None, 'overwrite':True}
     W = WorkFlow(**args)
     st = W.setup()
     if st == True:
         W.run()
-    vdf = tools.vcf_to_dataframe(W.vcf_file)
-    print (vdf)
+    samples = W.fastq_table
+    meta = simulate.create_meta_data(samples['sample'])
+    meta.to_csv(os.path.join(out,'metadata.csv'))
+    print (f'test run results in {out}. you can also open the results folder in the GUI.')
     return
 
 def main():

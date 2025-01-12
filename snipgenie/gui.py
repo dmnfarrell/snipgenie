@@ -491,8 +491,8 @@ class App(QMainWindow):
         self.analysis_menu = QMenu('Workflow', self)
         self.menuBar().addSeparator()
         self.menuBar().addMenu(self.analysis_menu)
-        self.analysis_menu.addAction('Trim Reads',
-            lambda: self.run_threaded_process(self.run_trimming, self.processing_completed))
+        #self.analysis_menu.addAction('Trim Reads',
+        #    lambda: self.run_threaded_process(self.run_trimming, self.processing_completed))
         icon = QIcon(os.path.join(iconpath,'align-reads.png'))
         self.analysis_menu.addAction(icon, 'Align Reads',
             lambda: self.run_threaded_process(self.align_files, self.alignment_completed))
@@ -504,8 +504,8 @@ class App(QMainWindow):
         icon = QIcon(os.path.join(iconpath,'phylogeny.png'))
         self.analysis_menu.addAction(icon, 'Build Phylogeny',
             lambda: self.run_threaded_process(self.make_phylo_tree, self.phylogeny_completed))
-        #self.analysis_menu.addSeparator()
-        #self.analysis_menu.addAction('Run Workflow', self.run)
+        self.analysis_menu.addSeparator()
+        self.analysis_menu.addAction('Run Workflow', self.run)
 
         self.tools_menu = QMenu('Tools', self)
         self.menuBar().addMenu(self.tools_menu)
@@ -551,7 +551,7 @@ class App(QMainWindow):
         self.settings_menu.addAction('View Meta Data', self.view_meta_data)
         self.settings_menu.addAction('Merge Meta Data', self.merge_meta_data)
         self.settings_menu.addAction('Clean Up Files', self.clean_up)
-
+        self.settings_menu.addAction('Create Test Data', self.create_test_project)
         self.presets_menu = QMenu('Preset Genomes', self)
         self.menuBar().addMenu(self.presets_menu)
         self.load_presets_menu()
@@ -583,17 +583,6 @@ class App(QMainWindow):
                 mask = genomes[name]['mask']
             else:
                 mask = None
-            '''def func(seqname,gbfile,mask,ask):
-
-                if ask == True:
-                    msg = 'This will replace the current reference with a preset.'
-                    reply = QMessageBox.question(self, 'Warning!', msg,
-                                                    QMessageBox.No | QMessageBox.Yes )
-                    if reply == QMessageBox.No:
-                        return
-                self.set_reference(seqname, ask=False)
-                self.set_annotation(gbfile)
-                self.set_mask(mask)'''
             func = self.load_preset_genome
             receiver = lambda seqname=seqname, gb=gbfile, mask=mask, ask=ask: func(seqname, gb, mask, ask)
             self.presets_menu.addAction('%s' %name, receiver)
@@ -807,34 +796,35 @@ class App(QMainWindow):
                 print ('%s missing file' %i)
         return
 
-    def load_test(self):
-        """Load test_files"""
-
-        reply = self.new_project(ask=True)
-        if reply == False:
-            return
-        #filenames = glob.glob(os.path.join(app.datadir, '*.fa'))
-        self.load_fastq_table(filenames)
-        return
-
-    def import_results_folder(self, path):
-        """Import previously made results"""
-
-        df = read.csv(os.path.join(path, 'samples.csv'))
-        return
-
-    def check_missing_files(self):
-        """Check folders for missing files"""
-
-        folders = ['mapped','trimmed']
-        #for f in folders:
-
-        return
-
     def clear_tabs(self):
         """Clear tabbed panes"""
 
         #self.right_tabs
+        return
+
+    def test_run(self, path, progress_callback=None):
+        app.test_run(path)
+        return
+
+    def create_test_project(self):
+        """Make test data and save project"""
+
+        reply = self.new_project(ask=True)
+        if reply == False:
+            return
+        path = QFileDialog.getExistingDirectory(self, 'Where to save test folders', './')
+        if not path:
+            return
+
+        def completed():
+            outpath = os.path.join(path, 'test_run_results')
+            self.set_previous_run(outpath)
+            self.load_preset_genome(app.sarscov2_genome, app.sarscov2_gb, None, ask=False)
+            self.outdirLabel.setText(self.outputdir)
+            self.setup_paths()
+        def func(progress_callback):
+            self.test_run(path)
+        self.run_threaded_process(func, completed)
         return
 
     def clean_up(self):
@@ -1063,13 +1053,13 @@ class App(QMainWindow):
         return filename
 
     def set_output_folder(self):
-        """Set the output folder"""
+        """Set an output folder, if previous run set samples"""
 
         selected_directory = QFileDialog.getExistingDirectory()
-        if selected_directory:
-            self.outputdir = selected_directory
+        if not selected_directory:
+            return
         #check if folder already got some results
-        results_file = os.path.join(self.outputdir, 'samples.csv')
+        results_file = os.path.join(selected_directory, 'samples.csv')
         if os.path.exists(results_file):
             msg = "This folder appears to have results already. Try to import them?"
             reply = QMessageBox.question(self, 'Confirm', msg,
@@ -1077,13 +1067,23 @@ class App(QMainWindow):
             if reply == QMessageBox.Cancel:
                 return
             elif reply == QMessageBox.Yes:
-                #ensure sample col object type when we import
-                df = pd.read_csv(results_file, dtype={'sample':'object'})
-                df = df.set_index('sample',drop=False)
-                self.fastq_table.model.df = df
-                self.fastq_table.refresh()
+                self.set_previous_run(selected_directory)
         self.outdirLabel.setText(self.outputdir)
         self.setup_paths()
+        return
+
+    def set_previous_run(self, path):
+        """Set the output folder of previous run"""
+
+        if not os.path.exists(path):
+            return
+        self.outputdir = path
+        results_file = os.path.join(self.outputdir, 'samples.csv')
+        #ensure sample col object type when we import
+        df = pd.read_csv(results_file, dtype={'sample':'object'})
+        df = df.set_index('sample',drop=False)
+        self.fastq_table.model.df = df
+        self.fastq_table.refresh()
         return
 
     def check_output_folder(self):
@@ -1202,7 +1202,6 @@ class App(QMainWindow):
         else:
             gff_file = None
 
-        #bam_files = list(df.bam_file.dropna().unique())
         samples = self.fastq_table.model.df
         print ('Calling with %s samples' % len(samples))
         self.results['vcf_file'] = app.variant_calling(samples, self.ref_genome, path,
@@ -1218,6 +1217,12 @@ class App(QMainWindow):
 
         self.processing_completed()
         self.show_snpdist()
+        return
+
+    def run(self):
+
+        self.run_threaded_process(self.align_files, self.alignment_completed)
+        self.run_threaded_process(self.variant_calling, self.calling_completed)
         return
 
     def show_variants(self):

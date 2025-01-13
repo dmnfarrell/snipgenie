@@ -1964,13 +1964,13 @@ class SimpleBamViewer(QDialog):
         self.bam_file = bam_file
         self.gb_file = gb_file
         chromnames = plotting.get_fasta_names(ref_file)
-        length = plotting.get_fasta_length(ref_file)
+        self.length = length = plotting.get_fasta_length(ref_file)
         if self.gb_file != None:
             df = tools.genbank_to_dataframe(gb_file)
             if 'locus_tag' in df.columns:
                 df.loc[df["gene"].isnull(),'gene'] = df.locus_tag
             if 'gene' in df.columns:
-                genes = df.gene.unique()
+                genes = df.gene.dropna().unique()
                 self.annot = df
                 self.geneselect.addItems(genes)
                 self.geneselect.setStyleSheet("QComboBox { combobox-popup: 0; }");
@@ -1982,7 +1982,7 @@ class SimpleBamViewer(QDialog):
         sl = self.slider
         sl.setMinimum(1)
         sl.setMaximum(length)
-        sl.setTickInterval(length/20)
+        sl.setTickInterval(int(length/20))
         return
 
     def set_chrom(self, chrom):
@@ -1995,12 +1995,13 @@ class SimpleBamViewer(QDialog):
     def update_chrom(self, chrom=None):
         """Update after chromosome selection changed"""
 
+        #self.chrom = chrom
         recname = self.chromselect.currentText()
         length = self.length = plotting.get_fasta_length(self.ref_file, key=chrom)
         sl = self.slider
         sl.setMinimum(1)
         sl.setMaximum(length)
-        sl.setTickInterval(length/20)
+        sl.setTickInterval(int(length/20))
         self.redraw()
         return
 

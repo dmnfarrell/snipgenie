@@ -26,6 +26,7 @@ setup(
                       'pyvcf3',
                       'pyfaidx',
                       'bcbio_gff',
+                      'tqdm'
                       #'pyside2>=5.1',
                       #'toytree',
                       ],

@@ -94,9 +94,6 @@ class App(QMainWindow):
         self.setWindowTitle("snipgenie")
 
         self.setWindowIcon(QIcon(logoimg))
-        self.create_menu()
-        self.main = QSplitter()
-
         screen_resolution = QGuiApplication.primaryScreen().availableGeometry()
         width, height = screen_resolution.width()*0.7, screen_resolution.height()*.7
         if screen_resolution.width()>1280:
@@ -113,11 +110,12 @@ class App(QMainWindow):
         self.plugindata = {}
         self.meta = None
 
+        self.load_settings()
+        self.create_tool_bar()
+        self.create_menu()
+        self.main = QWidget(self)
         self.main.setFocus()
         self.setCentralWidget(self.main)
-        self.load_settings()
-
-        self.create_tool_bar()
         self.setup_gui()
 
         self.show_recent_files()
@@ -333,10 +331,28 @@ class App(QMainWindow):
     def setup_gui(self):
         """Add all GUI elements"""
 
+        layout = QHBoxLayout()
+        self.main.setLayout(layout)
+        #self.tabs=self.main
+        self.tabs = QTabWidget()
+        self.tabs.setTabsClosable(True)
+        self.tabs.setMovable(True)
+        self.tabs.tabCloseRequested.connect(self.close_tab)
+        layout.addWidget(self.tabs)
+
+        #general plot window
+        #self.plotview = widgets.PlotViewer(self)
+        #self.tabs.addTab(self.plotview, 'plot')
+
+        self.fastq_table = tables.SampleTable(self, dataframe=pd.DataFrame(), app=self)
+        self.table_widget = tables.DataFrameWidget(parent=self, table=self.fastq_table,
+                            toolbar=True)
+        #self.fastq_table = self.table_widget.table
+        self.tabs.addTab(self.table_widget, 'samples')
+        self.opentables['main'] = self.fastq_table
+
         self.setDockNestingEnabled(True)
         self.docks = {}
-        #self.m = QSplitter(self.main)
-        self.m = self.main
 
         style = '''
         QWidget {
@@ -366,48 +382,17 @@ class App(QMainWindow):
 
         self.add_dock(dialog, 'genome')
         #create option widgets
-        self.opts = AppOptions(parent=self.m)
+        self.opts = AppOptions(parent=self)
         dialog = self.opts.showDialog(self, wrap=1, section_wrap=1, style=widgetstyle)
         self.add_dock(dialog, 'options')
 
-        #add dock menu items
-        #for name in ['options']:
-        #    action = self.docks[name].toggleViewAction()
-        #    self.dock_menu.addAction(action)
-        #    action.setCheckable(True)
-
-        #general plot window
-        #self.plotview = widgets.PlotViewer(self)
-
-        center = QSplitter(Qt.Vertical)
-        self.m.addWidget(center)
-
-        self.fastq_table = tables.SampleTable(self, dataframe=pd.DataFrame(), app=self)
-        self.table_widget = tables.DataFrameWidget(parent=center, table=self.fastq_table,
-                            toolbar=True)
-        #self.fastq_table = self.table_widget.table
-        center.addWidget(self.table_widget)
-        self.opentables['main'] = self.fastq_table
-
-        self.tabs = QTabWidget(center)
-        self.tabs.setTabsClosable(True)
-        self.tabs.setMovable(True)
-        self.tabs.tabCloseRequested.connect(self.close_tab)
-        center.addWidget(self.tabs)
-        center.setSizes((100,100))
-
         self.info = widgets.Editor(self.tabs, readOnly=True, fontsize=11)
-        #self.tabs.addTab(self.info, 'log')
         self.add_dock(self.info, 'log', 'bottom')
         self.info.append("Welcome\n")
-
         for name in ['options','genome','log']:
             action = self.docks[name].toggleViewAction()
             self.dock_menu.addAction(action)
             action.setCheckable(True)
-
-        self.m.setSizes([200,150])
-        self.m.setStretchFactor(1,0)
 
         self.statusBar = QStatusBar()
         from . import __version__
@@ -436,7 +421,7 @@ class App(QMainWindow):
 
         #index = self.tabs.currentIndex()
         name = self.tabs.tabText(index)
-        if name == 'log':
+        if name == 'samples':
             return
         self.tabs.removeTab(index)
         return
@@ -700,7 +685,7 @@ class App(QMainWindow):
         self.meta = None
         self.fastq_table.setDataFrame(pd.DataFrame({'name':[]}))
         self.fastq_table.refresh()
-        self.tabs.clear()
+        #self.tabs.clear()
         if hasattr(self, 'treeviewer'):
             self.treeviewer.clear()
         self.ref_genome = None
@@ -1251,7 +1236,8 @@ class App(QMainWindow):
             return
         mat = pd.read_csv(self.dist_matrix,index_col=0)
         if 'SNP dist' in self.get_tabs():
-            self.tabs.removeTab(0)
+            index = self.get_tab_indices(self.tabs, 'SNP dist')[0]
+            self.tabs.removeTab(index)
         table = tables.DistMatrixTable(self, app=self, dataframe=mat)
         w = tables.DataFrameWidget(self.tabs, table=table,
                             toolbar=True)
@@ -1310,7 +1296,7 @@ class App(QMainWindow):
         mat = mat.T
         if 'SNPs' in self.get_tabs():
             index = self.get_tab_indices(self.tabs, 'SNPs')
-            print (index)
+            #print (index)
             self.tabs.removeTab(index[0])
         table = tables.SNPTable(self.tabs, app=self, dataframe=mat)
         idx = self.tabs.addTab(table, 'SNPs')
@@ -1325,7 +1311,8 @@ class App(QMainWindow):
             return
         mat = pd.read_csv(self.csq_matrix)
         if 'CSQ' in self.get_tabs():
-            self.tabs.removeTab(0)
+            index = self.get_tab_indices(self.tabs, 'CSQ')[0]
+            self.tabs.removeTab(index)
         table = tables.CSQTable(self.tabs, app=self, dataframe=mat)
         idx = self.tabs.addTab(table, 'CSQ')
         self.tabs.setCurrentIndex(idx)
@@ -1819,20 +1806,19 @@ class App(QMainWindow):
         if self.running == True:
             print ('another process running')
             return
-        self.running == True
-        #df = self.fastq_table.model.df
+        self.running = True
 
         data = self.get_selected()
         if len(data) == 0:
             print ('no rows selected')
             return
         out = os.path.join(self.outputdir,'qc_report.pdf')
-        #if os.path.exists(out):
 
         def completed():
             self.processing_completed()
-            import webbrowser
-            webbrowser.open_new(out)
+            #import webbrowser
+            #webbrowser.open_new(out)
+            self.show_browser_tab(out, 'quality report')
             print ('file saved to %s' %out)
 
         def func(progress_callback):
@@ -2188,8 +2174,7 @@ class App(QMainWindow):
     def online_documentation(self,event=None):
         """Open the online documentation"""
 
-        link = 'https://github.com/dmnfarrell/snipgenie'
-        link = 'https://snipgenie.readthedocs.io/'
+        link = 'https://github.com/dmnfarrell/snipgenie/wiki'
         self.show_browser_tab(link, 'help')
         return
 

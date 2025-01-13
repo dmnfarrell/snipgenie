@@ -838,10 +838,10 @@ class SampleTable(DataFrameTable):
         menu = self.menu
         detailsAction = menu.addAction("Sample Details")
         fastqqualityAction = menu.addAction("Quality Summary")
-        readlengthsAction = menu.addAction("Read Length Distribution")
-        plotbamAction = menu.addAction("Show Read Alignments")
+        #readlengthsAction = menu.addAction("Read Length Distribution")
+        #plotbamAction = menu.addAction("Show Read Alignments")
         mappingstatsAction = menu.addAction("Mapping Statistics")
-        contamaction = menu.addAction('Check Contamination')
+        #contamaction = menu.addAction('Check Contamination')
         samplereadsaction = menu.addAction('Sample Sequences')
         normalisefastqaction = menu.addAction('Normalise Fastq')
         removeAction = menu.addAction("Remove Selected")
@@ -858,18 +858,18 @@ class SampleTable(DataFrameTable):
         elif action == fastqqualityAction:
             #print (row)
             self.app.quality_summary(row)
-        elif action == readlengthsAction:
-            self.app.read_distributon(row)
-        elif action == contamaction:
-            self.app.check_contamination()
+        #elif action == readlengthsAction:
+        #    self.app.read_distributon(row)
+        #elif action == contamaction:
+        #    self.app.check_contamination()
         elif action == samplereadsaction:
             self.app.get_fasta_reads()
         elif action == normalisefastqaction:
             self.app.normalise_fastq(row)
         elif action == mappingstatsAction:
             self.app.mapping_stats(row)
-        elif action == plotbamAction:
-            self.app.show_bam_viewer(row)
+        #elif action == plotbamAction:
+        #    self.app.show_bam_viewer(row)
         elif action == removeAction:
             self.deleteRows(rows)
         elif action == removebamAction:

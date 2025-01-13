@@ -1,6 +1,5 @@
-
 """
-    snipgenie app
+    snipgenie qt imports
     Created January 2021
     Copyright (C) Damien Farrell
 
@@ -20,20 +19,20 @@
 """
 
 # handle qt imports depending on the available Qt python library
-# This uses * imports which are generally frowned upon but tmakes it easier
+# This uses * imports which are generally frowned upon but makes it easier
 # to use the classes in all other modules
 
 import sys
 
 try:
-    from PySide2 import QtCore
-    from PySide2.QtWidgets import *
-    from PySide2.QtGui import *
-    from PySide2.QtCore import Qt, QUrl, QObject, Signal, Slot
-    from PySide2.QtWebEngineWidgets import QWebEngineView
-except:
     from PyQt5 import QtCore
     from PyQt5.QtWidgets import *
     from PyQt5.QtGui import *
     from PyQt5.QtCore import Qt, QUrl, QObject, pyqtSignal as Signal, pyqtSlot as Slot
     from PyQt5.QtWebEngineWidgets import QWebEngineView
+except:
+    from PySide2 import QtCore
+    from PySide2.QtWidgets import *
+    from PySide2.QtGui import *
+    from PySide2.QtCore import Qt, QUrl, QObject, Signal, Slot
+    from PySide2.QtWebEngineWidgets import QWebEngineView

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     snipgenie GUI.
@@ -1308,14 +1308,14 @@ class App(QMainWindow):
         file = os.path.join(self.outputdir, 'core.txt')
         mat = pd.read_csv(file, sep=' ',index_col=0).sort_index()
         mat = mat.T
-        if 'SNP' in self.get_tabs():
-            index = self.get_tab_indices(self.tabs, 'SNP')
+        if 'SNPs' in self.get_tabs():
+            index = self.get_tab_indices(self.tabs, 'SNPs')
             print (index)
             self.tabs.removeTab(index[0])
         table = tables.SNPTable(self.tabs, app=self, dataframe=mat)
-        idx = self.tabs.addTab(table, 'SNP')
+        idx = self.tabs.addTab(table, 'SNPs')
         self.tabs.setCurrentIndex(idx)
-        self.opentables['SNP'] = table
+        self.opentables['SNPs'] = table
         return
 
     def csq_viewer(self):
@@ -2201,7 +2201,13 @@ class App(QMainWindow):
         pandasver = pd.__version__
         pythonver = platform.python_version()
         mplver = matplotlib.__version__
-        qtver = PySide2.QtCore.__version__
+        try:
+            qtver = PySide2.QtCore.__version__
+            qtlib = 'PySide2'
+        except:
+            from PyQt5.QtCore import PYQT_VERSION_STR
+            qtver = PYQT_VERSION_STR
+            qtlib = 'PyQt5'
         if self._check_snap == True:
             snap='(snap)'
         else:
@@ -2215,7 +2221,7 @@ class App(QMainWindow):
             +'as published by the Free Software Foundation; either '\
             +'version 3 of the License, or (at your option) any '\
             +'later version.\n'\
-            +'Using Python v%s, PySide2 v%s\n' %(pythonver, qtver)\
+            +'Using Python v%s, %s v%s\n' %(pythonver, qtlib, qtver)\
             +'pandas v%s, matplotlib v%s' %(pandasver,mplver)
 
         msg = QMessageBox.about(self, "About", text)

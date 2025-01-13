@@ -22,7 +22,7 @@ setup(
     install_requires=['numpy>=1.2',
                       'pandas>=0.24',
                       'matplotlib>=3.0',
-                      'biopython==1.80',
+                      'biopython==1.84',
                       'pyvcf3',
                       'pyfaidx',
                       'bcbio_gff',

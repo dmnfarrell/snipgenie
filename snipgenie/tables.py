@@ -989,6 +989,41 @@ class MyHeaderView(QHeaderView):
     def _get_data(self, index):
         return self.model().headerData(index, self.orientation())
 
+class VerticalHeaderView(QHeaderView):
+    def __init__(self, orientation, parent=None):
+        super().__init__(orientation, parent)
+        self.setDefaultAlignment(Qt.AlignCenter)
+
+    def paintSection(self, painter, rect, logicalIndex):
+        painter.save()
+
+        # Draw the header background
+        painter.fillRect(rect, self.palette().color(self.backgroundRole()))
+
+        # Translate and rotate the painter for vertical text
+        painter.translate(rect.x(), rect.y() + rect.height())
+        painter.rotate(-90)
+
+        # Adjust the rectangle for rotated text
+        rotatedRect = rect.translated(0, rect.height())
+        rotatedRect.setWidth(rect.height())
+        rotatedRect.setHeight(rect.width())
+
+        # Retrieve the text from the model
+        text = self.model().headerData(logicalIndex, self.orientation(), Qt.DisplayRole)
+
+        # Draw the text vertically
+        painter.drawText(rotatedRect, self.defaultAlignment(), text)
+
+        painter.restore()
+
+    def sizeHint(self):
+        # Increase size hint to accommodate vertical text
+        hint = super().sizeHint()
+        if self.orientation() == Qt.Horizontal:
+            hint.setHeight(100)  # Adjust as needed
+        return hint
+
 class SNPTableModel(DataFrameModel):
 
     def __init__(self, dataframe=None, *args):
@@ -1033,10 +1068,12 @@ class SNPTable(DataFrameTable):
         tm = SNPTableModel(dataframe)
         self.setModel(tm)
         self.app = app
-        headerview = MyHeaderView()
+        #headerview = MyHeaderView()
+        headerview = VerticalHeaderView(Qt.Horizontal, self)
         self.setHorizontalHeader(headerview)
         hh = self.horizontalHeader()
         hh.setDefaultSectionSize(20)
+        hh.setVisible(True)
         #hh.customContextMenuRequested.connect(self.columnHeaderMenu)
         self.transposed = False
         return

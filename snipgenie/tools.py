@@ -1554,7 +1554,7 @@ def gff_bcftools_format(in_file, out_file):
                 q['Parent'] = 'transcript:%s' %tag
                 q['biotype'] = 'protein_coding'
                 #create mRNA feature
-                m = SeqFeature(feat.location,type='mRNA',strand=feat.strand)
+                m = SeqFeature(feat.location,type='mRNA')#,strand=feat.strand)
                 q = m.qualifiers
                 q['ID'] = 'transcript:%s' %tag
                 q['Parent'] = 'gene:%s' %tag

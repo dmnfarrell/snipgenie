@@ -125,7 +125,7 @@ class ContaminationCheckerPlugin(Plugin):
         w = QLabel('Read limit:')
         vbox.addWidget(w)
         self.readsentry = w = QSpinBox()
-        w.setRange(10000,1e6)
+        w.setRange(10000,1000000)
         #w.setMaximum(max)
         #w.setMinimum(min)
         w.setSingleStep(10000)

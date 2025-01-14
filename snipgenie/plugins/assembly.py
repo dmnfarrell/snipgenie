@@ -111,6 +111,8 @@ class AssemblyPlugin(Plugin):
                 if not os.path.exists(outfile):
                     tools.spades(r.filename1,r.filename2, os.path.join(path,name),
                                   outfile, threads)
+                else:
+                    print (f'assembly exists in {outfile}, remove this file to recreate')
                 df.loc[i,'assembly'] = outfile
                 lengths = get_sequence_lengths(outfile)
                 df.loc[i,'N50'] = calculate_N50(lengths)

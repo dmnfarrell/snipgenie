@@ -903,7 +903,7 @@ class SampleTable(DataFrameTable):
         """Remove the sample and it's bam file"""
 
         answer = QMessageBox.question(self, 'Delete Entry?',
-                             'Are you sure? This will not remove the sample file.',
+                             'Are you sure? This will remove the alignments and calls but not the fastq file.',
                              QMessageBox.Yes, QMessageBox.No)
         if answer == QMessageBox.No:
             return

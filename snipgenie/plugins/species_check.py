@@ -180,7 +180,7 @@ class SpeciesCheckerPlugin(Plugin):
         w = QLabel('Max Hits:')
         vbox.addWidget(w)
         self.hitsentry = w = QSpinBox()
-        w.setRange(10,2e3)
+        w.setRange(10,2000)
         w.setSingleStep(10)
         w.setValue(self.numhits)
         vbox.addWidget(w)
@@ -228,18 +228,24 @@ class SpeciesCheckerPlugin(Plugin):
         def func(progress_callback):
             table = self.parent.fastq_table
             df = table.model.df.copy()
+            if not 'assembly' in df.columns:
+                print('You need to run an assembly for the sample. Use the assembly plugin.')
+                return
             rows = table.getSelectedRows()
             new = df.iloc[rows] #subset of sample table to run
             for i,r in new.iterrows():
-                if r.assembly is None or not os.path.exists(r.assembly):
-                    print ('no assembly found')
-                    continue
                 sample = r['sample']
+                if r.assembly is None or not os.path.exists(r.assembly):
+                    print (f'no assembly found for sample {sample}')
+                    continue
                 if sample in self.results and overwrite == False:
                     continue
                 bl = blast_16S(r.assembly, self.ref_file, pident=pident, hits=hits)
                 #print (bl)
-                self.results[sample] = bl
+                if len(bl) == 0:
+                    print ('no blast hits found!')
+                else:
+                    self.results[sample] = bl
         self.parent.run_threaded_process(func, self.run_completed)
         return
 

@@ -278,7 +278,9 @@ def setWidgetValues(widgets, values):
                 w.setChecked(val)
             elif type(w) is QSlider:
                 w.setValue(val)
-            elif type(w) in [QSpinBox,QDoubleSpinBox]:
+            elif type(w) is QSpinBox:
+                w.setValue(int(val))
+            elif type(w) is QDoubleSpinBox:
                 w.setValue(val)
     return
 

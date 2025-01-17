@@ -14,7 +14,8 @@ setup(
     author = 'Damien Farrell',
     author_email = 'farrell.damien@gmail.com',
     packages = ['snipgenie'],
-    package_data={'snipgenie': ['data/*.*','logo.png','description.txt',
+    package_data={'snipgenie': ['data/*.*','testing/*.*',
+                                'logo.png','description.txt',
                                   'styles/*.qss','icons/*.png',
                                   'plugins/*.py','plugins/icons/*.png',
                   'description.txt']

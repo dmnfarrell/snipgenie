@@ -109,6 +109,27 @@ def check_dict(d):
                 return 0
     return 1
 
+def is_folder_empty(folder_path):
+    """
+    Checks if a folder is empty or not.
+
+    Parameters:
+        folder_path (str): The path to the folder.
+
+    Returns:
+        bool: True if the folder is empty, False otherwise.
+    """
+    try:
+        # Check if the path exists and is a directory
+        if not os.path.isdir(folder_path):
+            raise ValueError(f"The path '{folder_path}' is not a valid directory.")
+
+        # Check if the folder is empty
+        return len(os.listdir(folder_path)) == 0
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
+
 def batch_iterator(iterator, batch_size):
     """Returns lists of length batch_size.
 

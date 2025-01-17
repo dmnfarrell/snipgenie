@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
     Simulate reads
     Created Sep 2022
@@ -28,8 +26,7 @@ import subprocess
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
 from Bio import SeqIO, AlignIO, Phylo
-from .qt import *
-from . import tools, widgets
+from . import tools
 
 home = os.path.expanduser("~")
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module

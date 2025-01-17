@@ -187,6 +187,36 @@ def get_samples(filenames, sep='-', index=0):
     df = df.drop_duplicates('filename')
     return df
 
+def find_best_separator(files):
+    """
+    Finds the best separator or substring to generate unique prefixes for a list of filenames.
+    Ensures the separator produces meaningful and unique prefixes.
+
+    Parameters:
+        files (list): List of filenames (strings).
+
+    Returns:
+        str: The best separator or substring that generates unique prefixes, or None if no solution is found.
+    """
+    separators = ['_', '-', '.']
+
+    # Test predefined separators
+    for separator in separators:
+        prefixes = [file.split(separator)[0] + separator for file in files]
+        # Ensure prefixes are unique and meaningful (not the full file name)
+        if len(prefixes) == len(set(prefixes)) and all(len(prefix) < len(file) for prefix, file in zip(prefixes, files)):
+            return separator
+
+    # Fallback: Test substrings for uniqueness
+    for i in range(1, len(files[0])):
+        # Extract substrings of length i
+        prefixes = [file[:i] for file in files]
+        # Check for uniqueness
+        if len(prefixes) == len(set(prefixes)):
+            # Return the substring as the separator
+            return files[0][:i]
+    return None
+
 def get_pivoted_samples(df, allow_errors=False):
     """
     Args:
@@ -1063,8 +1093,18 @@ class WorkFlow(object):
             print ('using manifest file for samples')
             df = pd.read_csv(self.manifest)
         else:
-            #get files from input folder(s)
             self.filenames = get_files_from_paths(self.input)
+            #get files from input folder(s)
+            if self.labelsep == 'guess':
+                #guess separator
+                sep = find_best_separator(self.filenames)
+                if sep is not None:
+                    self.labelsep = sep
+                    print (f'using {sep} as separator')
+                else:
+                    print ('cannot guess separator, you need to supply one')
+                    return
+
             df = get_samples(self.filenames, sep=self.labelsep, index=self.labelindex)
             df = get_pivoted_samples(df)
 

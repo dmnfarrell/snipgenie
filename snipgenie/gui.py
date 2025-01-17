@@ -1040,11 +1040,11 @@ class App(QMainWindow):
     def set_output_folder(self):
         """Set an output folder, if previous run set samples"""
 
-        selected_directory = QFileDialog.getExistingDirectory()
-        if not selected_directory:
+        path = QFileDialog.getExistingDirectory()
+        if not path:
             return
-        #check if folder already got some results
-        results_file = os.path.join(selected_directory, 'samples.csv')
+        #check if folder already has results
+        results_file = os.path.join(path, 'samples.csv')
         if os.path.exists(results_file):
             msg = "This folder appears to have results already. Try to import them?"
             reply = QMessageBox.question(self, 'Confirm', msg,
@@ -1052,7 +1052,11 @@ class App(QMainWindow):
             if reply == QMessageBox.Cancel:
                 return
             elif reply == QMessageBox.Yes:
-                self.set_previous_run(selected_directory)
+                self.set_previous_run(path)
+        if not tools.is_folder_empty(path):
+            print ('warning: folder is not empty.')
+        print(f'using path {path}')
+        self.outputdir = path
         self.outdirLabel.setText(self.outputdir)
         self.setup_paths()
         return

@@ -1,3 +1,3 @@
-__version__ = '0.7.0-pre'
+__version__ = '0.7.0'
 from .app import *
 from .tools import *

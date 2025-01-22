@@ -517,7 +517,7 @@ class App(QMainWindow):
         self.tools_menu.addAction('Show Annotation', self.show_ref_annotation)
         self.tools_menu.addAction('SNP Dist Matrix', self.show_snpdist)
         self.tools_menu.addAction('SNP Viewer', self.snp_viewer)
-        #self.tools_menu.addAction('CSQ Viewer', self.csq_viewer)
+        self.tools_menu.addAction('CSQ Viewer', self.csq_viewer)
         self.tools_menu.addAction('VCF Viewer', self.vcf_viewer)
         #self.tools_menu.addAction('Map View', self.show_map)
         #self.tools_menu.addAction('Tree Viewer', self.tree_viewer)
@@ -698,6 +698,7 @@ class App(QMainWindow):
         self.update_ref_genome()
         self.update_mask()
         self.clear_plugins()
+        self.clear_tabs()
         self.comms.newproj.emit()
         return True
 
@@ -784,7 +785,12 @@ class App(QMainWindow):
     def clear_tabs(self):
         """Clear tabbed panes"""
 
-        #self.right_tabs
+        while self.tabs.count() > 1:
+            index = self.tabs.count() - 1
+            name = self.tabs.tabText(index)
+            if name == 'samples':
+                continue
+            self.tabs.removeTab(index)
         return
 
     def test_run(self, path, progress_callback=None):
@@ -1719,10 +1725,16 @@ class App(QMainWindow):
         name = 'aln:'+data['sample']
         if name in self.get_tab_names():
             return
-        #text view using samtools tview
-        w = widgets.SimpleBamViewer(self)
-        w.load_data(data.bam_file, self.ref_genome, self.ref_gb)
-        w.redraw(xstart=1)
+        self.launch_bam_viewer(data.bam_file, name)
+        return
+
+    def launch_bam_viewer(self, bam_file, name, pos=None):
+
+        """text view using samtools tview"""
+        w = widgets.StaticBamViewer(self)
+        w.load_data(bam_file, self.ref_genome, self.ref_gb)
+        if pos != None:
+            w.redraw(pos)
         i = self.tabs.addTab(w, name )
         self.tabs.setCurrentIndex(i)
         return

@@ -228,6 +228,11 @@ class DataFrameTable(QTableView):
         self.plotview.app = app
         return
 
+    def getMaxHeight(self):
+        h = max([len(str(c))*10 for c in self.model.df.columns])
+        #if h>150: h=150
+        return h
+
     def updateFont(self):
         """Update the font"""
 
@@ -460,10 +465,10 @@ class DataFrameTable(QTableView):
             return
         # Show a context menu for empty space at bottom of table...
         self.menu = QMenu(self)
-        self.addActions(event, row)
+        self.addActions(event, row, column)
         return
 
-    def addActions(self, event, row):
+    def addActions(self, event, row, column):
         """Actions"""
 
         menu = self.menu
@@ -832,7 +837,7 @@ class SampleTable(DataFrameTable):
         self.model = tm
         return
 
-    def addActions(self, event, row):
+    def addActions(self, event, row, column):
         """Table actions"""
 
         menu = self.menu
@@ -911,9 +916,17 @@ class SampleTable(DataFrameTable):
         idx = df.index[rows]
         #remove any bam files first
         self.deleteBamFiles(rows, ask=False)
-
+        #self.deleteVariantCalls(rows)
         self.model.df = df.drop(idx)
         self.refresh()
+        return
+
+    def deleteVariantCalls(self, rows):
+        """Delete folder with var calls for samples"""
+
+        df = self.model.df
+        samples = list(df.index[rows])
+        #app.delete_variant_calls(samples)
         return
 
     def deleteBamFiles(self, rows, ask=True):
@@ -950,7 +963,7 @@ class ResultsTable(DataFrameTable):
         self.app = app
         self.setWordWrap(False)
 
-    def addActions(self, event, row):
+    def addActions(self, event, row, column):
 
         menu = self.menu
         showSequencesAction = menu.addAction("Show sequences")
@@ -963,66 +976,54 @@ class ResultsTable(DataFrameTable):
             self.app.show_gene_alignment(row)
         return
 
-class MyHeaderView(QHeaderView):
-
-    def __init__(self, parent=None):
+class Verticalheaderview(QHeaderView):
+    """Vertical header view"""
+    def __init__(self, parent=None, height=100):
         super().__init__(Qt.Horizontal, parent)
-        self._font = QFont(core.FONT, core.FONTSIZE)
+        self._font = QFont(core.FONT)
         self._metrics = QFontMetrics(self._font)
-        self._descent = self._metrics.descent()
-        self._margin = 5
+        self._margin = 10
+        self.height = height
+        return
 
     def paintSection(self, painter, rect, index):
-        data = str(self._get_data(index))
+        # Get the header text
+        data = self._get_data(index)
+        if not data:  # Skip empty sections
+            return
+
+        painter.save()
+        # Translate painter to the center of the rect, then rotate
+        painter.translate(rect.x() + rect.width() / 2, rect.y() + rect.height())
         painter.rotate(-90)
+        # Set font and draw text
         painter.setFont(self._font)
-        painter.drawText(int(rect.height() + self._margin),
-                         int(rect.left() + (rect.width() + self._descent) / 2), data)
+        # Draw text using QRect for proper positioning
+        #text_rect = QtCore.QRect(0, 0, rect.height(), rect.width())
+        text_rect = QtCore.QRect(-int(rect.height() / 2), -int(rect.width() / 2),
+                                 rect.height()*2, rect.width())
+
+        painter.drawText(
+            text_rect,
+            Qt.AlignCenter,
+            data
+        )
+        painter.restore()  # Restore the painter's state
 
     def sizeHint(self):
-        return QtCore.QSize(0, self._get_text_width() + 2 * self._margin)
+        # Calculate header height based on the tallest text
+        #max_height = self._get_text_width() + 2 * 1000
+        #return QtCore.QSize(max_height, super().sizeHint().height())
+        return QtCore.QSize(20, self.height+10)
 
     def _get_text_width(self):
-        return max([self._metrics.width(self._get_data(i))
-                    for i in range(0, self.model().columnCount())])
+        # Calculate the maximum width of all header texts
+        return max(self._metrics.width(str(self._get_data(i)))
+                   for i in range(self.model().columnCount()))
 
     def _get_data(self, index):
-        return self.model().headerData(index, self.orientation())
-
-class VerticalHeaderView(QHeaderView):
-    def __init__(self, orientation, parent=None):
-        super().__init__(orientation, parent)
-        self.setDefaultAlignment(Qt.AlignCenter)
-
-    def paintSection(self, painter, rect, logicalIndex):
-        painter.save()
-
-        # Draw the header background
-        painter.fillRect(rect, self.palette().color(self.backgroundRole()))
-
-        # Translate and rotate the painter for vertical text
-        painter.translate(rect.x(), rect.y() + rect.height())
-        painter.rotate(-90)
-
-        # Adjust the rectangle for rotated text
-        rotatedRect = rect.translated(0, rect.height())
-        rotatedRect.setWidth(rect.height())
-        rotatedRect.setHeight(rect.width())
-
-        # Retrieve the text from the model
-        text = self.model().headerData(logicalIndex, self.orientation(), Qt.DisplayRole)
-
-        # Draw the text vertically
-        painter.drawText(rotatedRect, self.defaultAlignment(), text)
-
-        painter.restore()
-
-    def sizeHint(self):
-        # Increase size hint to accommodate vertical text
-        hint = super().sizeHint()
-        if self.orientation() == Qt.Horizontal:
-            hint.setHeight(100)  # Adjust as needed
-        return hint
+        # Fetch header data from the model
+        return self.model().headerData(index, Qt.Horizontal, Qt.DisplayRole)
 
 class SNPTableModel(DataFrameModel):
 
@@ -1045,18 +1046,16 @@ class SNPTableModel(DataFrameModel):
             return value
         elif role == QtCore.Qt.BackgroundRole:
             if (isinstance(value, str)):
+                clr = QColor(colors[value])
                 if rowname == 'ref':
-                    return QColor('gray')
+                    return clr.darker(140)
                 else:
-                    return QColor(colors[value])
+                    return clr
         elif role == QtCore.Qt.TextAlignmentRole:
             return QtCore.Qt.AlignCenter
 
     def flags(self, index):
             return Qt.ItemIsSelectable|Qt.ItemIsEnabled
-
-    #def rowCount(self, index=None):
-    #    return 1
 
 class SNPTable(DataFrameTable):
     """
@@ -1067,9 +1066,10 @@ class SNPTable(DataFrameTable):
         DataFrameTable.__init__(self, parent, dataframe, **kwargs)
         tm = SNPTableModel(dataframe)
         self.setModel(tm)
+        self.model = tm
         self.app = app
-        #headerview = MyHeaderView()
-        headerview = VerticalHeaderView(Qt.Horizontal, self)
+        h = self.getMaxHeight()
+        headerview = Verticalheaderview(parent=self, height=h)
         self.setHorizontalHeader(headerview)
         hh = self.horizontalHeader()
         hh.setDefaultSectionSize(20)
@@ -1087,37 +1087,49 @@ class SNPTable(DataFrameTable):
         self.refresh()
         return
 
-    def addActions(self, event, row):
+    def addActions(self, event, row, column):
         """Right click action menu"""
 
         df = self.model.df
         menu = self.menu
-        #uniquepositionsAction = menu.addAction("View unique positions")
-        gotoPositionAction = menu.addAction("Go to position")
-        transposeAction = menu.addAction("Transpose")
+        #gotoPositionAction = menu.addAction("Find Position")
+        showAlignmentAction = menu.addAction("View Alignments")
+        #transposeAction = menu.addAction("Transpose")
         orderbyPhyloAction = menu.addAction("Order By Phylogeny")
         loadAction = menu.addAction("Load SNP table")
         zoominAction = menu.addAction("Zoom in")
         zoomoutAction = menu.addAction("Zoom out")
-
         action = menu.exec_(event.globalPos())
-        if action == transposeAction:
-            df = self.model.df.T
+
+        '''if action == transposeAction:
+            df = df.T
             self.setDataFrame(df)
             #self.refresh()
             self.transposed = not self.transposed
-        elif action == orderbyPhyloAction:
-            self.orderByPhylogeny()
         elif action == gotoPositionAction:
-            pos,ok = QInputDialog.getInt(self,"Move to position","Enter position")
+            items = [str(i) for i in df.columns]
+            pos,ok = QInputDialog.getItem(self, "Go to Position","Pos:", items, 0, False)
             if not ok:
                 return
             if self.transposed == True:
-                row = df.index.get_loc(pos)
-                self.setScrollPosition(row,0)
+                idx = df.index.get_loc(pos)
+                self.setScrollPosition(idx,0)
             else:
-                col = df.columns.get_loc(pos)
-                self.setScrollPosition(0,col)
+                col = df.columns.get_loc(int(pos))
+                self.setScrollPosition(col,0)
+        '''
+        if action == orderbyPhyloAction:
+            self.orderByPhylogeny()
+
+        elif action == showAlignmentAction:
+            #print (row, column)
+            pos = df.columns[column]
+            sample = df.index[row]
+            #print (sample,pos)
+            sample_df = self.app.fastq_table.model.df
+            bam_file = sample_df.loc[sample].bam_file
+            label = f'{sample}:{pos}'
+            bm = self.app.launch_bam_viewer(bam_file, label, pos-200)
         elif action == loadAction:
             filename, _ = QFileDialog.getOpenFileName(self, 'Open File', './',
                                         filter="Text Files(*.csv *.txt);;All Files(*.*)" )
@@ -1153,12 +1165,15 @@ class SNPTable(DataFrameTable):
         """Cluster labels by phylogeny tip order"""
 
         treefile = self.app.treefile
+        if not os.path.exists(treefile):
+            print ('no tree file found')
+            return
         from Bio import Phylo
         tree = Phylo.read(treefile, "newick")
         #get order of tips and use to order dataframe
         df = self.model.df
         tips = [leaf.name for leaf in tree.get_terminals()]
-        tips.remove('ref')
+        #tips.remove('ref')
         if self.transposed == True:
             df = df.reindex(tips, axis=1)
         else:
@@ -1201,7 +1216,7 @@ class DistMatrixTableModel(DataFrameModel):
         if df is None:
             return
 
-        cmap = plt.cm.coolwarm
+        cmap = plt.cm.Blues
         lut = cmap(df.to_numpy().flatten())
         lut = {i:cmap(i) for i in df.to_numpy().flatten()}
         self.colors = df.applymap(lambda x: lut[x])
@@ -1221,11 +1236,12 @@ class DistMatrixTable(DataFrameTable):
         self.setModel(tm)
         self.model = tm
         self.app = app
-        headerview = MyHeaderView()
+        h = self.getMaxHeight()
+        headerview = Verticalheaderview(height=h)
         self.setHorizontalHeader(headerview)
         hh = self.horizontalHeader()
+        hh.setDefaultSectionSize(30)
         self.transposed = False
-        #self.zoomOut(10)
         return
 
     def setDataFrame(self, df):
@@ -1237,7 +1253,7 @@ class DistMatrixTable(DataFrameTable):
         tm.updateColors()
         return
 
-    def addActions(self, event, row):
+    def addActions(self, event, row, column):
         """Right click action menu"""
 
         df = self.model.df
@@ -1304,9 +1320,9 @@ class CSQTableModel(DataFrameModel):
             if value == 0 or j <= 3:
                 return QColor('white')
             else:
-                return QColor('black')
+                return QColor('blue')
         elif role == QtCore.Qt.TextAlignmentRole:
-            if j>2:
+            if j>3:
                 return QtCore.Qt.AlignCenter
 
     def flags(self, index):
@@ -1321,7 +1337,7 @@ class CSQTable(DataFrameTable):
         tm = CSQTableModel(dataframe)
         self.setModel(tm)
         self.app = app
-        headerview = MyHeaderView()
+        headerview = Verticalheaderview()
         self.setHorizontalHeader(headerview)
         hh = self.horizontalHeader()
         hh.setDefaultSectionSize(18)
@@ -1329,7 +1345,7 @@ class CSQTable(DataFrameTable):
         self.setColumnWidth(0, 80)
         self.setColumnWidth(1, 100)
         self.setColumnWidth(2, 100)
-
+        self.setColumnWidth(3, 80)
         return
 
     def setDataFrame(self, df):
@@ -1340,7 +1356,7 @@ class CSQTable(DataFrameTable):
         self.model = tm
         return
 
-    def addActions(self, event, row):
+    def addActions(self, event, row, column):
         """Right click action menu"""
 
         df = self.model.df
@@ -1413,7 +1429,7 @@ class VCFTable(DataFrameTable):
         self.model = tm
         return
 
-    def addActions(self, event, row):
+    def addActions(self, event, row, column):
         """Right click action menu"""
 
         df = self.model.df

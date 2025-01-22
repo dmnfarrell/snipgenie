@@ -1882,8 +1882,116 @@ class SequencesViewer(QWidget):
         SeqIO.write(self.aln,filename,format='clustal')
         return
 
+class StaticBamViewer(QDialog):
+    """Sequence records features viewer using samtools tview"""
+    def __init__(self, parent=None, filename=None):
+
+        super(StaticBamViewer, self).__init__(parent)
+        #self.setWindowTitle('Bam File View')
+        self.setGeometry(QtCore.QRect(200, 200, 1000, 300))
+        self.setMinimumHeight(150)
+        self.fontsize = 8
+        self.add_widgets()
+        self.pos = 1
+        return
+
+    def add_widgets(self):
+        """Add widgets"""
+
+        l = QVBoxLayout(self)
+        self.setLayout(l)
+        val=0
+        self.textview = QTextEdit(readOnly=True)
+        self.font = QFont("Monospace")
+        self.font.setPointSize(self.fontsize)
+        self.font.setStyleHint(QFont.TypeWriter)
+        self.textview.setFont(self.font)
+        l.addWidget(self.textview)
+
+        navpanel = QWidget()
+        navpanel.setMaximumHeight(60)
+        l.addWidget(navpanel)
+        bl = QHBoxLayout(navpanel)
+
+        zoomoutbtn = QPushButton('-')
+        zoomoutbtn.setMaximumWidth(50)
+        bl.addWidget(zoomoutbtn)
+        zoomoutbtn.clicked.connect(self.zoom_out)
+        zoominbtn = QPushButton('+')
+        zoominbtn.setMaximumWidth(50)
+        bl.addWidget(zoominbtn)
+        zoominbtn.clicked.connect(self.zoom_in)
+        return
+
+    def load_data(self, bam_file, ref_file, gb_file=None, vcf_file=None):
+        """Load reference seq and get contig/chrom names"""
+
+        self.ref_file = ref_file
+        self.bam_file = bam_file
+        self.gb_file = gb_file
+        chromnames = plotting.get_fasta_names(ref_file)
+        self.chrom = chromnames[0]
+        self.length = length = plotting.get_fasta_length(ref_file)
+        if self.gb_file != None:
+            df = tools.genbank_to_dataframe(gb_file)
+            if 'locus_tag' in df.columns:
+                df.loc[df["gene"].isnull(),'gene'] = df.locus_tag
+
+        return
+
+    def set_chrom(self, chrom):
+        """Set the selected record which also updates the plot"""
+
+        index = self.chromselect.findText(chrom)
+        self.chromselect.setCurrentIndex(index)
+        return
+
+    def goto(self, pos=None):
+        """Go to position"""
+
+        pos = int(self.startw.text())
+        self.pos = pos
+        self.redraw(pos)
+        return
+
+    def redraw(self, pos=None):
+        """Plot the features"""
+
+        if pos == None:
+            pos = self.pos
+        h = 5
+        length = self.length
+        if pos<0:
+            pos=1
+        ref = self.ref_file
+        self.txt = txt = tools.samtools_tview(self.bam_file, self.chrom, pos, 500, ref, 'H')
+        #print (txt)
+        self.textview.setText(txt)
+        self.pos = pos
+        return
+
+    def zoom_in(self):
+        """Zoom in"""
+
+        self.fontsize = self.fontsize+1
+        self.font.setPointSize(self.fontsize)
+        self.textview.setFont(self.font)
+        #self.redraw()
+        return
+
+    def zoom_out(self):
+        """Zoom out"""
+
+        if self.fontsize <= 2:
+            return
+        self.fontsize = self.fontsize-1
+        self.font.setPointSize(self.fontsize)
+        self.textview.setFont(self.font)
+        #self.redraw()
+        return
+
 class SimpleBamViewer(QDialog):
-    """Sequence records features viewer using dna_features_viewer"""
+    """Sequence records features viewer using samtools tview"""
     def __init__(self, parent=None, filename=None):
 
         super(SimpleBamViewer, self).__init__(parent)
@@ -1955,8 +2063,8 @@ class SimpleBamViewer(QDialog):
         bottom.setMaximumHeight(50)
         l.addWidget(bottom)
         bl2 = QHBoxLayout(bottom)
-        self.loclbl = QLabel('')
-        bl2.addWidget(self.loclbl)
+        #self.loclbl = QLabel('')
+        #bl2.addWidget(self.loclbl)
         return
 
     def load_data(self, bam_file, ref_file, gb_file=None, vcf_file=None):
@@ -1966,6 +2074,7 @@ class SimpleBamViewer(QDialog):
         self.bam_file = bam_file
         self.gb_file = gb_file
         chromnames = plotting.get_fasta_names(ref_file)
+        self.chrom = chromnames[0]
         self.length = length = plotting.get_fasta_length(ref_file)
         if self.gb_file != None:
             df = tools.genbank_to_dataframe(gb_file)
@@ -1977,7 +2086,7 @@ class SimpleBamViewer(QDialog):
                 self.geneselect.addItems(genes)
                 self.geneselect.setStyleSheet("QComboBox { combobox-popup: 0; }");
                 self.geneselect.setMaxVisibleItems(10)
-        self.chrom = chromnames[0]
+
         self.chromselect.addItems(chromnames)
         self.chromselect.setStyleSheet("QComboBox { combobox-popup: 0; }");
         self.chromselect.setMaxVisibleItems(10)
@@ -2007,10 +2116,11 @@ class SimpleBamViewer(QDialog):
         self.redraw()
         return
 
-    def goto(self):
+    def goto(self, pos=None):
+        """Go to position"""
 
-        loc = int(self.startw.text())
-        self.redraw(loc)
+        pos = int(self.startw.text())
+        self.redraw(pos)
         return
 
     def find_gene(self):
@@ -2044,7 +2154,7 @@ class SimpleBamViewer(QDialog):
         ref = self.ref_file
         txt = tools.samtools_tview(self.bam_file, self.chrom, xstart, 500, ref, 'H')
         self.textview.setText(txt)
-        self.loclbl.setText(str(xstart))
+        #self.loclbl.setText(str(xstart))
         return
 
     def prev_page(self):
@@ -2145,8 +2255,8 @@ class GraphicalBamViewer(QDialog):
         bottom.setMaximumHeight(50)
         l.addWidget(bottom)
         bl2 = QHBoxLayout(bottom)
-        self.loclbl = QLabel('')
-        bl2.addWidget(self.loclbl)
+        #self.loclbl = QLabel('')
+        #bl2.addWidget(self.loclbl)
         return
 
     def load_data(self, bam_file, ref_file, gb_file=None, vcf_file=None):
@@ -2251,7 +2361,7 @@ class GraphicalBamViewer(QDialog):
 
         self.canvas.draw()
         self.view_range = xend-xstart
-        self.loclbl.setText(str(xstart)+'-'+str(xend))
+        #self.loclbl.setText(str(xstart)+'-'+str(xend))
         return
 
 class ScratchPad(QWidget):

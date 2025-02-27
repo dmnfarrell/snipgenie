@@ -1456,7 +1456,7 @@ def samtools_tview(bam_file, chrom, pos, width=200, ref='', display='T'):
     os.environ["COLUMNS"] = str(width)
     cmd = '{sc} tview {b} -p {c}:{p} -d {d} {r}'\
             .format(b=bam_file,c=chrom,p=pos,d=display,r=ref,sc=samtoolscmd)
-    #print (cmd)
+    print (cmd)
     tmp = subprocess.check_output(cmd, shell=True, universal_newlines=True)
     return tmp
 

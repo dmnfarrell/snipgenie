@@ -155,6 +155,12 @@ class App(QMainWindow):
         self._stdout.printOccur.connect(lambda x : self.info.insert(x))
         return
 
+    def save_samples_file(self):
+        """Write out sample table to results folder"""
+        df = self.fastq_table.model.df
+        df.to_csv(os.path.join(self.outputdir,'samples.csv'))
+        return
+
     def load_settings(self):
         """Load GUI settings"""
 
@@ -1410,6 +1416,7 @@ class App(QMainWindow):
         self.progressbar.setRange(0,1)
         self.running = False
         self.fastq_table.refresh()
+        self.save_samples_file()
         print ('finished')
         return
 
@@ -1420,6 +1427,7 @@ class App(QMainWindow):
         self.progressbar.setRange(0,1)
         df = self.fastq_table.getDataFrame()
         self.fastq_table.refresh()
+        self.save_samples_file()
         self.running = False
         return
 

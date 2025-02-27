@@ -1349,8 +1349,8 @@ def main():
                         help="QC report")
     parser.add_argument("-s", "--stats", dest="get_stats", action="store_true", default=False,
                         help="Calculate read length and mapping stats")
-    parser.add_argument("-d", "--dummy", dest="dummy",  action="store_true",
-                        default=False, help="Check samples but don't run")
+    parser.add_argument("-dummy", "--dummy", dest="dummy",  action="store_true",
+                        default=False, help="Check samples but don't execute run")
     parser.add_argument("-T", "--test", dest="test",  action="store_true",
                         default=False, help="Test run")
     parser.add_argument("-v", "--version", dest="version", action="store_true",
@@ -1360,7 +1360,7 @@ def main():
     check_platform()
 
     if args['test'] == True:
-        test_run()
+        test_run()    
     elif args['version'] == True:
         from . import __version__
         print ('snipgenie version %s' %__version__)

@@ -1,804 +1,804 @@
-"Accession_Number","Clonal_Complex","Country","Country_Patient_Birth","Gnumber","Host","Map","SIB_Number","Sample.included.in.Loiseau.et.al..2020","Strain"
-"ERS2573045","La1.6","Nigeria","Nigeria","G02538","Human",1,"SB0944",1,"M.bovis"
-"ERR1203064","La1.6","Ghana",,"G08506","Human",1,"SB0944",1,"M.bovis"
-"ERR502499","La1.6","Ghana",,"G08621","Human",1,"SB1025",1,"M.bovis"
-"ERR502526","La1.6","Ghana",,"G08645","Human",1,"New pattern",1,"M.bovis"
-"ERR502529","La1.6","Ghana",,"G08648","Human",1,"SB0944",1,"M.bovis"
-"ERR502538","La1.6","Ghana",,"G08654","Human",1,"SB0944",1,"M.bovis"
-"ERR553061","La1.6","Germany",,"G13968","Human",0,"SB0944",1,"M.bovis"
-"ERR2515016","La1.6","United Kingdom",,"G36740","Human",0,"SB1027",1,"M.bovis"
-"ERR4769567","La1.6","Mali",,"G66533","Cattle",1,"SB0300",0,"M.bovis"
-"ERR3458084","La1.3","Ethiopia",,"G00229","Human",1,"SB1984",1,"M.bovis"
-"ERR3458085","La1.3","Ethiopia",,"G00234","Human",1,"SB0133",1,"M.bovis"
-"ERR3458086","La1.3","Ethiopia",,"G00244","Human",1,"SB0303",1,"M.bovis"
-"ERR3458080","La1.3","Ethiopia",,"G00370","Cattle",1,"New pattern",1,"M.bovis"
-"ERR3458081","La1.3","Ethiopia",,"G00371","Cattle",1,"SB1477",1,"M.bovis"
-"ERR3458087","La1.3","Burundi",,"G00396","Cattle",1,"SB0303",1,"M.bovis"
-"SRR1173570","La1.3","Uganda",,"G22538","chimpanzee",1,"SB0133",1,"M.bovis"
-"ERR1200622","La1.3","Ethiopia",,"G26444",,0,"SB0303",1,"M.bovis"
-"SRR1791710","La1.3","Tanzania",,"G36917","Primate",1,"SB2467",1,"M.bovis"
-"SRR1791712","La1.3","Tanzania",,"G36919","Primate",1,"SB2467",1,"M.bovis"
-"SRR8065069","La1.3","Uganda",,"G41490","Cattle",1,"SB1469",1,"M.bovis"
-"SRR8065070","La1.3","Uganda",,"G41491","Cattle",1,"SB1471",1,"M.bovis"
-"SRR8065071","La1.3","Uganda",,"G41492","Cattle",1,"SB1469",1,"M.bovis"
-"SRR8065073","La1.3","Uganda",,"G41494","Cattle",1,"SB0133",1,"M.bovis"
-"SRR8065074","La1.3","Uganda",,"G41495","Cattle",1,"SB0133",1,"M.bovis"
-"SRR8065078","La1.3","Uganda",,"G41499","Cattle",1,"SB1469",1,"M.bovis"
-"SRR8065079","La1.3","Uganda",,"G41500","Cattle",1,"SB1469",1,"M.bovis"
-"SRR8065080","La1.3","Uganda",,"G41501","Cattle",1,"SB0133",1,"M.bovis"
-"SRR8065081","La1.3","Uganda",,"G41502","Cattle",1,"SB0133",1,"M.bovis"
-"SRR8065082","La1.3","Uganda",,"G41503","Cattle",1,"SB1469",1,"M.bovis"
-"SRR8065084","La1.3","Uganda",,"G41505","Cattle",1,"SB0133",1,"M.bovis"
-"SRR8065085","La1.3","Uganda",,"G41506","Cattle",1,"SB1469",1,"M.bovis"
-"SRR8065086","La1.3","Uganda",,"G41507","Cattle",1,"SB1469",1,"M.bovis"
-"SRR8065087","La1.3","Uganda",,"G41508","Cattle",1,"SB1469",1,"M.bovis"
-"SRR8063651","La1.3","Ethiopia",,"G41517","Cattle",1,"SB0133",1,"M.bovis"
-"SRR8063652","La1.3","Ethiopia",,"G41518","Cattle",1,"SB0912",1,"M.bovis"
-"SRR8063653","La1.3","Ethiopia",,"G41519","Cattle",1,"SB1176",1,"M.bovis"
-"SRR8063654","La1.3","Ethiopia",,"G41520","Cattle",1,"SB1176",1,"M.bovis"
-"SRR8063655","La1.3","Ethiopia",,"G41521","Cattle",1,"SB0912",1,"M.bovis"
-"SRR8063656","La1.3","Ethiopia",,"G41522","Cattle",1,"SB1176",1,"M.bovis"
-"SRR8063657","La1.3","Ethiopia",,"G41523","Cattle",1,"SB1176",1,"M.bovis"
-"SRR8063658","La1.3","Ethiopia",,"G41524","Cattle",1,"SB1176",1,"M.bovis"
-"SRR8063659","La1.3","Ethiopia",,"G41525","Cattle",1,"SB1176",1,"M.bovis"
-"SRR8063660","La1.3","Ethiopia",,"G41526","Cattle",1,"SB0133",1,"M.bovis"
-"SRR8063661","La1.3","Ethiopia",,"G41527","Cattle",1,"SB1176",1,"M.bovis"
-"SRR8063662","La1.3","Ethiopia",,"G41528","Cattle",1,"SB0912",1,"M.bovis"
-"SRR8063663","La1.3","Ethiopia",,"G41529","Cattle",1,"SB1176",1,"M.bovis"
-"SRR8063664","La1.3","Ethiopia",,"G41530","Cattle",1,"New pattern",1,"M.bovis"
-"SRR8063665","La1.3","Ethiopia",,"G41531","Cattle",1,"SB1176",1,"M.bovis"
-"SRR8063666","La1.3","Ethiopia",,"G41532","Cattle",1,"SB1176",1,"M.bovis"
-"ERR3077969","La1.3","Tanzania",,"G51349","Human",1,"New pattern",0,"M.bovis"
-"ERR4769565","La1.3","Ethiopia",,"G66535","Cattle",0,"SB1477",0,"M.bovis"
-"ERR4769561","La1.3","Ethiopia",,"G66539","Cattle",0,"SB0303",0,"M.bovis"
-"ERR4769560","La1.3","Ethiopia",,"G66540","Cattle",0,"SB2595",0,"M.bovis"
-"ERR4769559","La1.3","Ethiopia",,"G66541","Cattle",0,"SB1176",0,"M.bovis"
-"ERR4772237","La1.3","Ethiopia",,"G66542","Human",0,"SB0303",0,"M.bovis"
-"ERR4772236","La1.3","Ethiopia",,"G66543","Human",0,"SB0133",0,"M.bovis"
-"ERR4772235","La1.3","Ethiopia",,"G66544","Human",0,"SB1984",0,"M.bovis"
-"ERR4772234","La1.3","Ethiopia",,"G66545","Human",0,"SB0303",0,"M.bovis"
-"ERR4772231","La1.3","Ethiopia",,"G66710","Cattle",1,"SB1176",0,"M.bovis"
-"ERR4772228","La1.3","Ethiopia",,"G66713","Cattle",1,"SB1176",0,"M.bovis"
-"ERR4772227","La1.3","Ethiopia",,"G66714","Cattle",1,"SB0133",0,"M.bovis"
-"ERR4772224","La1.3","Ethiopia",,"G66717","Cattle",1,"SB1176",0,"M.bovis"
-"ERR4772223","La1.3","Ethiopia",,"G66718","Cattle",1,"SB0133",0,"M.bovis"
-"ERR4772222","La1.3","Ethiopia",,"G66719","Cattle",1,"New pattern",0,"M.bovis"
-"ERR4772221","La1.3","Ethiopia",,"G66720","Cattle",1,"SB0133",0,"M.bovis"
-"ERR4772220","La1.3","Ethiopia",,"G66721","Cattle",1,"SB0133",0,"M.bovis"
-"ERR4772217","La1.3","Ethiopia",,"G66724","Dromedary",1,"SB1176",0,"M.bovis"
-"ERR4772216","La1.3","Ethiopia",,"G66725","Cattle",1,"SB1176",0,"M.bovis"
-"ERR4772215","La1.3","Ethiopia",,"G66726","Cattle",1,"SB1176",0,"M.bovis"
-"ERR4772214","La1.3","Ethiopia",,"G66727","Cattle",1,"SB1176",0,"M.bovis"
-"ERR4772213","La1.3","Ethiopia",,"G66728","Cattle",1,"New pattern",0,"M.bovis"
-"ERR4772209","La1.3","Ethiopia",,"G66732","Cattle",1,"SB0303",0,"M.bovis"
-"ERR4772208","La1.3","Ethiopia",,"G66733","Cattle",1,"SB1176",0,"M.bovis"
-"ERR1462578","La2","Germany",,"G36645","Cattle",1,"SB0418",1,"M.caprae"
-"ERR1462593","La2","Germany",,"G36660","Cattle",1,"SB0418",1,"M.caprae"
-"ERR2517345","La2","Netherlands",,"G36760",,0,"SB0835",1,"M.caprae"
-"ERR2510183","La2","Peru",,"G36761",,0,"SB0415",1,"M.caprae"
-"ERR2510206","La2","Peru",,"G36762",,0,"SB0415",1,"M.caprae"
-"SRR1792164","La2","China",,"G37371","Primate",1,"SB1622",1,"M.caprae"
-"SRR1792165","La2","China",,"G37372","Primate",1,"SB1622",1,"M.caprae"
-"SRR7617662","La2","China",,"G41838","Monkey",1,"SB1622",1,"M.caprae"
-"DRR120408","La2","Japan",,"G42152","Elephas maximus",1,"SB0418",1,"M.caprae"
-"DRR120409","La2","Japan",,"G42153","Elephas maximus",1,"SB0418",1,"M.caprae"
-"ERR017796","La1.8.1","Russia",,"G04157",,0,"New pattern",1,"M.bovis"
-"ERR400386","La1.8.1","United Kingdom","United Kingdom","G13058",,0,"SB0272",1,"M.bovis"
-"ERR400460","La1.8.1","United Kingdom",,"G13125",,0,"New pattern",1,"M.bovis"
-"SRR2100072","La1.8.1","United Kingdom",,"G14219",,0,"SB0263",1,"M.bovis"
-"SRR2100074","La1.8.1","United Kingdom",,"G14221",,0,"New pattern",1,"M.bovis"
-"SRR2101351","La1.8.1","United Kingdom",,"G15488",,0,"SB0263",1,"M.bovis"
-"ERR046748","La1.8.1","United Kingdom",,"G16000",,0,"New pattern",1,"M.bovis"
-"ERR046749","La1.8.1","United Kingdom",,"G16001",,0,"SB0263",1,"M.bovis"
-"ERR046954","La1.8.1","United Kingdom",,"G16092",,0,"SB0263",1,"M.bovis"
-"ERR046961","La1.8.1","United Kingdom",,"G16096",,0,"SB0263",1,"M.bovis"
-"ERR841810","La1.8.1","United Kingdom",,"G22057","Cattle",1,"SB0140",1,"M.bovis"
-"ERR841874","La1.8.1","United Kingdom",,"G22121","Cattle",1,"SB0140",1,"M.bovis"
-"SRR5216970","La1.8.1","New Zealand",,"G22232","Cattle",1,"SB0140",1,"M.bovis"
-"SRR5216951","La1.8.1","New Zealand",,"G22251","Possum",1,"SB0130",1,"M.bovis"
-"SRR5216928","La1.8.1","New Zealand",,"G22274","Cattle",1,"SB0140",1,"M.bovis"
-"SRR5216893","La1.8.1","New Zealand",,"G22309","Cattle",1,"SB0140",1,"M.bovis"
-"SRR5216884","La1.8.1","New Zealand",,"G22318","Cattle",1,"SB0140",1,"M.bovis"
-"SRR5216883","La1.8.1","New Zealand",,"G22319","Cattle",1,"SB1031",1,"M.bovis"
-"SRR5216854","La1.8.1","New Zealand",,"G22348","Cattle",1,"SB0140",1,"M.bovis"
-"SRR5216835","La1.8.1","New Zealand",,"G22367","Cattle",1,"SB0140",1,"M.bovis"
-"SRR5216806","La1.8.1","New Zealand",,"G22396","Ferret",1,"SB0130",1,"M.bovis"
-"SRR5216799","La1.8.1","New Zealand",,"G22403","Cattle",1,"SB0140",1,"M.bovis"
-"SRR5216779","La1.8.1","New Zealand",,"G22423","Possum",1,"SB0140",1,"M.bovis"
-"SRR5216774","La1.8.1","New Zealand",,"G22428","Cattle",1,"SB0140",1,"M.bovis"
-"SRR5216763","La1.8.1","New Zealand",,"G22439","Cattle",1,"SB0140",1,"M.bovis"
-"SRR5216759","La1.8.1","New Zealand",,"G22443","Cattle",1,"SB0140",1,"M.bovis"
-"SRR5216741","La1.8.1","New Zealand",,"G22461","Cattle",1,"SB0140",1,"M.bovis"
-"SRR5216740","La1.8.1","New Zealand",,"G22462","Cattle",1,"SB0140",1,"M.bovis"
-"SRR5216727","La1.8.1","New Zealand",,"G22475","Possum",1,"SB0140",1,"M.bovis"
-"SRR5216724","La1.8.1","New Zealand",,"G22478","Ferret",1,"SB0140",1,"M.bovis"
-"SRR5216706","La1.8.1","New Zealand",,"G22497","Cattle",1,"SB0140",1,"M.bovis"
-"SRR6467887","La1.8.1","Canada",,"G36314","Bison bison athabascae",1,"SB0130",1,"M.bovis"
-"SRR6467891","La1.8.1","Canada",,"G36316","elk",1,"SB0140",1,"M.bovis"
-"SRR6467893","La1.8.1","Canada",,"G36317","Cattle",1,"SB1071",1,"M.bovis"
-"SRR5657361","La1.8.1","Mexico",,"G36405","Cattle",1,"SB1758",1,"M.bovis"
-"SRR5657376","La1.8.1","Mexico",,"G36420","Cattle",1,"SB0145",1,"M.bovis"
-"SRR5657393","La1.8.1","Mexico",,"G36437","Cattle",1,"SB0145",1,"M.bovis"
-"SRR5657394","La1.8.1","Mexico",,"G36438","Cattle",1,"SB0140",1,"M.bovis"
-"SRR5657395","La1.8.1","Mexico",,"G36439","Cattle",1,"SB0145",1,"M.bovis"
-"SRR5657410","La1.8.1","Mexico",,"G36454","Human",1,"SB0145",1,"M.bovis"
-"SRR5657432","La1.8.1","Mexico",,"G36476","Cattle",1,"SB0145",1,"M.bovis"
-"SRR5657493","La1.8.1","Mexico",,"G36537","Cattle",1,"SB0145",1,"M.bovis"
-"SRR5657520","La1.8.1","Mexico",,"G36564","Cattle",1,"SB0145",1,"M.bovis"
-"SRR5657521","La1.8.1","Mexico",,"G36565","Cattle",1,"SB1758",1,"M.bovis"
-"ERR1815539","La1.8.1","South Africa",,"G36575","Syncerus caffer",1,"SB0130",1,"M.bovis"
-"ERR1815543","La1.8.1","South Africa",,"G36579","Syncerus caffer",1,"SB1755",1,"M.bovis"
-"ERR1815544","La1.8.1","South Africa",,"G36580","Cattle",1,"SB0130",1,"M.bovis"
-"ERR1815548","La1.8.1","South Africa",,"G36584","Cattle",1,"SB0267",1,"M.bovis"
-"ERR1815550","La1.8.1","South Africa",,"G36586","Panthera leo",1,"SB0130",1,"M.bovis"
-"SRR5382721","La1.8.1","Uruguay",,"G36587","Cattle",1,"SB0145",1,"M.bovis"
-"SRR5430090","La1.8.1","Uruguay",,"G36588","Cattle",1,"SB0145",1,"M.bovis"
-"SRR5430091","La1.8.1","Uruguay",,"G36589","Cattle",1,"SB0274",1,"M.bovis"
-"SRR5430098","La1.8.1","Uruguay",,"G36590","Cattle",1,"SB0145",1,"M.bovis"
-"SRR5430569","La1.8.1","Uruguay",,"G36591","Cattle",1,"SB0130",1,"M.bovis"
-"SRR5430746","La1.8.1","Uruguay",,"G36592","Cattle",1,"SB1072",1,"M.bovis"
-"SRR5430747","La1.8.1","Uruguay",,"G36593","Cattle",1,"SB0130",1,"M.bovis"
-"SRR5430748","La1.8.1","Uruguay",,"G36594","Cattle",1,"SB0274",1,"M.bovis"
-"SRR5430749","La1.8.1","Uruguay",,"G36595","Cattle",1,"SB0274",1,"M.bovis"
-"SRR5430750","La1.8.1","Uruguay",,"G36596","Cattle",1,"SB0130",1,"M.bovis"
-"SRR5431711","La1.8.1","Uruguay",,"G36597","Cattle",1,"SB0274",1,"M.bovis"
-"SRR5431718","La1.8.1","Uruguay",,"G36598","Cattle",1,"SB0130",1,"M.bovis"
-"SRR5431719","La1.8.1","Uruguay",,"G36599","Cattle",1,"SB0274",1,"M.bovis"
-"SRR5431720","La1.8.1","Uruguay",,"G36600","Cattle",1,"SB0145",1,"M.bovis"
-"SRR5431721","La1.8.1","Uruguay",,"G36601","Cattle",1,"SB0274",1,"M.bovis"
-"SRR5431730","La1.8.1","Uruguay",,"G36602","Cattle",1,"SB1619",1,"M.bovis"
-"SRR5431732","La1.8.1","Uruguay",,"G36603","Cattle",1,"SB0130",1,"M.bovis"
-"SRR5431790","La1.8.1","Uruguay",,"G36604","Cattle",1,"SB0130",1,"M.bovis"
-"SRR5431791","La1.8.1","Uruguay",,"G36605","Cattle",1,"SB0145",1,"M.bovis"
-"SRR5431792","La1.8.1","Uruguay",,"G36606","Cattle",1,"SB0145",1,"M.bovis"
-"SRR5431793","La1.8.1","Uruguay",,"G36607","Cattle",1,"SB0274",1,"M.bovis"
-"SRR5431795","La1.8.1","Uruguay",,"G36609","Cattle",1,"SB0274",1,"M.bovis"
-"ERR125612","La1.8.1","Ireland",,"G36624",,1,"SB0140",1,"M.bovis"
-"SRR6045827","La1.8.1","United Kingdom",,"G36705","Human",0,"SB0263",1,"M.bovis"
-"ERR2512570","La1.8.1","United Kingdom",,"G36706",,0,"SB0263",1,"M.bovis"
-"ERR2512647","La1.8.1","United Kingdom",,"G36707",,0,"SB0263",1,"M.bovis"
-"ERR2512732","La1.8.1","United Kingdom",,"G36710",,0,"SB0129",1,"M.bovis"
-"ERR2512755","La1.8.1","United Kingdom",,"G36711",,0,"New pattern",1,"M.bovis"
-"ERR2512838","La1.8.1","United Kingdom",,"G36712",,0,"SB0130",1,"M.bovis"
-"ERR2512954","La1.8.1","United Kingdom",,"G36717",,0,"SB0129",1,"M.bovis"
-"ERR2512962","La1.8.1","United Kingdom",,"G36718",,0,"SB0129",1,"M.bovis"
-"ERR2513034","La1.8.1","United Kingdom",,"G36719",,0,"New pattern",1,"M.bovis"
-"ERR2513138","La1.8.1","United Kingdom",,"G36720",,0,"SB0140",1,"M.bovis"
-"ERR2513194","La1.8.1","United Kingdom",,"G36721",,0,"SB0263",1,"M.bovis"
-"ERR2513433","La1.8.1","United Kingdom",,"G36724",,0,"SB0129",1,"M.bovis"
-"ERR2513607","La1.8.1","United Kingdom",,"G36725",,0,"SB0140",1,"M.bovis"
-"ERR2513811","La1.8.1","United Kingdom",,"G36727",,0,"SB0263",1,"M.bovis"
-"ERR2514144","La1.8.1","United Kingdom",,"G36729",,0,"SB0673",1,"M.bovis"
-"ERR2514191","La1.8.1","United Kingdom",,"G36730",,0,"SB0129",1,"M.bovis"
-"SRR6045214","La1.8.1","United Kingdom",,"G36731","Human",0,"SB0263",1,"M.bovis"
-"ERR2514285","La1.8.1","United Kingdom",,"G36732",,0,"SB0129",1,"M.bovis"
-"ERR2514352","La1.8.1","United Kingdom",,"G36733",,0,"SB0272",1,"M.bovis"
-"SRR6045235","La1.8.1","United Kingdom",,"G36734","Human",0,"SB0267",1,"M.bovis"
-"ERR2514545","La1.8.1","United Kingdom",,"G36735",,0,"SB0140",1,"M.bovis"
-"ERR2514583","La1.8.1","United Kingdom",,"G36736",,0,"SB0129",1,"M.bovis"
-"ERR2514837","La1.8.1","United Kingdom",,"G36737",,0,"New pattern",1,"M.bovis"
-"ERR2514955","La1.8.1","United Kingdom",,"G36738",,0,"New pattern",1,"M.bovis"
-"ERR2815609","La1.8.1","Germany",,"G36802","racoon",0,"SB0141",0,"M.bovis"
-"SRR1791700","La1.8.1","Mexico",,"G36907","Cattle",1,"SB1499",1,"M.bovis"
-"SRR1791703","La1.8.1","Mexico",,"G36910","Cattle",1,"SB0673",1,"M.bovis"
-"SRR1791707","La1.8.1","USA",,"G36914","Jaguar",1,"SB0140",1,"M.bovis"
-"SRR1791728","La1.8.1","Mexico",,"G36935","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791737","La1.8.1","Mexico",,"G36944","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791751","La1.8.1","Mexico",,"G36958","Cattle",1,"SB0145",1,"M.bovis"
-"SRR1791752","La1.8.1","Mexico",,"G36959","Cattle",1,"New pattern",1,"M.bovis"
-"SRR1791762","La1.8.1","Mexico",,"G36969","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791763","La1.8.1","Mexico",,"G36970","Cattle",1,"New pattern",1,"M.bovis"
-"SRR1791766","La1.8.1","Mexico",,"G36973","Cattle",1,"SB0307",1,"M.bovis"
-"SRR1791770","La1.8.1","Mexico",,"G36977","Cattle",1,"SB0130",1,"M.bovis"
-"SRR1791773","La1.8.1","Mexico",,"G36980","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791777","La1.8.1","Mexico",,"G36984","Cattle",1,"SB0943",1,"M.bovis"
-"SRR1791784","La1.8.1","USA",,"G36991","Cattle",1,"SB1071",1,"M.bovis"
-"SRR1791785","La1.8.1","Mexico",,"G36992","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791792","La1.8.1","Mexico",,"G36999","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791801","La1.8.1","Mexico",,"G37008","Cattle",1,"SB2020",1,"M.bovis"
-"SRR1791809","La1.8.1","Mexico",,"G37016","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791816","La1.8.1","Mexico",,"G37023","Cattle",1,"SB2020",1,"M.bovis"
-"SRR1791822","La1.8.1","Mexico",,"G37029","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791826","La1.8.1","Mexico",,"G37033","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791829","La1.8.1","Mexico",,"G37036","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791834","La1.8.1","Mexico",,"G37041","Cattle",1,"SB1499",1,"M.bovis"
-"SRR1791861","La1.8.1","Mexico",,"G37068","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791864","La1.8.1","Mexico",,"G37071","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791871","La1.8.1","Mexico",,"G37078","Cattle",1,"SB0130",1,"M.bovis"
-"SRR1791881","La1.8.1","USA",,"G37088","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791883","La1.8.1","Mexico",,"G37090","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791889","La1.8.1","USA",,"G37096","Wild boar",1,"SB0145",1,"M.bovis"
-"SRR1791894","La1.8.1","USA",,"G37101","Cattle",1,"SB0145",1,"M.bovis"
-"SRR1791911","La1.8.1","USA",,"G37118","Cattle",1,"SB1758",1,"M.bovis"
-"SRR1791937","La1.8.1","Mexico",,"G37144","Cattle",1,"SB0269",1,"M.bovis"
-"SRR1791942","La1.8.1","Mexico",,"G37149","Cattle",1,"SB1499",1,"M.bovis"
-"SRR1791947","La1.8.1","USA",,"G37154","Cattle",1,"SB0271",1,"M.bovis"
-"SRR1791952","La1.8.1","Mexico",,"G37159","Cattle",1,"SB0971",1,"M.bovis"
-"SRR1791953","La1.8.1","Mexico",,"G37160","Cattle",1,"SB0673",1,"M.bovis"
-"SRR1791958","La1.8.1","Mexico",,"G37165","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791970","La1.8.1","Mexico",,"G37177","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791975","La1.8.1","Mexico",,"G37182","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791977","La1.8.1","Mexico",,"G37184","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791985","La1.8.1","USA",,"G37192","Cattle",1,"SB0271",1,"M.bovis"
-"SRR1791987","La1.8.1","Mexico",,"G37194","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1791988","La1.8.1","Mexico",,"G37195","Cattle",1,"SB1754",1,"M.bovis"
-"SRR1791998","La1.8.1","Mexico",,"G37205","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1792009","La1.8.1","USA",,"G37216","Cervid",1,"SB0271",1,"M.bovis"
-"SRR1792014","La1.8.1","USA",,"G37221","Wild boar",1,"SB0145",1,"M.bovis"
-"SRR1792043","La1.8.1","USA",,"G37250","Cervid",1,"SB0271",1,"M.bovis"
-"SRR1792044","La1.8.1","USA",,"G37251","Cervid",1,"SB0271",1,"M.bovis"
-"SRR1792051","La1.8.1","USA",,"G37258","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1792060","La1.8.1","USA",,"G37267","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1792066","La1.8.1","Mexico",,"G37273","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1792067","La1.8.1","USA",,"G37274","Cervid",1,"SB0271",1,"M.bovis"
-"SRR1792076","La1.8.1","USA",,"G37283","Cervid",1,"SB0271",1,"M.bovis"
-"SRR1792090","La1.8.1","USA",,"G37297","Cattle",1,"SB0271",1,"M.bovis"
-"SRR1792103","La1.8.1","USA",,"G37310","Cervid",1,"SB0271",1,"M.bovis"
-"SRR1792107","La1.8.1","USA",,"G37314","Wild boar",1,"SB0145",1,"M.bovis"
-"SRR1792114","La1.8.1","USA",,"G37321","Cattle",1,"SB0271",1,"M.bovis"
-"SRR1792124","La1.8.1","USA",,"G37331","Cervid",1,"SB0271",1,"M.bovis"
-"SRR1792146","La1.8.1","USA",,"G37353","Wild boar",1,"SB0145",1,"M.bovis"
-"SRR1792152","La1.8.1","USA",,"G37359","Wild boar",1,"SB0145",1,"M.bovis"
-"SRR1792172","La1.8.1","Mexico",,"G37379","Cattle",1,"SB1348",1,"M.bovis"
-"SRR1792176","La1.8.1","USA",,"G37383","Cattle",1,"SB1758",1,"M.bovis"
-"SRR1792178","La1.8.1","USA",,"G37385","Cattle",1,"SB0271",1,"M.bovis"
-"SRR1792179","La1.8.1","USA",,"G37386","Cattle",1,"SB0271",1,"M.bovis"
-"SRR1792279","La1.8.1","Mexico",,"G37486","Cattle",1,"SB0267",1,"M.bovis"
-"SRR1792281","La1.8.1","Mexico",,"G37488","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1792339","La1.8.1","USA",,"G37546","Cattle",1,"SB0271",1,"M.bovis"
-"SRR1792349","La1.8.1","Mexico",,"G37556","Cattle",1,"SB0673",1,"M.bovis"
-"SRR1792350","La1.8.1","USA",,"G37557","Cat",1,"SB0145",1,"M.bovis"
-"SRR1792358","La1.8.1","Mexico",,"G37565","Cattle",1,"SB0140",1,"M.bovis"
-"SRR1792372","La1.8.1","Mexico",,"G37579","Cattle",1,"New pattern",1,"M.bovis"
-"SRR1792429","La1.8.1","USA",,"G37636","Cattle",1,"SB0271",1,"M.bovis"
-"SRR1792438","La1.8.1","Mexico",,"G37645","Cattle",1,"SB0130",1,"M.bovis"
-"SRR1792441","La1.8.1","Mexico",,"G37648","Cattle",1,"SB0145",1,"M.bovis"
-"SRR1792487","La1.8.1","USA",,"G37694","Cattle",1,"SB0130",1,"M.bovis"
-"SRR1792494","La1.8.1","USA",,"G37701","Cattle",1,"SB0145",1,"M.bovis"
-"SRR4019490","La1.8.1","USA",,"G37784","Human",0,"SB0145",1,"M.bovis"
-"SRR1657061","La1.8.1","Costa Rica",,"G38449","Cattle",1,"SB1041",1,"M.bovis"
-"SRR1657070","La1.8.1","Panama",,"G38453","Cattle",1,"SB0145",1,"M.bovis"
-"SRR7236106","La1.8.1","Mexico",,"G41169","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236111","La1.8.1","Mexico",,"G41174","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236140","La1.8.1","Mexico",,"G41203","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236142","La1.8.1","Mexico",,"G41205","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236143","La1.8.1","Mexico",,"G41206","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236144","La1.8.1","Mexico",,"G41207","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236148","La1.8.1","Mexico",,"G41211","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236150","La1.8.1","Mexico",,"G41213","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236154","La1.8.1","Mexico",,"G41217","Cattle",1,"New pattern",1,"M.bovis"
-"SRR7236155","La1.8.1","Mexico",,"G41218","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236164","La1.8.1","Mexico",,"G41227","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236174","La1.8.1","Mexico",,"G41237","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236183","La1.8.1","Mexico",,"G41246","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236188","La1.8.1","Mexico",,"G41251","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236190","La1.8.1","Mexico",,"G41253","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236195","La1.8.1","Mexico",,"G41258","Cattle",1,"SB0145",1,"M.bovis"
-"SRR7236225","La1.8.1","Mexico",,"G41288","Cattle",1,"SB0130",1,"M.bovis"
-"SRR7236234","La1.8.1","Mexico",,"G41297","Cattle",1,"SB0145",1,"M.bovis"
-"SRR7236249","La1.8.1","Mexico",,"G41312","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236252","La1.8.1","Mexico",,"G41315","Cattle",1,"SB0131",1,"M.bovis"
-"SRR7236262","La1.8.1","Mexico",,"G41325","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236271","La1.8.1","Mexico",,"G41334","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236275","La1.8.1","Mexico",,"G41338","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236279","La1.8.1","Mexico",,"G41342","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236287","La1.8.1","Mexico",,"G41350","Cattle",1,"SB0145",1,"M.bovis"
-"SRR7236293","La1.8.1","Mexico",,"G41356","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236303","La1.8.1","Mexico",,"G41366","Cattle",1,"SB0289",1,"M.bovis"
-"SRR7236324","La1.8.1","Mexico",,"G41387","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236330","La1.8.1","Mexico",,"G41393","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236331","La1.8.1","Mexico",,"G41394","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236349","La1.8.1","Mexico",,"G41412","Cattle",1,"SB0327",1,"M.bovis"
-"SRR7236350","La1.8.1","Mexico",,"G41413","Cattle",1,"SB0145",1,"M.bovis"
-"SRR7236354","La1.8.1","Mexico",,"G41417","Cattle",1,"SB0130",1,"M.bovis"
-"SRR7236357","La1.8.1","Mexico",,"G41420","Cattle",1,"SB0139",1,"M.bovis"
-"SRR7236376","La1.8.1","Mexico",,"G41439","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236393","La1.8.1","Mexico",,"G41456","Cattle",1,"SB1758",1,"M.bovis"
-"SRR7236394","La1.8.1","Mexico",,"G41457","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236397","La1.8.1","Mexico",,"G41460","Cattle",1,"SB1754",1,"M.bovis"
-"SRR7236403","La1.8.1","Mexico",,"G41466","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236404","La1.8.1","Mexico",,"G41467","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236413","La1.8.1","Mexico",,"G41476","Cattle",1,"SB0275",1,"M.bovis"
-"SRR7236415","La1.8.1","Mexico",,"G41478","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236417","La1.8.1","Mexico",,"G41480","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236418","La1.8.1","Mexico",,"G41481","Cattle",1,"New pattern",1,"M.bovis"
-"SRR7236421","La1.8.1","Mexico",,"G41484","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7236424","La1.8.1","Mexico",,"G41487","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7617392","La1.8.1","New Zealand",,"G41568","Cervine",1,"SB0140",1,"M.bovis"
-"SRR7617394","La1.8.1","New Zealand",,"G41570","Cervine",1,"SB0140",1,"M.bovis"
-"SRR7617396","La1.8.1","New Zealand",,"G41572","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7617409","La1.8.1","New Zealand",,"G41585","Possum",1,"SB0130",1,"M.bovis"
-"SRR7617439","La1.8.1","New Zealand",,"G41615","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7617441","La1.8.1","United Kingdom",,"G41617","Cattle",1,"SB0268",1,"M.bovis"
-"SRR7617442","La1.8.1","New Zealand",,"G41618","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7617446","La1.8.1","New Zealand",,"G41622","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7617510","La1.8.1","New Zealand",,"G41686","Possum",1,"SB0140",1,"M.bovis"
-"SRR7617514","La1.8.1","New Zealand",,"G41690","Ferret",1,"SB0140",1,"M.bovis"
-"SRR7617515","La1.8.1","New Zealand",,"G41691","Ferret",1,"SB0140",1,"M.bovis"
-"SRR7617517","La1.8.1","New Zealand",,"G41693","Possum",1,"SB0140",1,"M.bovis"
-"SRR7617526","La1.8.1","New Zealand",,"G41702","Possum",1,"SB0140",1,"M.bovis"
-"SRR7617588","La1.8.1","New Zealand",,"G41764","Pig",1,"SB0130",1,"M.bovis"
-"SRR7617596","La1.8.1","New Zealand",,"G41772","Cervine",1,"SB0130",1,"M.bovis"
-"SRR7617599","La1.8.1","New Zealand",,"G41775","Cervine",1,"SB0140",1,"M.bovis"
-"SRR7617634","La1.8.1","New Zealand",,"G41810","Pig",1,"SB0130",1,"M.bovis"
-"SRR7617639","La1.8.1","New Zealand",,"G41815","Ferret",1,"SB0130",1,"M.bovis"
-"SRR7617660","La1.8.1","New Zealand",,"G41836","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7617666","La1.8.1","New Zealand",,"G41842","Ferret",1,"SB0140",1,"M.bovis"
-"SRR7617681","La1.8.1","New Zealand",,"G41857","Ferret",1,"SB0140",1,"M.bovis"
-"SRR7617682","La1.8.1","New Zealand",,"G41858","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7617710","La1.8.1","New Zealand",,"G41886","Human",0,"SB0673",1,"M.bovis"
-"SRR7617711","La1.8.1","New Zealand",,"G41887","Cattle",1,"SB1031",1,"M.bovis"
-"SRR7617761","La1.8.1","New Zealand",,"G41937","Ferret",1,"SB0140",1,"M.bovis"
-"SRR7617812","La1.8.1","New Zealand",,"G41988","Cattle",1,"SB1897",1,"M.bovis"
-"SRR7617827","La1.8.1","New Zealand",,"G42003","Pig",1,"SB0130",1,"M.bovis"
-"SRR7617828","La1.8.1","New Zealand",,"G42004","Cattle",1,"SB0140",1,"M.bovis"
-"SRR7617836","La1.8.1","New Zealand",,"G42012","Cattle",1,"SB0140",1,"M.bovis"
-"SRR6045019","La1.8.1","United Kingdom",,"G42045","Human",0,"SB0267",1,"M.bovis"
-"SRR8073610","La1.8.1","USA",,"G42077","Deer",1,"SB0145",1,"M.bovis"
-"SRR7851305","La1.8.1","France",,"G47578","Cattle",1,"SB0140",0,"M.bovis"
-"SRR7851314","La1.8.1","France",,"G47587","Cattle",1,"SB0130",0,"M.bovis"
-"SRR7851320","La1.8.1","France",,"G47593","Cattle",1,"SB0145",0,"M.bovis"
-"SRR7851341","La1.8.1","France",,"G47614","Cattle",1,"SB0140",0,"M.bovis"
-"SRR7851351","La1.8.1","France",,"G47624","Cattle",1,"SB0140",0,"M.bovis"
-"SRR7851364","La1.8.1","France",,"G47637","Cattle",1,"SB0140",0,"M.bovis"
-"SRR7851305","La1.8.1","France",,"G49365","Cattle",1,"SB0140",0,"M.bovis"
-"SRR10808421","La1.8.1","Indonesia",,"G62291","Human",1,"SB0130",0,"M.bovis"
-"ERR550954","La1.7.1","Germany",,"G13311",,0,"SB0339",1,"M.bovis"
-"SRR6467889","La1.7.1","Canada",,"G36315","Cattle",1,"SB0265",1,"M.bovis"
-"SRR6705904","La1.7.1","Brazil",,"G36401","Cattle",1,"SB0121",1,"M.bovis"
-"SRR5657358","La1.7.1","Mexico",,"G36402","Cattle",1,"SB1345",1,"M.bovis"
-"SRR5657359","La1.7.1","Mexico",,"G36403","Cattle",1,"SB1345",1,"M.bovis"
-"SRR5657512","La1.7.1","Mexico",,"G36556","Cattle",1,"SB2469",1,"M.bovis"
-"SRR5657513","La1.7.1","Mexico",,"G36557","Cattle",1,"SB1345",1,"M.bovis"
-"ERR1815538","La1.7.1","South Africa",,"G36574","Panthera leo",1,"SB0121",1,"M.bovis"
-"ERR1815540","La1.7.1","South Africa",,"G36576","Tragelaphus strepsiceros",1,"SB0121",1,"M.bovis"
-"ERR1815541","La1.7.1","South Africa",,"G36577","Syncerus caffer",1,"SB0121",1,"M.bovis"
-"ERR1815542","La1.7.1","South Africa",,"G36578","Syncerus caffer",1,"SB0121",1,"M.bovis"
-"ERR1815545","La1.7.1","South Africa",,"G36581","Syncerus caffer",1,"SB0121",1,"M.bovis"
-"ERR1815546","La1.7.1","South Africa",,"G36582","Syncerus caffer",1,"SB0121",1,"M.bovis"
-"ERR1815547","La1.7.1","South Africa",,"G36583","Syncerus caffer",1,"SB0121",1,"M.bovis"
-"ERR1815549","La1.7.1","South Africa",,"G36585","Panthera leo",1,"SB0121",1,"M.bovis"
-"ERR2516545","La1.7.1","Netherlands",,"G36703",,0,"New pattern",1,"M.bovis"
-"ERR2199797","La1.7.1","Germany",,"G36704",,0,"SB0265",1,"M.bovis"
-"ERR2516207","La1.7.1","Belgium",,"G36741",,0,"New pattern",1,"M.bovis"
-"ERR2516335","La1.7.1","Belgium",,"G36743",,0,"SB0265",1,"M.bovis"
-"ERR2517408","La1.7.1","Netherlands",,"G36750",,0,"SB2179",1,"M.bovis"
-"ERR2517616","La1.7.1","Netherlands",,"G36752",,0,"SB1947",1,"M.bovis"
-"ERR2517518","La1.7.1","Netherlands",,"G36753",,0,"SB0121",1,"M.bovis"
-"ERR2517443","La1.7.1","Netherlands",,"G36754",,0,"SB0121",1,"M.bovis"
-"ERR2517349","La1.7.1","Netherlands",,"G36755",,0,"New pattern",1,"M.bovis"
-"ERR2517523","La1.7.1","Netherlands",,"G36756",,0,"SB0121",1,"M.bovis"
-"ERR2517227","La1.7.1","Netherlands",,"G36757",,0,"SB0121",1,"M.bovis"
-"ERR2515455","La1.7.1","South Africa",,"G36758",,0,"SB0121",1,"M.bovis"
-"ERR2815614","La1.7.1","Germany",,"G36797","Cattle",0,"SB0944",0,"M.bovis"
-"ERR2815608","La1.7.1","Germany",,"G36803","Cattle",0,"SB1275",0,"M.bovis"
-"ERR2815606","La1.7.1","Germany",,"G36805","Cattle",0,"SB0121",0,"M.bovis"
-"ERR2815605","La1.7.1","Germany",,"G36806","Wild boar",0,"SB0295",0,"M.bovis"
-"ERR2815604","La1.7.1","Germany",,"G36807","Wild boar",0,"SB0295",0,"M.bovis"
-"ERR2815601","La1.7.1","Germany",,"G36810","pig",0,"SB1021",0,"M.bovis"
-"ERR2815600","La1.7.1","Germany",,"G36811","pig",0,"SB1021",0,"M.bovis"
-"ERR2815537","La1.7.1","Germany",,"G36871","Cattle",0,"SB0121",0,"M.bovis"
-"ERR2815511","La1.7.1","Germany",,"G36893","cat",0,"SB1021",0,"M.bovis"
-"ERR2815509","La1.7.1","Germany",,"G36895","cattle",0,"SB0121",0,"M.bovis"
-"ERR2815508","La1.7.1","Germany",,"G36896","cattle",0,"SB0121",0,"M.bovis"
-"ERR2815507","La1.7.1","Germany",,"G36897","Cattle",0,"SB1021",0,"M.bovis"
-"SRR1791708","La1.7.1","USA",,"G36915","Cattle",1,"SB0265",1,"M.bovis"
-"SRR1791722","La1.7.1","Mexico",,"G36929","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1791736","La1.7.1","USA",,"G36943","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1791793","La1.7.1","USA",,"G37000","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1791797","La1.7.1","Mexico",,"G37004","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1791802","La1.7.1","Mexico",,"G37009","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1791804","La1.7.1","Mexico",,"G37011","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1791824","La1.7.1","Mexico",,"G37031","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1791832","La1.7.1","USA",,"G37039","Cervid",1,"SB0265",1,"M.bovis"
-"SRR1791841","La1.7.1","USA",,"G37048","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1791866","La1.7.1","USA",,"G37073","Cattle",1,"SB1345",1,"M.bovis"
-"SRR1791876","La1.7.1","USA",,"G37083","Cattle",1,"SB1345",1,"M.bovis"
-"SRR1791880","La1.7.1","USA",,"G37087","Cattle",1,"SB1345",1,"M.bovis"
-"SRR1791891","La1.7.1","Mexico",,"G37098","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1791909","La1.7.1","Mexico",,"G37116","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1791950","La1.7.1","USA",,"G37157","Cervid",1,"SB0121",1,"M.bovis"
-"SRR1791959","La1.7.1","Mexico",,"G37166","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1791960","La1.7.1","Mexico",,"G37167","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1791969","La1.7.1","Mexico",,"G37176","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792002","La1.7.1","USA",,"G37209","Cattle",1,"SB0265",1,"M.bovis"
-"SRR1792005","La1.7.1","Mexico",,"G37212","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792027","La1.7.1","Mexico",,"G37234","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792041","La1.7.1","Mexico",,"G37248","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792068","La1.7.1","USA",,"G37275","Cattle",1,"SB0152",1,"M.bovis"
-"SRR1792073","La1.7.1","Mexico",,"G37280","Cattle",1,"SB0152",1,"M.bovis"
-"SRR1792110","La1.7.1","USA",,"G37317","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792118","La1.7.1","Mexico",,"G37325","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792122","La1.7.1","USA",,"G37329","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792155","La1.7.1","Mexico",,"G37362","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792171","La1.7.1","Mexico",,"G37378","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792193","La1.7.1","USA",,"G37400","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792204","La1.7.1","USA",,"G37411","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792245","La1.7.1","Mexico",,"G37452","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792410","La1.7.1","Mexico",,"G37617","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792445","La1.7.1","Mexico",,"G37652","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792449","La1.7.1","Mexico",,"G37656","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792477","La1.7.1","USA",,"G37684","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792490","La1.7.1","USA",,"G37697","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792491","La1.7.1","USA",,"G37698","Cattle",1,"SB0121",1,"M.bovis"
-"SRR1792502","La1.7.1","USA",,"G37709","Cattle",1,"SB0121",1,"M.bovis"
-"SRR6865435","La1.7.1","Brazil",,"G38457","Lama glama",1,"SB0295",1,"M.bovis"
-"SRR7236129","La1.7.1","Mexico",,"G41192","Cattle",1,"SB0121",1,"M.bovis"
-"SRR7236131","La1.7.1","Mexico",,"G41194","Cattle",1,"SB0152",1,"M.bovis"
-"SRR7236145","La1.7.1","Mexico",,"G41208","Cattle",1,"SB0121",1,"M.bovis"
-"SRR7236149","La1.7.1","Mexico",,"G41212","Cattle",1,"SB0121",1,"M.bovis"
-"SRR7236192","La1.7.1","Mexico",,"G41255","Cattle",1,"SB0295",1,"M.bovis"
-"SRR7236193","La1.7.1","Mexico",,"G41256","Cattle",1,"New pattern",1,"M.bovis"
-"SRR7236231","La1.7.1","Mexico",,"G41294","Cattle",1,"SB0121",1,"M.bovis"
-"SRR7236232","La1.7.1","Mexico",,"G41295","Cattle",1,"SB0121",1,"M.bovis"
-"SRR7236253","La1.7.1","Mexico",,"G41316","Cattle",1,"SB0121",1,"M.bovis"
-"SRR7236264","La1.7.1","Mexico",,"G41327","Cattle",1,"SB0121",1,"M.bovis"
-"SRR7236269","La1.7.1","Mexico",,"G41332","Cattle",1,"SB0121",1,"M.bovis"
-"SRR7236344","La1.7.1","Mexico",,"G41407","Cattle",1,"SB0121",1,"M.bovis"
-"SRR7236345","La1.7.1","Mexico",,"G41408","Cattle",1,"SB0121",1,"M.bovis"
-"SRR7236378","La1.7.1","Mexico",,"G41441","Cattle",1,"SB0121",1,"M.bovis"
-"SRR7236380","La1.7.1","Mexico",,"G41443","Cattle",1,"SB0121",1,"M.bovis"
-"SRR7236387","La1.7.1","Mexico",,"G41450","Cattle",1,"SB0121",1,"M.bovis"
-"ERR2851361","La1.7.1","Lebanon","Lebanon","G42136","Human",1,"SB0121",1,"M.bovis"
-"SRR7851300","La1.7.1","France",,"G47573","Cattle",1,"SB0837",0,"M.bovis"
-"SRR7851301","La1.7.1","France",,"G47574","Cattle",1,"SB0339",0,"M.bovis"
-"SRR7851303","La1.7.1","France",,"G47576","Goat",1,"SB0152",0,"M.bovis"
-"SRR7851308","La1.7.1","France",,"G47581","Goat",1,"SB0121",0,"M.bovis"
-"SRR7851310","La1.7.1","France",,"G47583","Cattle",1,"SB0999",0,"M.bovis"
-"SRR7851318","La1.7.1","France",,"G47591","Cattle",1,"SB0121",0,"M.bovis"
-"SRR7851319","La1.7.1","France",,"G47592","Cattle",1,"SB0121",0,"M.bovis"
-"SRR7851332","La1.7.1","France",,"G47605","Cattle",1,"SB0121",0,"M.bovis"
-"SRR7851335","La1.7.1","France",,"G47608","Cattle",1,"SB0121",0,"M.bovis"
-"SRR7851343","La1.7.1","France",,"G47616","Cattle",1,"SB0339",0,"M.bovis"
-"SRR7851349","La1.7.1","France",,"G47622","Cattle",1,"SB0121",0,"M.bovis"
-"SRR7851357","La1.7.1","France",,"G47630","Cattle",1,"SB0121",0,"M.bovis"
-"SRR7851358","La1.7.1","France",,"G47631","Sheep",1,"SB0121",0,"M.bovis"
-"SRR7851363","La1.7.1","France",,"G47636","Cattle",1,"SB0121",0,"M.bovis"
-"SRR7851380","La1.7.1","France",,"G47653","Cattle",1,"SB0999",0,"M.bovis"
-"SRR7851382","La1.7.1","France",,"G47655","Cattle",1,"SB0295",0,"M.bovis"
-"SRR7851303","La1.7.1","France",,"G49367","Cattle",1,"SB0152",0,"M.bovis"
-"SRR7851300","La1.7.1","France",,"G49368","Cattle",1,"SB0837",0,"M.bovis"
-"SRR7851301","La1.7.1","France",,"G49369","Cattle",1,"SB0339",0,"M.bovis"
-"SRR9850824","La1.7.1","Brazil",,"G49370","captive capybara",0,"SB0295",0,"M.bovis"
-"SRR9850830","La1.7.1","Brazil",,"G49371","captive Lama glama",0,"SB0295",0,"M.bovis"
-"SRR7693912","La1.7.1","Brazil",,"G66750","captive European Bison",0,"SB0121",0,"M.bovis"
-"ERR1082113","L6","Ghana",,"G08466","Human",,,0,"M.bovis"
-"ERR015582","La3",,,"G00130","Oryx",0,"SB0422",0,"M.orygis"
-"ERR2659153","La3","Australia","India","G01224","Human",1,"SB0422",0,"M.orygis"
-"ERR2659154","La3","Australia","India","G01225","Human",1,"SB0422",0,"M.orygis"
-"ERR2659155","La3","Australia","India","G01226","Human",1,"SB0422",0,"M.orygis"
-"ERR2659156","La3","Australia","India","G01227","Human",1,"SB0422",0,"M.orygis"
-"ERR234675","La3",,,"G04149",,0,"SB0422",0,"M.orygis"
-"ERR234676","La3",,,"G04150",,0,"New pattern",0,"M.orygis"
-"ERR234682","La3",,,"G04151",,0,"New pattern",0,"M.orygis"
-"ERR017782","La3","United Kingdom",,"G04156",,0,"SB0422",0,"M.orygis"
-"SRR2100577","La3","United Kingdom",,"G14722",,0,"SB0422",0,"M.orygis"
-"SRR2101161","La3","United Kingdom",,"G15298",,0,"SB0422",0,"M.orygis"
-"SRR2101222","La3","United Kingdom",,"G15359",,0,"New pattern",0,"M.orygis"
-"SRR2101291","La3","United Kingdom",,"G15428",,0,"SB0422",0,"M.orygis"
-"SRR2101329","La3","United Kingdom",,"G15466",,0,"SB0422",0,"M.orygis"
-"SRR5642711","La3","USA","India","G22513","Human",1,"SB0422",0,"M.orygis"
-"SRR5642712","La3","USA","India","G22514","Human",1,"SB0422",0,"M.orygis"
-"SRR5642713","La3","USA","India","G22515","Human",1,"SB0422",0,"M.orygis"
-"SRR5642714","La3","USA","India","G22516","Human",1,"SB0422",0,"M.orygis"
-"SRR5642715","La3","USA","India","G22517","Human",1,"New pattern",0,"M.orygis"
-"SRR5642716","La3","USA","India","G22518","Human",1,"SB0422",0,"M.orygis"
-"SRR5642717","La3","USA","India","G22519","Human",1,"SB0422",0,"M.orygis"
-"SRR5642718","La3","USA","India","G22520","Human",1,"SB0422",0,"M.orygis"
-"SRR6797355","La3","Bangladesh",,"G28351","Human",0,"SB0422",0,"M.orygis"
-"SRR6045015","La3","United Kingdom",,"G36763","Human",0,"SB0422",0,"M.orygis"
-"ERR2512389","La3","United Kingdom",,"G36764","Human",0,"SB0422",0,"M.orygis"
-"ERR2512788","La3","United Kingdom",,"G36765","Human",0,"SB0422",0,"M.orygis"
-"ERR2512826","La3","United Kingdom",,"G36766","Human",0,"SB0422",0,"M.orygis"
-"ERR2512859","La3","United Kingdom",,"G36767","Human",0,"New pattern",0,"M.orygis"
-"ERR2512942","La3","United Kingdom",,"G36768","Human",0,"New pattern",0,"M.orygis"
-"SRR6044858","La3","United Kingdom",,"G36769","Human",0,"New pattern",0,"M.orygis"
-"SRR6046695","La3","United Kingdom",,"G36770","Human",0,"SB0422",0,"M.orygis"
-"ERR2513195","La3","United Kingdom",,"G36771","Human",0,"SB0422",0,"M.orygis"
-"SRR6045425","La3","United Kingdom",,"G36772","Human",0,"New pattern",0,"M.orygis"
-"ERR2513625","La3","United Kingdom",,"G36773","Human",0,"SB0422",0,"M.orygis"
-"ERR2513671","La3","United Kingdom",,"G36774","Human",0,"New pattern",0,"M.orygis"
-"SRR3675498","La3","United Kingdom",,"G36775","Human",0,"New pattern",0,"M.orygis"
-"ERR2514172","La3","United Kingdom",,"G36776","Human",0,"SB0422",0,"M.orygis"
-"SRR6045962","La3","United Kingdom",,"G36778","Human",0,"SB0422",0,"M.orygis"
-"SRR6044939","La3","United Kingdom",,"G36779","Human",0,"SB0422",0,"M.orygis"
-"SRR6045301","La3","United Kingdom",,"G36781","Human",0,"SB0422",0,"M.orygis"
-"ERR2514578","La3","United Kingdom",,"G36782","Human",0,"SB0422",0,"M.orygis"
-"SRR6046725","La3","United Kingdom",,"G36783","Human",0,"SB0422",0,"M.orygis"
-"ERR2514738","La3","United Kingdom",,"G36784","Human",0,"SB0422",0,"M.orygis"
-"ERR2514957","La3","United Kingdom",,"G36785","Human",0,"SB0422",0,"M.orygis"
-"SRR6046235","La3","United Kingdom",,"G36786","Human",0,"SB0422",0,"M.orygis"
-"ERR2515051","La3","United Kingdom",,"G36787","Human",0,"New pattern",0,"M.orygis"
-"ERR2512533","La3","United Kingdom",,"G36788","Human",0,"New pattern",0,"M.orygis"
-"ERR2199741","La3","Germany",,"G36789","Human",0,"New pattern",0,"M.orygis"
-"ERR2199829","La3","Germany",,"G36790","Human",0,"New pattern",0,"M.orygis"
-"ERR2200114","La3","Germany",,"G36791","Human",0,"SB0422",0,"M.orygis"
-"ERR2517102","La3","United Kingdom",,"G36792","Human",0,"SB0422",0,"M.orygis"
-"ERR2517593","La3","Netherlands",,"G36793","Human",0,"New pattern",0,"M.orygis"
-"SRR9157804","La3","India",,"G49362","Cattle",1,"SB0422",0,"M.orygis"
-"SRR10251193","La3","India",,"G49372","Cattle",1,"New pattern",0,"M.orygis"
-"SRR10251194","La3","India",,"G49373","Cattle",1,"New pattern",0,"M.orygis"
-"SRR10251195","La3","India",,"G49374","Deer",1,"New pattern",0,"M.orygis"
-"SRR10251196","La3","India",,"G49375","Deer",1,"New pattern",0,"M.orygis"
-"SRR10251197","La3","India",,"G49376","Cattle",1,"SB0422",0,"M.orygis"
-"SRR10251198","La3","India",,"G49377","Deer",1,"New pattern",0,"M.orygis"
-"SRR10251199","La3","India",,"G49378","Deer",1,"New pattern",0,"M.orygis"
-"SRR10251200","La3","India",,"G49379","Cattle",1,"SB0422",0,"M.orygis"
-"SRR10251201","La3","India",,"G49380","Cattle",1,"New pattern",0,"M.orygis"
-"SRR10251185","La3","India",,"G49381","Cattle",1,"SB0422",0,"M.orygis"
-"SRR10251186","La3","India",,"G49382","Cattle",1,"New pattern",0,"M.orygis"
-"SRR10251187","La3","India",,"G49383","Cattle",1,"New pattern",0,"M.orygis"
-"SRR10251188","La3","India",,"G49384","Cattle",1,"New pattern",0,"M.orygis"
-"SRR10251189","La3","India",,"G49385","Cattle",1,"SB0422",0,"M.orygis"
-"SRR10251190","La3","India",,"G49386","Cattle",1,"SB0422",0,"M.orygis"
-"SRR10251191","La3","India",,"G49387","Cattle",1,"SB0422",0,"M.orygis"
-"SRR10251192","La3","India",,"G49388","Cattle",1,"SB0422",0,"M.orygis"
-"SRR10251202","La3","India",,"G49389","Deer",1,"New pattern",0,"M.orygis"
-"SRR10251203","La3","India",,"G49390","Cattle",1,"New pattern",0,"M.orygis"
-"SRR10321143","La3","India",,"G49401","Human",1,"SB0422",0,"M.orygis"
-"SRR10321149","La3","India",,"G49402","Human",1,"SB0422",0,"M.orygis"
-"SRR10321128","La3","India",,"G49403","Human",1,"SB0422",0,"M.orygis"
-"SRR10321130","La3","India",,"G49404","Human",1,"SB0422",0,"M.orygis"
-"SRR10321134","La3","India",,"G49405","Human",1,"SB0422",0,"M.orygis"
-"ERR161044","La1.1","Malawi",,"G04143","Human",0,"New pattern",1,"M.bovis"
-"ERR181980","La1.1","Malawi",,"G04145","Human",0,"SB2190",1,"M.bovis"
-"ERR212091","La1.1","Malawi",,"G04147","Human",1,"SB0425",1,"M.bovis"
-"ERR2815611","La1.1","Germany",,"G36800","antelope",0,"SB1898",0,"M.bovis"
-"SRR8065072","La1.1","Uganda",,"G41493","Cattle",1,"SB1405",1,"M.bovis"
-"SRR8065075","La1.1","Uganda",,"G41496","Cattle",1,"SB1406",1,"M.bovis"
-"SRR8065076","La1.1","Uganda",,"G41497","Cattle",1,"SB1405",1,"M.bovis"
-"SRR8065077","La1.1","Uganda",,"G41498","Cattle",1,"SB1406",1,"M.bovis"
-"SRR8065083","La1.1","Uganda",,"G41504","Cattle",1,"SB1405",1,"M.bovis"
-"ERR3458083","La1.2","Ethiopia",,"G00208","Cattle",1,"SB0134",1,"M.bovis"
-"SAMN03023955","La1.2",,,"G01032","BCG",0,"New pattern",1,"M.bovis"
-"SRS897753","La1.2","United Kingdom",,"G01033","BCG",0,"SB0120",1,"M.bovis"
-"SRS897754","La1.2",,,"G01034","BCG",0,"SB0120",1,"M.bovis"
-"SAMN03023958","La1.2",,,"G01035","BCG",0,"SB0120",1,"M.bovis"
-"SAMN03023953","La1.2",,,"G01036","BCG",0,"SB0120",1,"M.bovis"
-"SAMN03023954","La1.2",,,"G01037","BCG",0,"SB0120",1,"M.bovis"
-"SAMN03023952","La1.2",,,"G01038","BCG",0,"SB0120",1,"M.bovis"
-"SAMN03023966","La1.2",,,"G01039","BCG",0,"SB0120",1,"M.bovis"
-"SAMN03023960","La1.2",,,"G01040","BCG",0,"SB0120",1,"M.bovis"
-"SAMN03023957","La1.2",,,"G01041","BCG",0,"SB0120",1,"M.bovis"
-"SRS897671","La1.2",,,"G01551","BCG",0,"SB0120",1,"M.bovis"
-"ERS2573046","La1.2","Switzerland","Switzerland","G02545","Human",0,"SB0120",1,"M.bovis"
-"SRR5486087","La1.2","Spain",,"G36378","Cattle",1,"SB0120",1,"M.bovis"
-"SRR5486088","La1.2","Spain",,"G36379","Cattle",1,"SB0120",1,"M.bovis"
-"SRR5486089","La1.2","Spain",,"G36380","Cattle",1,"SB0828",1,"M.bovis"
-"SRR5486090","La1.2","Spain",,"G36381","Cattle",1,"SB0828",1,"M.bovis"
-"SRR5486091","La1.2","Spain",,"G36382","Cattle",1,"SB0828",1,"M.bovis"
-"SRR5486092","La1.2","Spain",,"G36383","Cattle",1,"SB0828",1,"M.bovis"
-"SRR5486093","La1.2","Spain",,"G36384","Cattle",1,"SB0828",1,"M.bovis"
-"SRR5486073","La1.2","Eritrea",,"G36385","Cattle",1,"SB0134",1,"M.bovis"
-"SRR5486074","La1.2","Eritrea",,"G36386","Cattle",1,"SB0120",1,"M.bovis"
-"SRR5486075","La1.2","Eritrea",,"G36387","Cattle",1,"SB0134",1,"M.bovis"
-"SRR5486076","La1.2","Eritrea",,"G36388","Cattle",1,"SB0134",1,"M.bovis"
-"SRR5486077","La1.2","Eritrea",,"G36389","Cattle",1,"SB0120",1,"M.bovis"
-"SRR5486078","La1.2","Eritrea",,"G36390","Cattle",1,"SB0120",1,"M.bovis"
-"SRR5486079","La1.2","Eritrea",,"G36391","Cattle",1,"SB0120",1,"M.bovis"
-"SRR5486080","La1.2","Eritrea",,"G36392","Cattle",1,"SB0948",1,"M.bovis"
-"SRR5486081","La1.2","Eritrea",,"G36393","Cattle",1,"SB0134",1,"M.bovis"
-"SRR5486082","La1.2","Eritrea",,"G36394","Cattle",1,"SB0120",1,"M.bovis"
-"SRR5486083","La1.2","Eritrea",,"G36395","Cattle",1,"SB0120",1,"M.bovis"
-"SRR5486084","La1.2","Eritrea",,"G36396","Cattle",1,"SB0120",1,"M.bovis"
-"SRR5486085","La1.2","Eritrea",,"G36397","Cattle",1,"SB0120",1,"M.bovis"
-"SRR5486086","La1.2","Eritrea",,"G36398","Cattle",1,"SB0120",1,"M.bovis"
-"SRR5486071","La1.2","Ethiopia",,"G36399","Cattle",1,"SB1517",1,"M.bovis"
-"SRR5486072","La1.2","Ethiopia",,"G36400","Cattle",1,"SB1517",1,"M.bovis"
-"ERR2815610","La1.2",,,"G36801","BCG",0,"SB0120",0,"M.bovis"
-"ERR2815607","La1.2","Germany",,"G36804","cattle",0,"SB0120",0,"M.bovis"
-"ERR2815602","La1.2",,,"G36809","BCG",0,"SB0120",0,"M.bovis"
-"ERR2815506","La1.2","Germany",,"G36898","cattle",0,"SB0120",0,"M.bovis"
-"SRR1792485","La1.2","USA",,"G37692","Cattle",1,"SB0120",1,"M.bovis"
-"SRR5485729","La1.2","USA",,"G37788","Cattle",1,"SB0120",1,"M.bovis"
-"SRR4117155;SRR4199188","La1.2","France",,"G38455","wild boar",1,"SB0120",1,"M.bovis"
-"SRR7131117","La1.2","Italy","Italy","G38462","Human",0,"SB0120",1,"M.bovis"
-"SRR7131025","La1.2","Morocco","Morocco","G38463","Human",1,"SB0120",1,"M.bovis"
-"SRR3085259","La1.2","Tunisia",,"G42039","Human",1,"SB0120",1,"M.bovis"
-"SRR7851302","La1.2","France",,"G47575","cattle",1,"SB0134",0,"M.bovis"
-"SRR7851309","La1.2","France",,"G47582","cattle",1,"SB2680",0,"M.bovis"
-"SRR7851312","La1.2","France",,"G47585","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851313","La1.2","France",,"G47586","cattle",1,"SB0948",0,"M.bovis"
-"SRR7851316","La1.2","France",,"G47589","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851317","La1.2","France",,"G47590","cattle",1,"SB0040",0,"M.bovis"
-"SRR7851321","La1.2","France",,"G47594","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851322","La1.2","France",,"G47595","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851323","La1.2","France",,"G47596","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851325","La1.2","France",,"G47598","cattle",1,"SB0927",0,"M.bovis"
-"SRR7851326","La1.2","France",,"G47599","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851329","La1.2","France",,"G47602","cattle",1,"SB0134",0,"M.bovis"
-"SRR7851330","La1.2","France",,"G47603","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851331","La1.2","France",,"G47604","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851334","La1.2","France",,"G47607","cattle",1,"New pattern",0,"M.bovis"
-"SRR7851342","La1.2","France",,"G47615","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851344","La1.2","France",,"G47617","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851345","La1.2","France",,"G47618","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851346","La1.2","France",,"G47619","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851347","La1.2","France",,"G47620","cattle",1,"SB0822",0,"M.bovis"
-"SRR7851348","La1.2","France",,"G47621","cattle",1,"New pattern",0,"M.bovis"
-"SRR7851350","La1.2","France",,"G47623","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851352","La1.2","France",,"G47625","cattle",1,"SB0162",0,"M.bovis"
-"SRR7851353","La1.2","France",,"G47626","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851355","La1.2","France",,"G47628","cattle",1,"SB0828",0,"M.bovis"
-"SRR7851356","La1.2","France",,"G47629","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851359","La1.2","France",,"G47632","cattle",1,"New pattern",0,"M.bovis"
-"SRR7851360","La1.2","France",,"G47633","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851365","La1.2","France",,"G47638","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851367","La1.2","France",,"G47640","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851368","La1.2","France",,"G47641","cattle",1,"New pattern",0,"M.bovis"
-"SRR7851369","La1.2","France",,"G47642","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851371","La1.2","France",,"G47644","cattle",1,"New pattern",0,"M.bovis"
-"SRR7851374","La1.2","France",,"G47647","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851375","La1.2","France",,"G47648","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851377","La1.2","France",,"G47650","cattle",1,"New pattern",0,"M.bovis"
-"SRR7851381","La1.2","France",,"G47654","cattle",1,"SB0120",0,"M.bovis"
-"SRR4117155","La1.2","France",,"G47677","cattle",1,"SB0120",0,"M.bovis"
-"SRR4199188","La1.2","France",,"G47678","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851302","La1.2","France",,"G49366","cattle",1,"SB0134",0,"M.bovis"
-"SRR10303300","La1.2","Kazakhstan",,"G59919","Human",1,"SB0120",0,"M.bovis"
-"SRR10379919","La1.2","Moldova",,"G59967","Human",1,"SB0120",0,"M.bovis"
-"SRR10430327","La1.2","Kazakhstan",,"G60801","Human",1,"SB0120",0,"M.bovis"
-"ERR4769564","La1.2","Ethiopia",,"G66536","update",0,"SB0134",0,"M.bovis"
-"ERR4769563","La1.2","Ethiopia",,"G66537","update",0,"SB0134",0,"M.bovis"
-"ERR4769562","La1.2","Ethiopia",,"G66538","update",0,"SB0134",0,"M.bovis"
-"ERR4772233","La1.2","Ethiopia",,"G66546","update",0,"SB0134",0,"M.bovis"
-"ERR4772230","La1.2","Ethiopia",,"G66711","update",1,"SB0134",0,"M.bovis"
-"ERR4772226","La1.2","Ethiopia",,"G66715","update",1,"SB0134",0,"M.bovis"
-"ERR4772225","La1.2","Ethiopia",,"G66716","update",1,"SB0134",0,"M.bovis"
-"ERR4772219","La1.2","Ethiopia",,"G66722","update",1,"SB0134",0,"M.bovis"
-"ERR4772218","La1.2","Ethiopia",,"G66723","update",1,"SB0134",0,"M.bovis"
-"ERR4772212","La1.2","Ethiopia",,"G66729","update",1,"SB0134",0,"M.bovis"
-"ERR4772211","La1.2","Ethiopia",,"G66730","update",1,"SB0134",0,"M.bovis"
-"ERR4772210","La1.2","Ethiopia",,"G66731","update",1,"SB0134",0,"M.bovis"
-"ERR4772206","La1.2","Ethiopia",,"G66734","update",1,"SB0134",0,"M.bovis"
-"ERR4772205","La1.2","Ethiopia",,"G66735","update",1,"SB0134",0,"M.bovis"
-"ERR6358029","La1.2","Italy",,"G66752","cattle",1,"SB0841",0,"M.bovis"
-"ERR6358030","La1.2","Italy",,"G66753","cattle",1,"SB0120",0,"M.bovis"
-"ERR229952","La1.4","Russia",,"G04148",,0,"SB1919",1,"M.bovis"
-"ERR551252","La1.4","Germany",,"G13403","Human",0,"SB0288",1,"M.bovis"
-"ERR2199785","La1.4","Germany",,"G36744",,0,"SB0120",1,"M.bovis"
-"ERR2200072","La1.4","Germany",,"G36745",,0,"SB0120",1,"M.bovis"
-"ERR2517425","La1.4","Netherlands",,"G36751",,0,"SB0288",1,"M.bovis"
-"ERR2815603","La1.4","Germany",,"G36808","cat",0,"SB0288",0,"M.bovis"
-"ERR2851358","La1.4","Lebanon","Lebanon","G42133","Human",1,"SB1215",1,"M.bovis"
-"ERR550755","La1.7-unk4","Germany",,"G13253",,0,"SB0871",1,"M.bovis"
-"ERR551009","La1.7-unk4","Germany",,"G13329","Human",0,"New pattern",1,"M.bovis"
-"ERR551191","La1.7-unk4","Germany",,"G13389","Human",0,"SB0120",1,"M.bovis"
-"ERR551917","La1.7-unk4","Germany",,"G13622","Human",0,"New pattern",1,"M.bovis"
-"ERR2815613","La1.7-unk4","Germany",,"G36798","cattle",0,"SB0120",0,"M.bovis"
-"ERR2815612","La1.7-unk4","Germany",,"G36799","cattle",0,"SB0120",0,"M.bovis"
-"ERR2815536","La1.7-unk4","Germany",,"G36872","cattle",0,"SB0120",0,"M.bovis"
-"ERR2815535","La1.7-unk4","Germany",,"G36873","cattle",0,"SB0120",0,"M.bovis"
-"ERR2815520","La1.7-unk4","Germany",,"G36886","cattle",0,"SB0120",0,"M.bovis"
-"ERR2815519","La1.7-unk4","Germany",,"G36887","pig",0,"SB0120",0,"M.bovis"
-"ERR2815512","La1.7-unk4","Germany",,"G36892","pig",0,"SB0120",0,"M.bovis"
-"ERR2815510","La1.7-unk4","Germany",,"G36894","cattle",0,"SB0120",0,"M.bovis"
-"SRR7851362","La1.7-unk4","France",,"G47635","cattle",1,"SB0829",0,"M.bovis"
-"SRR7851366","La1.7-unk4","France",,"G47639","cattle",1,"SB0120",0,"M.bovis"
-"SRR7851373","La1.7-unk4","France",,"G47646","cattle",1,"SB0121",0,"M.bovis"
-"ERR3445485","La1.7-unk4","Brazil",,"G47656","cattle/Buffalo",1,"SB0822",0,"M.bovis"
-"ERR3445486","La1.7-unk4","Brazil",,"G47657","cattle/Buffalo",1,"SB0822",0,"M.bovis"
-"ERR3445487","La1.7-unk4","Brazil",,"G47658","cattle/Buffalo",1,"SB0822",0,"M.bovis"
-"ERR3445488","La1.7-unk4","Brazil",,"G47659","cattle/Buffalo",1,"SB0822",0,"M.bovis"
-"ERR3445489","La1.7-unk4","Brazil",,"G47660","cattle/Buffalo",1,"SB0822",0,"M.bovis"
-"ERR3445490","La1.7-unk4","Brazil",,"G47661","cattle/Buffalo",1,"SB0822",0,"M.bovis"
-"ERR3445491","La1.7-unk4","Brazil",,"G47662","cattle/Buffalo",1,"SB0822",0,"M.bovis"
-"ERR3445492","La1.7-unk4","Brazil",,"G47663","cattle/Buffalo",1,"SB0822",0,"M.bovis"
-"ERR3445494","La1.7-unk4","Brazil",,"G47665","cattle/Buffalo",1,"SB0822",0,"M.bovis"
-"ERR3445495","La1.7-unk4","Brazil",,"G47666","cattle/Buffalo",1,"SB0822",0,"M.bovis"
-"ERR3445496","La1.7-unk4","Brazil",,"G47667","cattle/Buffalo",1,"SB0885",0,"M.bovis"
-"ERR3445497","La1.7-unk4","Brazil",,"G47668","cattle/Buffalo",1,"SB0822",0,"M.bovis"
-"ERR3445498","La1.7-unk4","Brazil",,"G47669","cattle/Buffalo",1,"SB0822",0,"M.bovis"
-"ERR3445499","La1.7-unk4","Brazil",,"G47670","cattle/Buffalo",1,"SB0822",0,"M.bovis"
-"ERR3445500","La1.7-unk4","Brazil",,"G47671","cattle/Buffalo",1,"SB0822",0,"M.bovis"
-"ERR3906063","La1.7-unk4","Brazil",,"G47676","cattle/Buffalo",1,"SB0822",0,"M.bovis"
-"ERR2512839","La1.7-unk5","United Kingdom",,"G36713","Human",0,"New pattern",1,"M.bovis"
-"SRR8064853","La1.7-unk5","Zambia",,"G41509","Cattle",1,"SB0120",1,"M.bovis"
-"SRR8064854","La1.7-unk5","Zambia",,"G41510","Cattle",1,"SB0120",1,"M.bovis"
-"SRR8064855","La1.7-unk5","Zambia",,"G41511","Cattle",1,"SB0120",1,"M.bovis"
-"SRR8064856","La1.7-unk5","Zambia",,"G41512","Cattle",1,"SB0120",1,"M.bovis"
-"SRR8064857","La1.7-unk5","Zambia",,"G41513","Cattle",1,"SB0120",1,"M.bovis"
-"SRR8064858","La1.7-unk5","Zambia",,"G41514","Cattle",1,"SB0120",1,"M.bovis"
-"SRR8064859","La1.7-unk5","Zambia",,"G41515","Cattle",1,"SB0120",1,"M.bovis"
-"SRR8064860","La1.7-unk5","Zambia",,"G41516","Cattle",1,"SB0120",1,"M.bovis"
-"SRR1792161","La1.8-unk6","USA",,"G37368","Cervid",1,"SB1069",1,"M.bovis"
-"SRR1792474","La1.8-unk6","USA",,"G37681","Cervid",1,"SB1069",1,"M.bovis"
-"SRR1792479","La1.8-unk6","USA",,"G37686","Cervid",1,"SB1069",1,"M.bovis"
-"SRR1792481","La1.8-unk6","USA",,"G37688","Cervid",1,"SB1069",1,"M.bovis"
-"SRR1792482","La1.8-unk6","USA",,"G37689","Cervid",1,"SB1069",1,"M.bovis"
-"SRR1792488","La1.8-unk6","USA",,"G37695","Cervid",1,"SB1069",1,"M.bovis"
-"SRR1792493","La1.8-unk6","USA",,"G37700","Cervid",1,"SB1069",1,"M.bovis"
-"ERR2512675","La1.8.2","United Kingdom",,"G36708","Human",0,"SB0901",1,"M.bovis"
-"SRR6044919","La1.8.2","United Kingdom",,"G36715","Human",0,"SB0134",1,"M.bovis"
-"ERR2516262","La1.8.2","Belgium",,"G36742",,0,"SB0134",1,"M.bovis"
-"SRR5196685","La1.8.2","France",,"G38456","Cattle",1,"SB0821",1,"M.bovis"
-"SRR7851304","La1.8.2","France",,"G47577","Cattle",1,"SB0134",0,"M.bovis"
-"SRR7851306","La1.8.2","France",,"G47579","Cattle",1,"SB0825",0,"M.bovis"
-"SRR7851307","La1.8.2","France",,"G47580","Cattle",1,"SB0821",0,"M.bovis"
-"SRR7851311","La1.8.2","France",,"G47584","Cattle",1,"SB0818",0,"M.bovis"
-"SRR7851315","La1.8.2","France",,"G47588","Cattle",1,"SB0089",0,"M.bovis"
-"SRR7851324","La1.8.2","France",,"G47597","Cattle",1,"SB0826",0,"M.bovis"
-"SRR7851327","La1.8.2","France",,"G47600","Cattle",1,"SB0134",0,"M.bovis"
-"SRR7851328","La1.8.2","France",,"G47601","pig",1,"SB0840",0,"M.bovis"
-"SRR7851333","La1.8.2","France",,"G47606","Cattle",1,"SB0040",0,"M.bovis"
-"SRR7851336","La1.8.2","France",,"G47609","Cattle",1,"SB0134",0,"M.bovis"
-"SRR7851337","La1.8.2","France",,"G47610","Cattle",1,"SB0885",0,"M.bovis"
-"SRR7851338","La1.8.2","France",,"G47611","Cattle",1,"SB0134",0,"M.bovis"
-"SRR7851339","La1.8.2","France",,"G47612","Cattle",1,"New pattern",0,"M.bovis"
-"SRR7851340","La1.8.2","France",,"G47613","Cattle",1,"SB0928",0,"M.bovis"
-"SRR7851354","La1.8.2","France",,"G47627","Cattle",1,"SB0818",0,"M.bovis"
-"SRR7851361","La1.8.2","France",,"G47634","Cattle",1,"SB0128",0,"M.bovis"
-"SRR7851370","La1.8.2","France",,"G47643","Cattle",1,"SB0823",0,"M.bovis"
-"SRR7851372","La1.8.2","France",,"G47645","Cattle",1,"SB0089",0,"M.bovis"
-"SRR7851376","La1.8.2","France",,"G47649","Cattle",1,"SB0120",0,"M.bovis"
-"SRR7851378","La1.8.2","France",,"G47651","Cattle",1,"SB0824",0,"M.bovis"
-"SRR7851379","La1.8.2","France",,"G47652","Cattle",1,"SB0827",0,"M.bovis"
-"SRR5196685","La1.8.2","France",,"G47679","Cattle",1,"SB0821",0,"M.bovis"
-"SRR7851306","La1.8.2","France",,"G49363","Cattle",1,"SB0825",0,"M.bovis"
-"SRR7851304","La1.8.2","France",,"G49364","Cattle",1,"SB0134",0,"M.bovis"
-"ERR4769570","La1.8.2","Mali",,"G66530","Cattle",1,"SB0991",0,"M.bovis"
-"ERR4769569","La1.8.2","Mali",,"G66531","Cattle",1,"SB0134",0,"M.bovis"
-"ERR3458082","La1.8-unk8","Ethiopia",,"G00373","Cattle",1,"SB1476",1,"M.bovis"
-"ERR2212113","La1.5","Germany",,"G66737","red deer",1,"SB0989",0,"M.bovis"
-"ERR2212114","La1.5","Germany",,"G66738","red deer",1,"SB0989",0,"M.bovis"
-"ERR2212116","La1.5","Germany",,"G66740","red deer",1,"SB0989",0,"M.bovis"
-"ERR2212117","La1.5","Germany",,"G66741","red deer",1,"SB0989",0,"M.bovis"
-"ERR2212118","La1.5","Germany",,"G66742","bison",0,"SB0989",0,"M.bovis"
-"ERR2212119","La1.5","Germany",,"G66743","lynx",0,"SB0989",0,"M.bovis"
-"ERR2212120","La1.5","Germany",,"G66744","fallow deer",1,"SB0989",0,"M.bovis"
-"ERR2212121","La1.5","Germany",,"G66745","sika deer",0,"SB0989",0,"M.bovis"
-"ERR2212122","La1.5","Germany",,"G66746","fallow deer",1,"SB0989",0,"M.bovis"
-"ERR2212123","La1.5","Germany",,"G66747","fallow deer",1,"SB0989",0,"M.bovis"
-"ERR2212124","La1.5","Germany",,"G66748","red deer",1,"SB0989",0,"M.bovis"
-"ERR2212125","La1.5","Germany",,"G66749","lynx",0,"SB0989",0,"M.bovis"
-"SRR13888760","La2","Spain",,"G67120","Wild boar",,"SB1908",,"M.caprae"
-"SRR13888783","La2","Spain",,"G67121","Cattle",,"SB0418",,"M.caprae"
-"SRR13888762","La2","Spain",,"G67122","Goat",,"SB0157",,"M.caprae"
-"SRR13888792","La2","Spain",,"G67123","Goat",,"SB0416",,"M.caprae"
-"SRR13888769","La2","Spain",,"G67124","Goat",,"SB0415",,"M.caprae"
-"SRR13888773","La2","Spain",,"G67125","Goat",,"SB1081",,"M.caprae"
-"SRR13888784","La2","Spain",,"G67126","isolated from Cattle",,"SB0418",,"M.caprae"
-"SRR13888788","La2","Spain",,"G67127","Goat",,"SB0157",,"M.caprae"
-"SRR13888766","La2","Spain",,"G67128","Goat",,"SB0157",,"M.caprae"
-"SRR13888795","La2","Spain",,"G67129","isolated from Cattle",,"SB1199",,"M.caprae"
-"SRR13888781","La2","Spain",,"G67130","isolated from Cattle",,"SB0418",,"M.caprae"
-"SRR13888794","La2","Spain",,"G67131","Goat",,"SB0157",,"M.caprae"
-"SRR13888789","La2","Spain",,"G67132","isolated from Cattle",,"SB0418",,"M.caprae"
-"SRR13888753","La2","Spain",,"G67133","Goat",,"SB0416",,"M.caprae"
-"SRR13888763","La2","Spain",,"G67134","Goat",,"SB0157",,"M.caprae"
-"SRR13888775","La2","Spain",,"G67135","Goat",,"SB0157",,"M.caprae"
-"SRR13888757","La2","Spain",,"G67136","Wild boar",,"SB0415",,"M.caprae"
-"SRR13888759","La2","Spain",,"G67137","Wild boar",,"SB0415",,"M.caprae"
-"SRR13888774","La2","Spain",,"G67138","Cattle",,"SB0418",,"M.caprae"
-"SRR13888786","La2","Spain",,"G67139","Cattle",,"SB0415",,"M.caprae"
-"SRR13888790","La2","Spain",,"G67140","Cattle",,"SB0416",,"M.caprae"
-"SRR13888797","La2","Spain",,"G67141","Cattle",,"SB1199",,"M.caprae"
-"SRR13888772","La2","Spain",,"G67142","Goat",,"SB0415",,"M.caprae"
-"SRR13888776","La2","Spain",,"G67143","Cattle",,"SB1902",,"M.caprae"
-"SRR13888782","La2","Spain",,"G67144","Goat",,"SB0415",,"M.caprae"
-"SRR13888764","La2","Spain",,"G67145","Goat",,"SB0157",,"M.caprae"
-"SRR13888750","La2","Spain",,"G67146","Cattle",,"SB0418",,"M.caprae"
-"SRR13888767","La2","Spain",,"G67147","Wild boar",,"SB0415",,"M.caprae"
-"SRR13888765","La2","Spain",,"G67148","Goat",,"SB0416",,"M.caprae"
-"SRR13888780","La2","Spain",,"G67149","Cattle",,"SB0415",,"M.caprae"
-"SRR13888761","La2","Spain",,"G67150","Wild boar",,"SB0415",,"M.caprae"
-"SRR13888770","La2","Spain",,"G67151","Goat",,"SB1081",,"M.caprae"
-"SRR13888798","La2","Spain",,"G67152","Cattle",,"SB0416",,"M.caprae"
-"SRR13888771","La2","Spain",,"G67153","Goat",,"SB1081",,"M.caprae"
-"SRR13888785","La2","Spain",,"G67154","Cattle",,"SB1908",,"M.caprae"
-"SRR13888749","La2","Spain",,"G67155","Goat",,"SB0416",,"M.caprae"
-"SRR13888758","La2","Spain",,"G67156","Wild boar",,"SB0415",,"M.caprae"
-"SRR13888777","La2","Spain",,"G67157","Wild boar",,"SB0157",,"M.caprae"
-"SRR13888799","La2","Spain",,"G67158","Cattle",,"SB0415",,"M.caprae"
-"SRR13888752","La2","Spain",,"G67159","Cattle",,"SB0416",,"M.caprae"
-"SRR13888778","La2","Spain",,"G67160","Cattle",,"SB0418",,"M.caprae"
-"SRR13888796","La2","Spain",,"G67161","Cattle",,"SB0157",,"M.caprae"
-"SRR13888787","La2","Spain",,"G67162","Cattle",,"SB0157",,"M.caprae"
-"SRR13888791","La2","Spain",,"G67163","Goat",,"SB0157",,"M.caprae"
-"SRR13888755","La2","Spain",,"G67164","Goat",,"SB0416",,"M.caprae"
-"SRR13888768","La2","Spain",,"G67165","Wild boar",,"SB0157",,"M.caprae"
-"SRR13888756","La2","Spain",,"G67166","Wild boar",,"SB0415",,"M.caprae"
-"SRR13888754","La2","Spain",,"G67167","Cattle",,"SB0416",,"M.caprae"
-"SRR13888751","La2","Spain",,"G67168","Goat",,"SB0416",,"M.caprae"
-"SRR13888779","La2","Spain",,"G67169","Sheep",,"SB0157",,"M.caprae"
-"SRR13888793","La2","Spain",,"G67170","Goat",,"SB0415",,"M.caprae"
+sample,Clonal_Complex,Country,Country_Patient_Birth,Gnumber,Host,Map,SIB_Number,Sample.included.in.Loiseau.et.al..2020,Species
+ERS2573045,La1.6,Nigeria,Nigeria,G02538,Human,1,SB0944,1,M.bovis
+ERR1203064,La1.6,Ghana,,G08506,Human,1,SB0944,1,M.bovis
+ERR502499,La1.6,Ghana,,G08621,Human,1,SB1025,1,M.bovis
+ERR502526,La1.6,Ghana,,G08645,Human,1,New pattern,1,M.bovis
+ERR502529,La1.6,Ghana,,G08648,Human,1,SB0944,1,M.bovis
+ERR502538,La1.6,Ghana,,G08654,Human,1,SB0944,1,M.bovis
+ERR553061,La1.6,Germany,,G13968,Human,0,SB0944,1,M.bovis
+ERR2515016,La1.6,United Kingdom,,G36740,Human,0,SB1027,1,M.bovis
+ERR4769567,La1.6,Mali,,G66533,Cattle,1,SB0300,0,M.bovis
+ERR3458084,La1.3,Ethiopia,,G00229,Human,1,SB1984,1,M.bovis
+ERR3458085,La1.3,Ethiopia,,G00234,Human,1,SB0133,1,M.bovis
+ERR3458086,La1.3,Ethiopia,,G00244,Human,1,SB0303,1,M.bovis
+ERR3458080,La1.3,Ethiopia,,G00370,Cattle,1,New pattern,1,M.bovis
+ERR3458081,La1.3,Ethiopia,,G00371,Cattle,1,SB1477,1,M.bovis
+ERR3458087,La1.3,Burundi,,G00396,Cattle,1,SB0303,1,M.bovis
+SRR1173570,La1.3,Uganda,,G22538,chimpanzee,1,SB0133,1,M.bovis
+ERR1200622,La1.3,Ethiopia,,G26444,,0,SB0303,1,M.bovis
+SRR1791710,La1.3,Tanzania,,G36917,Primate,1,SB2467,1,M.bovis
+SRR1791712,La1.3,Tanzania,,G36919,Primate,1,SB2467,1,M.bovis
+SRR8065069,La1.3,Uganda,,G41490,Cattle,1,SB1469,1,M.bovis
+SRR8065070,La1.3,Uganda,,G41491,Cattle,1,SB1471,1,M.bovis
+SRR8065071,La1.3,Uganda,,G41492,Cattle,1,SB1469,1,M.bovis
+SRR8065073,La1.3,Uganda,,G41494,Cattle,1,SB0133,1,M.bovis
+SRR8065074,La1.3,Uganda,,G41495,Cattle,1,SB0133,1,M.bovis
+SRR8065078,La1.3,Uganda,,G41499,Cattle,1,SB1469,1,M.bovis
+SRR8065079,La1.3,Uganda,,G41500,Cattle,1,SB1469,1,M.bovis
+SRR8065080,La1.3,Uganda,,G41501,Cattle,1,SB0133,1,M.bovis
+SRR8065081,La1.3,Uganda,,G41502,Cattle,1,SB0133,1,M.bovis
+SRR8065082,La1.3,Uganda,,G41503,Cattle,1,SB1469,1,M.bovis
+SRR8065084,La1.3,Uganda,,G41505,Cattle,1,SB0133,1,M.bovis
+SRR8065085,La1.3,Uganda,,G41506,Cattle,1,SB1469,1,M.bovis
+SRR8065086,La1.3,Uganda,,G41507,Cattle,1,SB1469,1,M.bovis
+SRR8065087,La1.3,Uganda,,G41508,Cattle,1,SB1469,1,M.bovis
+SRR8063651,La1.3,Ethiopia,,G41517,Cattle,1,SB0133,1,M.bovis
+SRR8063652,La1.3,Ethiopia,,G41518,Cattle,1,SB0912,1,M.bovis
+SRR8063653,La1.3,Ethiopia,,G41519,Cattle,1,SB1176,1,M.bovis
+SRR8063654,La1.3,Ethiopia,,G41520,Cattle,1,SB1176,1,M.bovis
+SRR8063655,La1.3,Ethiopia,,G41521,Cattle,1,SB0912,1,M.bovis
+SRR8063656,La1.3,Ethiopia,,G41522,Cattle,1,SB1176,1,M.bovis
+SRR8063657,La1.3,Ethiopia,,G41523,Cattle,1,SB1176,1,M.bovis
+SRR8063658,La1.3,Ethiopia,,G41524,Cattle,1,SB1176,1,M.bovis
+SRR8063659,La1.3,Ethiopia,,G41525,Cattle,1,SB1176,1,M.bovis
+SRR8063660,La1.3,Ethiopia,,G41526,Cattle,1,SB0133,1,M.bovis
+SRR8063661,La1.3,Ethiopia,,G41527,Cattle,1,SB1176,1,M.bovis
+SRR8063662,La1.3,Ethiopia,,G41528,Cattle,1,SB0912,1,M.bovis
+SRR8063663,La1.3,Ethiopia,,G41529,Cattle,1,SB1176,1,M.bovis
+SRR8063664,La1.3,Ethiopia,,G41530,Cattle,1,New pattern,1,M.bovis
+SRR8063665,La1.3,Ethiopia,,G41531,Cattle,1,SB1176,1,M.bovis
+SRR8063666,La1.3,Ethiopia,,G41532,Cattle,1,SB1176,1,M.bovis
+ERR3077969,La1.3,Tanzania,,G51349,Human,1,New pattern,0,M.bovis
+ERR4769565,La1.3,Ethiopia,,G66535,Cattle,0,SB1477,0,M.bovis
+ERR4769561,La1.3,Ethiopia,,G66539,Cattle,0,SB0303,0,M.bovis
+ERR4769560,La1.3,Ethiopia,,G66540,Cattle,0,SB2595,0,M.bovis
+ERR4769559,La1.3,Ethiopia,,G66541,Cattle,0,SB1176,0,M.bovis
+ERR4772237,La1.3,Ethiopia,,G66542,Human,0,SB0303,0,M.bovis
+ERR4772236,La1.3,Ethiopia,,G66543,Human,0,SB0133,0,M.bovis
+ERR4772235,La1.3,Ethiopia,,G66544,Human,0,SB1984,0,M.bovis
+ERR4772234,La1.3,Ethiopia,,G66545,Human,0,SB0303,0,M.bovis
+ERR4772231,La1.3,Ethiopia,,G66710,Cattle,1,SB1176,0,M.bovis
+ERR4772228,La1.3,Ethiopia,,G66713,Cattle,1,SB1176,0,M.bovis
+ERR4772227,La1.3,Ethiopia,,G66714,Cattle,1,SB0133,0,M.bovis
+ERR4772224,La1.3,Ethiopia,,G66717,Cattle,1,SB1176,0,M.bovis
+ERR4772223,La1.3,Ethiopia,,G66718,Cattle,1,SB0133,0,M.bovis
+ERR4772222,La1.3,Ethiopia,,G66719,Cattle,1,New pattern,0,M.bovis
+ERR4772221,La1.3,Ethiopia,,G66720,Cattle,1,SB0133,0,M.bovis
+ERR4772220,La1.3,Ethiopia,,G66721,Cattle,1,SB0133,0,M.bovis
+ERR4772217,La1.3,Ethiopia,,G66724,Dromedary,1,SB1176,0,M.bovis
+ERR4772216,La1.3,Ethiopia,,G66725,Cattle,1,SB1176,0,M.bovis
+ERR4772215,La1.3,Ethiopia,,G66726,Cattle,1,SB1176,0,M.bovis
+ERR4772214,La1.3,Ethiopia,,G66727,Cattle,1,SB1176,0,M.bovis
+ERR4772213,La1.3,Ethiopia,,G66728,Cattle,1,New pattern,0,M.bovis
+ERR4772209,La1.3,Ethiopia,,G66732,Cattle,1,SB0303,0,M.bovis
+ERR4772208,La1.3,Ethiopia,,G66733,Cattle,1,SB1176,0,M.bovis
+ERR1462578,La2,Germany,,G36645,Cattle,1,SB0418,1,M.caprae
+ERR1462593,La2,Germany,,G36660,Cattle,1,SB0418,1,M.caprae
+ERR2517345,La2,Netherlands,,G36760,,0,SB0835,1,M.caprae
+ERR2510183,La2,Peru,,G36761,,0,SB0415,1,M.caprae
+ERR2510206,La2,Peru,,G36762,,0,SB0415,1,M.caprae
+SRR1792164,La2,China,,G37371,Primate,1,SB1622,1,M.caprae
+SRR1792165,La2,China,,G37372,Primate,1,SB1622,1,M.caprae
+SRR7617662,La2,China,,G41838,Monkey,1,SB1622,1,M.caprae
+DRR120408,La2,Japan,,G42152,Elephas maximus,1,SB0418,1,M.caprae
+DRR120409,La2,Japan,,G42153,Elephas maximus,1,SB0418,1,M.caprae
+ERR017796,La1.8.1,Russia,,G04157,,0,New pattern,1,M.bovis
+ERR400386,La1.8.1,United Kingdom,United Kingdom,G13058,,0,SB0272,1,M.bovis
+ERR400460,La1.8.1,United Kingdom,,G13125,,0,New pattern,1,M.bovis
+SRR2100072,La1.8.1,United Kingdom,,G14219,,0,SB0263,1,M.bovis
+SRR2100074,La1.8.1,United Kingdom,,G14221,,0,New pattern,1,M.bovis
+SRR2101351,La1.8.1,United Kingdom,,G15488,,0,SB0263,1,M.bovis
+ERR046748,La1.8.1,United Kingdom,,G16000,,0,New pattern,1,M.bovis
+ERR046749,La1.8.1,United Kingdom,,G16001,,0,SB0263,1,M.bovis
+ERR046954,La1.8.1,United Kingdom,,G16092,,0,SB0263,1,M.bovis
+ERR046961,La1.8.1,United Kingdom,,G16096,,0,SB0263,1,M.bovis
+ERR841810,La1.8.1,United Kingdom,,G22057,Cattle,1,SB0140,1,M.bovis
+ERR841874,La1.8.1,United Kingdom,,G22121,Cattle,1,SB0140,1,M.bovis
+SRR5216970,La1.8.1,New Zealand,,G22232,Cattle,1,SB0140,1,M.bovis
+SRR5216951,La1.8.1,New Zealand,,G22251,Possum,1,SB0130,1,M.bovis
+SRR5216928,La1.8.1,New Zealand,,G22274,Cattle,1,SB0140,1,M.bovis
+SRR5216893,La1.8.1,New Zealand,,G22309,Cattle,1,SB0140,1,M.bovis
+SRR5216884,La1.8.1,New Zealand,,G22318,Cattle,1,SB0140,1,M.bovis
+SRR5216883,La1.8.1,New Zealand,,G22319,Cattle,1,SB1031,1,M.bovis
+SRR5216854,La1.8.1,New Zealand,,G22348,Cattle,1,SB0140,1,M.bovis
+SRR5216835,La1.8.1,New Zealand,,G22367,Cattle,1,SB0140,1,M.bovis
+SRR5216806,La1.8.1,New Zealand,,G22396,Ferret,1,SB0130,1,M.bovis
+SRR5216799,La1.8.1,New Zealand,,G22403,Cattle,1,SB0140,1,M.bovis
+SRR5216779,La1.8.1,New Zealand,,G22423,Possum,1,SB0140,1,M.bovis
+SRR5216774,La1.8.1,New Zealand,,G22428,Cattle,1,SB0140,1,M.bovis
+SRR5216763,La1.8.1,New Zealand,,G22439,Cattle,1,SB0140,1,M.bovis
+SRR5216759,La1.8.1,New Zealand,,G22443,Cattle,1,SB0140,1,M.bovis
+SRR5216741,La1.8.1,New Zealand,,G22461,Cattle,1,SB0140,1,M.bovis
+SRR5216740,La1.8.1,New Zealand,,G22462,Cattle,1,SB0140,1,M.bovis
+SRR5216727,La1.8.1,New Zealand,,G22475,Possum,1,SB0140,1,M.bovis
+SRR5216724,La1.8.1,New Zealand,,G22478,Ferret,1,SB0140,1,M.bovis
+SRR5216706,La1.8.1,New Zealand,,G22497,Cattle,1,SB0140,1,M.bovis
+SRR6467887,La1.8.1,Canada,,G36314,Bison bison athabascae,1,SB0130,1,M.bovis
+SRR6467891,La1.8.1,Canada,,G36316,elk,1,SB0140,1,M.bovis
+SRR6467893,La1.8.1,Canada,,G36317,Cattle,1,SB1071,1,M.bovis
+SRR5657361,La1.8.1,Mexico,,G36405,Cattle,1,SB1758,1,M.bovis
+SRR5657376,La1.8.1,Mexico,,G36420,Cattle,1,SB0145,1,M.bovis
+SRR5657393,La1.8.1,Mexico,,G36437,Cattle,1,SB0145,1,M.bovis
+SRR5657394,La1.8.1,Mexico,,G36438,Cattle,1,SB0140,1,M.bovis
+SRR5657395,La1.8.1,Mexico,,G36439,Cattle,1,SB0145,1,M.bovis
+SRR5657410,La1.8.1,Mexico,,G36454,Human,1,SB0145,1,M.bovis
+SRR5657432,La1.8.1,Mexico,,G36476,Cattle,1,SB0145,1,M.bovis
+SRR5657493,La1.8.1,Mexico,,G36537,Cattle,1,SB0145,1,M.bovis
+SRR5657520,La1.8.1,Mexico,,G36564,Cattle,1,SB0145,1,M.bovis
+SRR5657521,La1.8.1,Mexico,,G36565,Cattle,1,SB1758,1,M.bovis
+ERR1815539,La1.8.1,South Africa,,G36575,Syncerus caffer,1,SB0130,1,M.bovis
+ERR1815543,La1.8.1,South Africa,,G36579,Syncerus caffer,1,SB1755,1,M.bovis
+ERR1815544,La1.8.1,South Africa,,G36580,Cattle,1,SB0130,1,M.bovis
+ERR1815548,La1.8.1,South Africa,,G36584,Cattle,1,SB0267,1,M.bovis
+ERR1815550,La1.8.1,South Africa,,G36586,Panthera leo,1,SB0130,1,M.bovis
+SRR5382721,La1.8.1,Uruguay,,G36587,Cattle,1,SB0145,1,M.bovis
+SRR5430090,La1.8.1,Uruguay,,G36588,Cattle,1,SB0145,1,M.bovis
+SRR5430091,La1.8.1,Uruguay,,G36589,Cattle,1,SB0274,1,M.bovis
+SRR5430098,La1.8.1,Uruguay,,G36590,Cattle,1,SB0145,1,M.bovis
+SRR5430569,La1.8.1,Uruguay,,G36591,Cattle,1,SB0130,1,M.bovis
+SRR5430746,La1.8.1,Uruguay,,G36592,Cattle,1,SB1072,1,M.bovis
+SRR5430747,La1.8.1,Uruguay,,G36593,Cattle,1,SB0130,1,M.bovis
+SRR5430748,La1.8.1,Uruguay,,G36594,Cattle,1,SB0274,1,M.bovis
+SRR5430749,La1.8.1,Uruguay,,G36595,Cattle,1,SB0274,1,M.bovis
+SRR5430750,La1.8.1,Uruguay,,G36596,Cattle,1,SB0130,1,M.bovis
+SRR5431711,La1.8.1,Uruguay,,G36597,Cattle,1,SB0274,1,M.bovis
+SRR5431718,La1.8.1,Uruguay,,G36598,Cattle,1,SB0130,1,M.bovis
+SRR5431719,La1.8.1,Uruguay,,G36599,Cattle,1,SB0274,1,M.bovis
+SRR5431720,La1.8.1,Uruguay,,G36600,Cattle,1,SB0145,1,M.bovis
+SRR5431721,La1.8.1,Uruguay,,G36601,Cattle,1,SB0274,1,M.bovis
+SRR5431730,La1.8.1,Uruguay,,G36602,Cattle,1,SB1619,1,M.bovis
+SRR5431732,La1.8.1,Uruguay,,G36603,Cattle,1,SB0130,1,M.bovis
+SRR5431790,La1.8.1,Uruguay,,G36604,Cattle,1,SB0130,1,M.bovis
+SRR5431791,La1.8.1,Uruguay,,G36605,Cattle,1,SB0145,1,M.bovis
+SRR5431792,La1.8.1,Uruguay,,G36606,Cattle,1,SB0145,1,M.bovis
+SRR5431793,La1.8.1,Uruguay,,G36607,Cattle,1,SB0274,1,M.bovis
+SRR5431795,La1.8.1,Uruguay,,G36609,Cattle,1,SB0274,1,M.bovis
+ERR125612,La1.8.1,Ireland,,G36624,,1,SB0140,1,M.bovis
+SRR6045827,La1.8.1,United Kingdom,,G36705,Human,0,SB0263,1,M.bovis
+ERR2512570,La1.8.1,United Kingdom,,G36706,,0,SB0263,1,M.bovis
+ERR2512647,La1.8.1,United Kingdom,,G36707,,0,SB0263,1,M.bovis
+ERR2512732,La1.8.1,United Kingdom,,G36710,,0,SB0129,1,M.bovis
+ERR2512755,La1.8.1,United Kingdom,,G36711,,0,New pattern,1,M.bovis
+ERR2512838,La1.8.1,United Kingdom,,G36712,,0,SB0130,1,M.bovis
+ERR2512954,La1.8.1,United Kingdom,,G36717,,0,SB0129,1,M.bovis
+ERR2512962,La1.8.1,United Kingdom,,G36718,,0,SB0129,1,M.bovis
+ERR2513034,La1.8.1,United Kingdom,,G36719,,0,New pattern,1,M.bovis
+ERR2513138,La1.8.1,United Kingdom,,G36720,,0,SB0140,1,M.bovis
+ERR2513194,La1.8.1,United Kingdom,,G36721,,0,SB0263,1,M.bovis
+ERR2513433,La1.8.1,United Kingdom,,G36724,,0,SB0129,1,M.bovis
+ERR2513607,La1.8.1,United Kingdom,,G36725,,0,SB0140,1,M.bovis
+ERR2513811,La1.8.1,United Kingdom,,G36727,,0,SB0263,1,M.bovis
+ERR2514144,La1.8.1,United Kingdom,,G36729,,0,SB0673,1,M.bovis
+ERR2514191,La1.8.1,United Kingdom,,G36730,,0,SB0129,1,M.bovis
+SRR6045214,La1.8.1,United Kingdom,,G36731,Human,0,SB0263,1,M.bovis
+ERR2514285,La1.8.1,United Kingdom,,G36732,,0,SB0129,1,M.bovis
+ERR2514352,La1.8.1,United Kingdom,,G36733,,0,SB0272,1,M.bovis
+SRR6045235,La1.8.1,United Kingdom,,G36734,Human,0,SB0267,1,M.bovis
+ERR2514545,La1.8.1,United Kingdom,,G36735,,0,SB0140,1,M.bovis
+ERR2514583,La1.8.1,United Kingdom,,G36736,,0,SB0129,1,M.bovis
+ERR2514837,La1.8.1,United Kingdom,,G36737,,0,New pattern,1,M.bovis
+ERR2514955,La1.8.1,United Kingdom,,G36738,,0,New pattern,1,M.bovis
+ERR2815609,La1.8.1,Germany,,G36802,racoon,0,SB0141,0,M.bovis
+SRR1791700,La1.8.1,Mexico,,G36907,Cattle,1,SB1499,1,M.bovis
+SRR1791703,La1.8.1,Mexico,,G36910,Cattle,1,SB0673,1,M.bovis
+SRR1791707,La1.8.1,USA,,G36914,Jaguar,1,SB0140,1,M.bovis
+SRR1791728,La1.8.1,Mexico,,G36935,Cattle,1,SB0140,1,M.bovis
+SRR1791737,La1.8.1,Mexico,,G36944,Cattle,1,SB0140,1,M.bovis
+SRR1791751,La1.8.1,Mexico,,G36958,Cattle,1,SB0145,1,M.bovis
+SRR1791752,La1.8.1,Mexico,,G36959,Cattle,1,New pattern,1,M.bovis
+SRR1791762,La1.8.1,Mexico,,G36969,Cattle,1,SB0140,1,M.bovis
+SRR1791763,La1.8.1,Mexico,,G36970,Cattle,1,New pattern,1,M.bovis
+SRR1791766,La1.8.1,Mexico,,G36973,Cattle,1,SB0307,1,M.bovis
+SRR1791770,La1.8.1,Mexico,,G36977,Cattle,1,SB0130,1,M.bovis
+SRR1791773,La1.8.1,Mexico,,G36980,Cattle,1,SB0140,1,M.bovis
+SRR1791777,La1.8.1,Mexico,,G36984,Cattle,1,SB0943,1,M.bovis
+SRR1791784,La1.8.1,USA,,G36991,Cattle,1,SB1071,1,M.bovis
+SRR1791785,La1.8.1,Mexico,,G36992,Cattle,1,SB0140,1,M.bovis
+SRR1791792,La1.8.1,Mexico,,G36999,Cattle,1,SB0140,1,M.bovis
+SRR1791801,La1.8.1,Mexico,,G37008,Cattle,1,SB2020,1,M.bovis
+SRR1791809,La1.8.1,Mexico,,G37016,Cattle,1,SB0140,1,M.bovis
+SRR1791816,La1.8.1,Mexico,,G37023,Cattle,1,SB2020,1,M.bovis
+SRR1791822,La1.8.1,Mexico,,G37029,Cattle,1,SB0140,1,M.bovis
+SRR1791826,La1.8.1,Mexico,,G37033,Cattle,1,SB0140,1,M.bovis
+SRR1791829,La1.8.1,Mexico,,G37036,Cattle,1,SB0140,1,M.bovis
+SRR1791834,La1.8.1,Mexico,,G37041,Cattle,1,SB1499,1,M.bovis
+SRR1791861,La1.8.1,Mexico,,G37068,Cattle,1,SB0140,1,M.bovis
+SRR1791864,La1.8.1,Mexico,,G37071,Cattle,1,SB0140,1,M.bovis
+SRR1791871,La1.8.1,Mexico,,G37078,Cattle,1,SB0130,1,M.bovis
+SRR1791881,La1.8.1,USA,,G37088,Cattle,1,SB0140,1,M.bovis
+SRR1791883,La1.8.1,Mexico,,G37090,Cattle,1,SB0140,1,M.bovis
+SRR1791889,La1.8.1,USA,,G37096,Wild boar,1,SB0145,1,M.bovis
+SRR1791894,La1.8.1,USA,,G37101,Cattle,1,SB0145,1,M.bovis
+SRR1791911,La1.8.1,USA,,G37118,Cattle,1,SB1758,1,M.bovis
+SRR1791937,La1.8.1,Mexico,,G37144,Cattle,1,SB0269,1,M.bovis
+SRR1791942,La1.8.1,Mexico,,G37149,Cattle,1,SB1499,1,M.bovis
+SRR1791947,La1.8.1,USA,,G37154,Cattle,1,SB0271,1,M.bovis
+SRR1791952,La1.8.1,Mexico,,G37159,Cattle,1,SB0971,1,M.bovis
+SRR1791953,La1.8.1,Mexico,,G37160,Cattle,1,SB0673,1,M.bovis
+SRR1791958,La1.8.1,Mexico,,G37165,Cattle,1,SB0140,1,M.bovis
+SRR1791970,La1.8.1,Mexico,,G37177,Cattle,1,SB0140,1,M.bovis
+SRR1791975,La1.8.1,Mexico,,G37182,Cattle,1,SB0140,1,M.bovis
+SRR1791977,La1.8.1,Mexico,,G37184,Cattle,1,SB0140,1,M.bovis
+SRR1791985,La1.8.1,USA,,G37192,Cattle,1,SB0271,1,M.bovis
+SRR1791987,La1.8.1,Mexico,,G37194,Cattle,1,SB0140,1,M.bovis
+SRR1791988,La1.8.1,Mexico,,G37195,Cattle,1,SB1754,1,M.bovis
+SRR1791998,La1.8.1,Mexico,,G37205,Cattle,1,SB0140,1,M.bovis
+SRR1792009,La1.8.1,USA,,G37216,Cervid,1,SB0271,1,M.bovis
+SRR1792014,La1.8.1,USA,,G37221,Wild boar,1,SB0145,1,M.bovis
+SRR1792043,La1.8.1,USA,,G37250,Cervid,1,SB0271,1,M.bovis
+SRR1792044,La1.8.1,USA,,G37251,Cervid,1,SB0271,1,M.bovis
+SRR1792051,La1.8.1,USA,,G37258,Cattle,1,SB0140,1,M.bovis
+SRR1792060,La1.8.1,USA,,G37267,Cattle,1,SB0140,1,M.bovis
+SRR1792066,La1.8.1,Mexico,,G37273,Cattle,1,SB0140,1,M.bovis
+SRR1792067,La1.8.1,USA,,G37274,Cervid,1,SB0271,1,M.bovis
+SRR1792076,La1.8.1,USA,,G37283,Cervid,1,SB0271,1,M.bovis
+SRR1792090,La1.8.1,USA,,G37297,Cattle,1,SB0271,1,M.bovis
+SRR1792103,La1.8.1,USA,,G37310,Cervid,1,SB0271,1,M.bovis
+SRR1792107,La1.8.1,USA,,G37314,Wild boar,1,SB0145,1,M.bovis
+SRR1792114,La1.8.1,USA,,G37321,Cattle,1,SB0271,1,M.bovis
+SRR1792124,La1.8.1,USA,,G37331,Cervid,1,SB0271,1,M.bovis
+SRR1792146,La1.8.1,USA,,G37353,Wild boar,1,SB0145,1,M.bovis
+SRR1792152,La1.8.1,USA,,G37359,Wild boar,1,SB0145,1,M.bovis
+SRR1792172,La1.8.1,Mexico,,G37379,Cattle,1,SB1348,1,M.bovis
+SRR1792176,La1.8.1,USA,,G37383,Cattle,1,SB1758,1,M.bovis
+SRR1792178,La1.8.1,USA,,G37385,Cattle,1,SB0271,1,M.bovis
+SRR1792179,La1.8.1,USA,,G37386,Cattle,1,SB0271,1,M.bovis
+SRR1792279,La1.8.1,Mexico,,G37486,Cattle,1,SB0267,1,M.bovis
+SRR1792281,La1.8.1,Mexico,,G37488,Cattle,1,SB0140,1,M.bovis
+SRR1792339,La1.8.1,USA,,G37546,Cattle,1,SB0271,1,M.bovis
+SRR1792349,La1.8.1,Mexico,,G37556,Cattle,1,SB0673,1,M.bovis
+SRR1792350,La1.8.1,USA,,G37557,Cat,1,SB0145,1,M.bovis
+SRR1792358,La1.8.1,Mexico,,G37565,Cattle,1,SB0140,1,M.bovis
+SRR1792372,La1.8.1,Mexico,,G37579,Cattle,1,New pattern,1,M.bovis
+SRR1792429,La1.8.1,USA,,G37636,Cattle,1,SB0271,1,M.bovis
+SRR1792438,La1.8.1,Mexico,,G37645,Cattle,1,SB0130,1,M.bovis
+SRR1792441,La1.8.1,Mexico,,G37648,Cattle,1,SB0145,1,M.bovis
+SRR1792487,La1.8.1,USA,,G37694,Cattle,1,SB0130,1,M.bovis
+SRR1792494,La1.8.1,USA,,G37701,Cattle,1,SB0145,1,M.bovis
+SRR4019490,La1.8.1,USA,,G37784,Human,0,SB0145,1,M.bovis
+SRR1657061,La1.8.1,Costa Rica,,G38449,Cattle,1,SB1041,1,M.bovis
+SRR1657070,La1.8.1,Panama,,G38453,Cattle,1,SB0145,1,M.bovis
+SRR7236106,La1.8.1,Mexico,,G41169,Cattle,1,SB0140,1,M.bovis
+SRR7236111,La1.8.1,Mexico,,G41174,Cattle,1,SB0140,1,M.bovis
+SRR7236140,La1.8.1,Mexico,,G41203,Cattle,1,SB0140,1,M.bovis
+SRR7236142,La1.8.1,Mexico,,G41205,Cattle,1,SB0140,1,M.bovis
+SRR7236143,La1.8.1,Mexico,,G41206,Cattle,1,SB0140,1,M.bovis
+SRR7236144,La1.8.1,Mexico,,G41207,Cattle,1,SB0140,1,M.bovis
+SRR7236148,La1.8.1,Mexico,,G41211,Cattle,1,SB0140,1,M.bovis
+SRR7236150,La1.8.1,Mexico,,G41213,Cattle,1,SB0140,1,M.bovis
+SRR7236154,La1.8.1,Mexico,,G41217,Cattle,1,New pattern,1,M.bovis
+SRR7236155,La1.8.1,Mexico,,G41218,Cattle,1,SB0140,1,M.bovis
+SRR7236164,La1.8.1,Mexico,,G41227,Cattle,1,SB0140,1,M.bovis
+SRR7236174,La1.8.1,Mexico,,G41237,Cattle,1,SB0140,1,M.bovis
+SRR7236183,La1.8.1,Mexico,,G41246,Cattle,1,SB0140,1,M.bovis
+SRR7236188,La1.8.1,Mexico,,G41251,Cattle,1,SB0140,1,M.bovis
+SRR7236190,La1.8.1,Mexico,,G41253,Cattle,1,SB0140,1,M.bovis
+SRR7236195,La1.8.1,Mexico,,G41258,Cattle,1,SB0145,1,M.bovis
+SRR7236225,La1.8.1,Mexico,,G41288,Cattle,1,SB0130,1,M.bovis
+SRR7236234,La1.8.1,Mexico,,G41297,Cattle,1,SB0145,1,M.bovis
+SRR7236249,La1.8.1,Mexico,,G41312,Cattle,1,SB0140,1,M.bovis
+SRR7236252,La1.8.1,Mexico,,G41315,Cattle,1,SB0131,1,M.bovis
+SRR7236262,La1.8.1,Mexico,,G41325,Cattle,1,SB0140,1,M.bovis
+SRR7236271,La1.8.1,Mexico,,G41334,Cattle,1,SB0140,1,M.bovis
+SRR7236275,La1.8.1,Mexico,,G41338,Cattle,1,SB0140,1,M.bovis
+SRR7236279,La1.8.1,Mexico,,G41342,Cattle,1,SB0140,1,M.bovis
+SRR7236287,La1.8.1,Mexico,,G41350,Cattle,1,SB0145,1,M.bovis
+SRR7236293,La1.8.1,Mexico,,G41356,Cattle,1,SB0140,1,M.bovis
+SRR7236303,La1.8.1,Mexico,,G41366,Cattle,1,SB0289,1,M.bovis
+SRR7236324,La1.8.1,Mexico,,G41387,Cattle,1,SB0140,1,M.bovis
+SRR7236330,La1.8.1,Mexico,,G41393,Cattle,1,SB0140,1,M.bovis
+SRR7236331,La1.8.1,Mexico,,G41394,Cattle,1,SB0140,1,M.bovis
+SRR7236349,La1.8.1,Mexico,,G41412,Cattle,1,SB0327,1,M.bovis
+SRR7236350,La1.8.1,Mexico,,G41413,Cattle,1,SB0145,1,M.bovis
+SRR7236354,La1.8.1,Mexico,,G41417,Cattle,1,SB0130,1,M.bovis
+SRR7236357,La1.8.1,Mexico,,G41420,Cattle,1,SB0139,1,M.bovis
+SRR7236376,La1.8.1,Mexico,,G41439,Cattle,1,SB0140,1,M.bovis
+SRR7236393,La1.8.1,Mexico,,G41456,Cattle,1,SB1758,1,M.bovis
+SRR7236394,La1.8.1,Mexico,,G41457,Cattle,1,SB0140,1,M.bovis
+SRR7236397,La1.8.1,Mexico,,G41460,Cattle,1,SB1754,1,M.bovis
+SRR7236403,La1.8.1,Mexico,,G41466,Cattle,1,SB0140,1,M.bovis
+SRR7236404,La1.8.1,Mexico,,G41467,Cattle,1,SB0140,1,M.bovis
+SRR7236413,La1.8.1,Mexico,,G41476,Cattle,1,SB0275,1,M.bovis
+SRR7236415,La1.8.1,Mexico,,G41478,Cattle,1,SB0140,1,M.bovis
+SRR7236417,La1.8.1,Mexico,,G41480,Cattle,1,SB0140,1,M.bovis
+SRR7236418,La1.8.1,Mexico,,G41481,Cattle,1,New pattern,1,M.bovis
+SRR7236421,La1.8.1,Mexico,,G41484,Cattle,1,SB0140,1,M.bovis
+SRR7236424,La1.8.1,Mexico,,G41487,Cattle,1,SB0140,1,M.bovis
+SRR7617392,La1.8.1,New Zealand,,G41568,Cervine,1,SB0140,1,M.bovis
+SRR7617394,La1.8.1,New Zealand,,G41570,Cervine,1,SB0140,1,M.bovis
+SRR7617396,La1.8.1,New Zealand,,G41572,Cattle,1,SB0140,1,M.bovis
+SRR7617409,La1.8.1,New Zealand,,G41585,Possum,1,SB0130,1,M.bovis
+SRR7617439,La1.8.1,New Zealand,,G41615,Cattle,1,SB0140,1,M.bovis
+SRR7617441,La1.8.1,United Kingdom,,G41617,Cattle,1,SB0268,1,M.bovis
+SRR7617442,La1.8.1,New Zealand,,G41618,Cattle,1,SB0140,1,M.bovis
+SRR7617446,La1.8.1,New Zealand,,G41622,Cattle,1,SB0140,1,M.bovis
+SRR7617510,La1.8.1,New Zealand,,G41686,Possum,1,SB0140,1,M.bovis
+SRR7617514,La1.8.1,New Zealand,,G41690,Ferret,1,SB0140,1,M.bovis
+SRR7617515,La1.8.1,New Zealand,,G41691,Ferret,1,SB0140,1,M.bovis
+SRR7617517,La1.8.1,New Zealand,,G41693,Possum,1,SB0140,1,M.bovis
+SRR7617526,La1.8.1,New Zealand,,G41702,Possum,1,SB0140,1,M.bovis
+SRR7617588,La1.8.1,New Zealand,,G41764,Pig,1,SB0130,1,M.bovis
+SRR7617596,La1.8.1,New Zealand,,G41772,Cervine,1,SB0130,1,M.bovis
+SRR7617599,La1.8.1,New Zealand,,G41775,Cervine,1,SB0140,1,M.bovis
+SRR7617634,La1.8.1,New Zealand,,G41810,Pig,1,SB0130,1,M.bovis
+SRR7617639,La1.8.1,New Zealand,,G41815,Ferret,1,SB0130,1,M.bovis
+SRR7617660,La1.8.1,New Zealand,,G41836,Cattle,1,SB0140,1,M.bovis
+SRR7617666,La1.8.1,New Zealand,,G41842,Ferret,1,SB0140,1,M.bovis
+SRR7617681,La1.8.1,New Zealand,,G41857,Ferret,1,SB0140,1,M.bovis
+SRR7617682,La1.8.1,New Zealand,,G41858,Cattle,1,SB0140,1,M.bovis
+SRR7617710,La1.8.1,New Zealand,,G41886,Human,0,SB0673,1,M.bovis
+SRR7617711,La1.8.1,New Zealand,,G41887,Cattle,1,SB1031,1,M.bovis
+SRR7617761,La1.8.1,New Zealand,,G41937,Ferret,1,SB0140,1,M.bovis
+SRR7617812,La1.8.1,New Zealand,,G41988,Cattle,1,SB1897,1,M.bovis
+SRR7617827,La1.8.1,New Zealand,,G42003,Pig,1,SB0130,1,M.bovis
+SRR7617828,La1.8.1,New Zealand,,G42004,Cattle,1,SB0140,1,M.bovis
+SRR7617836,La1.8.1,New Zealand,,G42012,Cattle,1,SB0140,1,M.bovis
+SRR6045019,La1.8.1,United Kingdom,,G42045,Human,0,SB0267,1,M.bovis
+SRR8073610,La1.8.1,USA,,G42077,Deer,1,SB0145,1,M.bovis
+SRR7851305,La1.8.1,France,,G47578,Cattle,1,SB0140,0,M.bovis
+SRR7851314,La1.8.1,France,,G47587,Cattle,1,SB0130,0,M.bovis
+SRR7851320,La1.8.1,France,,G47593,Cattle,1,SB0145,0,M.bovis
+SRR7851341,La1.8.1,France,,G47614,Cattle,1,SB0140,0,M.bovis
+SRR7851351,La1.8.1,France,,G47624,Cattle,1,SB0140,0,M.bovis
+SRR7851364,La1.8.1,France,,G47637,Cattle,1,SB0140,0,M.bovis
+SRR7851305,La1.8.1,France,,G49365,Cattle,1,SB0140,0,M.bovis
+SRR10808421,La1.8.1,Indonesia,,G62291,Human,1,SB0130,0,M.bovis
+ERR550954,La1.7.1,Germany,,G13311,,0,SB0339,1,M.bovis
+SRR6467889,La1.7.1,Canada,,G36315,Cattle,1,SB0265,1,M.bovis
+SRR6705904,La1.7.1,Brazil,,G36401,Cattle,1,SB0121,1,M.bovis
+SRR5657358,La1.7.1,Mexico,,G36402,Cattle,1,SB1345,1,M.bovis
+SRR5657359,La1.7.1,Mexico,,G36403,Cattle,1,SB1345,1,M.bovis
+SRR5657512,La1.7.1,Mexico,,G36556,Cattle,1,SB2469,1,M.bovis
+SRR5657513,La1.7.1,Mexico,,G36557,Cattle,1,SB1345,1,M.bovis
+ERR1815538,La1.7.1,South Africa,,G36574,Panthera leo,1,SB0121,1,M.bovis
+ERR1815540,La1.7.1,South Africa,,G36576,Tragelaphus strepsiceros,1,SB0121,1,M.bovis
+ERR1815541,La1.7.1,South Africa,,G36577,Syncerus caffer,1,SB0121,1,M.bovis
+ERR1815542,La1.7.1,South Africa,,G36578,Syncerus caffer,1,SB0121,1,M.bovis
+ERR1815545,La1.7.1,South Africa,,G36581,Syncerus caffer,1,SB0121,1,M.bovis
+ERR1815546,La1.7.1,South Africa,,G36582,Syncerus caffer,1,SB0121,1,M.bovis
+ERR1815547,La1.7.1,South Africa,,G36583,Syncerus caffer,1,SB0121,1,M.bovis
+ERR1815549,La1.7.1,South Africa,,G36585,Panthera leo,1,SB0121,1,M.bovis
+ERR2516545,La1.7.1,Netherlands,,G36703,,0,New pattern,1,M.bovis
+ERR2199797,La1.7.1,Germany,,G36704,,0,SB0265,1,M.bovis
+ERR2516207,La1.7.1,Belgium,,G36741,,0,New pattern,1,M.bovis
+ERR2516335,La1.7.1,Belgium,,G36743,,0,SB0265,1,M.bovis
+ERR2517408,La1.7.1,Netherlands,,G36750,,0,SB2179,1,M.bovis
+ERR2517616,La1.7.1,Netherlands,,G36752,,0,SB1947,1,M.bovis
+ERR2517518,La1.7.1,Netherlands,,G36753,,0,SB0121,1,M.bovis
+ERR2517443,La1.7.1,Netherlands,,G36754,,0,SB0121,1,M.bovis
+ERR2517349,La1.7.1,Netherlands,,G36755,,0,New pattern,1,M.bovis
+ERR2517523,La1.7.1,Netherlands,,G36756,,0,SB0121,1,M.bovis
+ERR2517227,La1.7.1,Netherlands,,G36757,,0,SB0121,1,M.bovis
+ERR2515455,La1.7.1,South Africa,,G36758,,0,SB0121,1,M.bovis
+ERR2815614,La1.7.1,Germany,,G36797,Cattle,0,SB0944,0,M.bovis
+ERR2815608,La1.7.1,Germany,,G36803,Cattle,0,SB1275,0,M.bovis
+ERR2815606,La1.7.1,Germany,,G36805,Cattle,0,SB0121,0,M.bovis
+ERR2815605,La1.7.1,Germany,,G36806,Wild boar,0,SB0295,0,M.bovis
+ERR2815604,La1.7.1,Germany,,G36807,Wild boar,0,SB0295,0,M.bovis
+ERR2815601,La1.7.1,Germany,,G36810,pig,0,SB1021,0,M.bovis
+ERR2815600,La1.7.1,Germany,,G36811,pig,0,SB1021,0,M.bovis
+ERR2815537,La1.7.1,Germany,,G36871,Cattle,0,SB0121,0,M.bovis
+ERR2815511,La1.7.1,Germany,,G36893,cat,0,SB1021,0,M.bovis
+ERR2815509,La1.7.1,Germany,,G36895,cattle,0,SB0121,0,M.bovis
+ERR2815508,La1.7.1,Germany,,G36896,cattle,0,SB0121,0,M.bovis
+ERR2815507,La1.7.1,Germany,,G36897,Cattle,0,SB1021,0,M.bovis
+SRR1791708,La1.7.1,USA,,G36915,Cattle,1,SB0265,1,M.bovis
+SRR1791722,La1.7.1,Mexico,,G36929,Cattle,1,SB0121,1,M.bovis
+SRR1791736,La1.7.1,USA,,G36943,Cattle,1,SB0121,1,M.bovis
+SRR1791793,La1.7.1,USA,,G37000,Cattle,1,SB0121,1,M.bovis
+SRR1791797,La1.7.1,Mexico,,G37004,Cattle,1,SB0121,1,M.bovis
+SRR1791802,La1.7.1,Mexico,,G37009,Cattle,1,SB0121,1,M.bovis
+SRR1791804,La1.7.1,Mexico,,G37011,Cattle,1,SB0121,1,M.bovis
+SRR1791824,La1.7.1,Mexico,,G37031,Cattle,1,SB0121,1,M.bovis
+SRR1791832,La1.7.1,USA,,G37039,Cervid,1,SB0265,1,M.bovis
+SRR1791841,La1.7.1,USA,,G37048,Cattle,1,SB0121,1,M.bovis
+SRR1791866,La1.7.1,USA,,G37073,Cattle,1,SB1345,1,M.bovis
+SRR1791876,La1.7.1,USA,,G37083,Cattle,1,SB1345,1,M.bovis
+SRR1791880,La1.7.1,USA,,G37087,Cattle,1,SB1345,1,M.bovis
+SRR1791891,La1.7.1,Mexico,,G37098,Cattle,1,SB0121,1,M.bovis
+SRR1791909,La1.7.1,Mexico,,G37116,Cattle,1,SB0121,1,M.bovis
+SRR1791950,La1.7.1,USA,,G37157,Cervid,1,SB0121,1,M.bovis
+SRR1791959,La1.7.1,Mexico,,G37166,Cattle,1,SB0121,1,M.bovis
+SRR1791960,La1.7.1,Mexico,,G37167,Cattle,1,SB0121,1,M.bovis
+SRR1791969,La1.7.1,Mexico,,G37176,Cattle,1,SB0121,1,M.bovis
+SRR1792002,La1.7.1,USA,,G37209,Cattle,1,SB0265,1,M.bovis
+SRR1792005,La1.7.1,Mexico,,G37212,Cattle,1,SB0121,1,M.bovis
+SRR1792027,La1.7.1,Mexico,,G37234,Cattle,1,SB0121,1,M.bovis
+SRR1792041,La1.7.1,Mexico,,G37248,Cattle,1,SB0121,1,M.bovis
+SRR1792068,La1.7.1,USA,,G37275,Cattle,1,SB0152,1,M.bovis
+SRR1792073,La1.7.1,Mexico,,G37280,Cattle,1,SB0152,1,M.bovis
+SRR1792110,La1.7.1,USA,,G37317,Cattle,1,SB0121,1,M.bovis
+SRR1792118,La1.7.1,Mexico,,G37325,Cattle,1,SB0121,1,M.bovis
+SRR1792122,La1.7.1,USA,,G37329,Cattle,1,SB0121,1,M.bovis
+SRR1792155,La1.7.1,Mexico,,G37362,Cattle,1,SB0121,1,M.bovis
+SRR1792171,La1.7.1,Mexico,,G37378,Cattle,1,SB0121,1,M.bovis
+SRR1792193,La1.7.1,USA,,G37400,Cattle,1,SB0121,1,M.bovis
+SRR1792204,La1.7.1,USA,,G37411,Cattle,1,SB0121,1,M.bovis
+SRR1792245,La1.7.1,Mexico,,G37452,Cattle,1,SB0121,1,M.bovis
+SRR1792410,La1.7.1,Mexico,,G37617,Cattle,1,SB0121,1,M.bovis
+SRR1792445,La1.7.1,Mexico,,G37652,Cattle,1,SB0121,1,M.bovis
+SRR1792449,La1.7.1,Mexico,,G37656,Cattle,1,SB0121,1,M.bovis
+SRR1792477,La1.7.1,USA,,G37684,Cattle,1,SB0121,1,M.bovis
+SRR1792490,La1.7.1,USA,,G37697,Cattle,1,SB0121,1,M.bovis
+SRR1792491,La1.7.1,USA,,G37698,Cattle,1,SB0121,1,M.bovis
+SRR1792502,La1.7.1,USA,,G37709,Cattle,1,SB0121,1,M.bovis
+SRR6865435,La1.7.1,Brazil,,G38457,Lama glama,1,SB0295,1,M.bovis
+SRR7236129,La1.7.1,Mexico,,G41192,Cattle,1,SB0121,1,M.bovis
+SRR7236131,La1.7.1,Mexico,,G41194,Cattle,1,SB0152,1,M.bovis
+SRR7236145,La1.7.1,Mexico,,G41208,Cattle,1,SB0121,1,M.bovis
+SRR7236149,La1.7.1,Mexico,,G41212,Cattle,1,SB0121,1,M.bovis
+SRR7236192,La1.7.1,Mexico,,G41255,Cattle,1,SB0295,1,M.bovis
+SRR7236193,La1.7.1,Mexico,,G41256,Cattle,1,New pattern,1,M.bovis
+SRR7236231,La1.7.1,Mexico,,G41294,Cattle,1,SB0121,1,M.bovis
+SRR7236232,La1.7.1,Mexico,,G41295,Cattle,1,SB0121,1,M.bovis
+SRR7236253,La1.7.1,Mexico,,G41316,Cattle,1,SB0121,1,M.bovis
+SRR7236264,La1.7.1,Mexico,,G41327,Cattle,1,SB0121,1,M.bovis
+SRR7236269,La1.7.1,Mexico,,G41332,Cattle,1,SB0121,1,M.bovis
+SRR7236344,La1.7.1,Mexico,,G41407,Cattle,1,SB0121,1,M.bovis
+SRR7236345,La1.7.1,Mexico,,G41408,Cattle,1,SB0121,1,M.bovis
+SRR7236378,La1.7.1,Mexico,,G41441,Cattle,1,SB0121,1,M.bovis
+SRR7236380,La1.7.1,Mexico,,G41443,Cattle,1,SB0121,1,M.bovis
+SRR7236387,La1.7.1,Mexico,,G41450,Cattle,1,SB0121,1,M.bovis
+ERR2851361,La1.7.1,Lebanon,Lebanon,G42136,Human,1,SB0121,1,M.bovis
+SRR7851300,La1.7.1,France,,G47573,Cattle,1,SB0837,0,M.bovis
+SRR7851301,La1.7.1,France,,G47574,Cattle,1,SB0339,0,M.bovis
+SRR7851303,La1.7.1,France,,G47576,Goat,1,SB0152,0,M.bovis
+SRR7851308,La1.7.1,France,,G47581,Goat,1,SB0121,0,M.bovis
+SRR7851310,La1.7.1,France,,G47583,Cattle,1,SB0999,0,M.bovis
+SRR7851318,La1.7.1,France,,G47591,Cattle,1,SB0121,0,M.bovis
+SRR7851319,La1.7.1,France,,G47592,Cattle,1,SB0121,0,M.bovis
+SRR7851332,La1.7.1,France,,G47605,Cattle,1,SB0121,0,M.bovis
+SRR7851335,La1.7.1,France,,G47608,Cattle,1,SB0121,0,M.bovis
+SRR7851343,La1.7.1,France,,G47616,Cattle,1,SB0339,0,M.bovis
+SRR7851349,La1.7.1,France,,G47622,Cattle,1,SB0121,0,M.bovis
+SRR7851357,La1.7.1,France,,G47630,Cattle,1,SB0121,0,M.bovis
+SRR7851358,La1.7.1,France,,G47631,Sheep,1,SB0121,0,M.bovis
+SRR7851363,La1.7.1,France,,G47636,Cattle,1,SB0121,0,M.bovis
+SRR7851380,La1.7.1,France,,G47653,Cattle,1,SB0999,0,M.bovis
+SRR7851382,La1.7.1,France,,G47655,Cattle,1,SB0295,0,M.bovis
+SRR7851303,La1.7.1,France,,G49367,Cattle,1,SB0152,0,M.bovis
+SRR7851300,La1.7.1,France,,G49368,Cattle,1,SB0837,0,M.bovis
+SRR7851301,La1.7.1,France,,G49369,Cattle,1,SB0339,0,M.bovis
+SRR9850824,La1.7.1,Brazil,,G49370,captive capybara,0,SB0295,0,M.bovis
+SRR9850830,La1.7.1,Brazil,,G49371,captive Lama glama,0,SB0295,0,M.bovis
+SRR7693912,La1.7.1,Brazil,,G66750,captive European Bison,0,SB0121,0,M.bovis
+ERR1082113,L6,Ghana,,G08466,Human,,,0,M.bovis
+ERR015582,La3,,,G00130,Oryx,0,SB0422,0,M.orygis
+ERR2659153,La3,Australia,India,G01224,Human,1,SB0422,0,M.orygis
+ERR2659154,La3,Australia,India,G01225,Human,1,SB0422,0,M.orygis
+ERR2659155,La3,Australia,India,G01226,Human,1,SB0422,0,M.orygis
+ERR2659156,La3,Australia,India,G01227,Human,1,SB0422,0,M.orygis
+ERR234675,La3,,,G04149,,0,SB0422,0,M.orygis
+ERR234676,La3,,,G04150,,0,New pattern,0,M.orygis
+ERR234682,La3,,,G04151,,0,New pattern,0,M.orygis
+ERR017782,La3,United Kingdom,,G04156,,0,SB0422,0,M.orygis
+SRR2100577,La3,United Kingdom,,G14722,,0,SB0422,0,M.orygis
+SRR2101161,La3,United Kingdom,,G15298,,0,SB0422,0,M.orygis
+SRR2101222,La3,United Kingdom,,G15359,,0,New pattern,0,M.orygis
+SRR2101291,La3,United Kingdom,,G15428,,0,SB0422,0,M.orygis
+SRR2101329,La3,United Kingdom,,G15466,,0,SB0422,0,M.orygis
+SRR5642711,La3,USA,India,G22513,Human,1,SB0422,0,M.orygis
+SRR5642712,La3,USA,India,G22514,Human,1,SB0422,0,M.orygis
+SRR5642713,La3,USA,India,G22515,Human,1,SB0422,0,M.orygis
+SRR5642714,La3,USA,India,G22516,Human,1,SB0422,0,M.orygis
+SRR5642715,La3,USA,India,G22517,Human,1,New pattern,0,M.orygis
+SRR5642716,La3,USA,India,G22518,Human,1,SB0422,0,M.orygis
+SRR5642717,La3,USA,India,G22519,Human,1,SB0422,0,M.orygis
+SRR5642718,La3,USA,India,G22520,Human,1,SB0422,0,M.orygis
+SRR6797355,La3,Bangladesh,,G28351,Human,0,SB0422,0,M.orygis
+SRR6045015,La3,United Kingdom,,G36763,Human,0,SB0422,0,M.orygis
+ERR2512389,La3,United Kingdom,,G36764,Human,0,SB0422,0,M.orygis
+ERR2512788,La3,United Kingdom,,G36765,Human,0,SB0422,0,M.orygis
+ERR2512826,La3,United Kingdom,,G36766,Human,0,SB0422,0,M.orygis
+ERR2512859,La3,United Kingdom,,G36767,Human,0,New pattern,0,M.orygis
+ERR2512942,La3,United Kingdom,,G36768,Human,0,New pattern,0,M.orygis
+SRR6044858,La3,United Kingdom,,G36769,Human,0,New pattern,0,M.orygis
+SRR6046695,La3,United Kingdom,,G36770,Human,0,SB0422,0,M.orygis
+ERR2513195,La3,United Kingdom,,G36771,Human,0,SB0422,0,M.orygis
+SRR6045425,La3,United Kingdom,,G36772,Human,0,New pattern,0,M.orygis
+ERR2513625,La3,United Kingdom,,G36773,Human,0,SB0422,0,M.orygis
+ERR2513671,La3,United Kingdom,,G36774,Human,0,New pattern,0,M.orygis
+SRR3675498,La3,United Kingdom,,G36775,Human,0,New pattern,0,M.orygis
+ERR2514172,La3,United Kingdom,,G36776,Human,0,SB0422,0,M.orygis
+SRR6045962,La3,United Kingdom,,G36778,Human,0,SB0422,0,M.orygis
+SRR6044939,La3,United Kingdom,,G36779,Human,0,SB0422,0,M.orygis
+SRR6045301,La3,United Kingdom,,G36781,Human,0,SB0422,0,M.orygis
+ERR2514578,La3,United Kingdom,,G36782,Human,0,SB0422,0,M.orygis
+SRR6046725,La3,United Kingdom,,G36783,Human,0,SB0422,0,M.orygis
+ERR2514738,La3,United Kingdom,,G36784,Human,0,SB0422,0,M.orygis
+ERR2514957,La3,United Kingdom,,G36785,Human,0,SB0422,0,M.orygis
+SRR6046235,La3,United Kingdom,,G36786,Human,0,SB0422,0,M.orygis
+ERR2515051,La3,United Kingdom,,G36787,Human,0,New pattern,0,M.orygis
+ERR2512533,La3,United Kingdom,,G36788,Human,0,New pattern,0,M.orygis
+ERR2199741,La3,Germany,,G36789,Human,0,New pattern,0,M.orygis
+ERR2199829,La3,Germany,,G36790,Human,0,New pattern,0,M.orygis
+ERR2200114,La3,Germany,,G36791,Human,0,SB0422,0,M.orygis
+ERR2517102,La3,United Kingdom,,G36792,Human,0,SB0422,0,M.orygis
+ERR2517593,La3,Netherlands,,G36793,Human,0,New pattern,0,M.orygis
+SRR9157804,La3,India,,G49362,Cattle,1,SB0422,0,M.orygis
+SRR10251193,La3,India,,G49372,Cattle,1,New pattern,0,M.orygis
+SRR10251194,La3,India,,G49373,Cattle,1,New pattern,0,M.orygis
+SRR10251195,La3,India,,G49374,Deer,1,New pattern,0,M.orygis
+SRR10251196,La3,India,,G49375,Deer,1,New pattern,0,M.orygis
+SRR10251197,La3,India,,G49376,Cattle,1,SB0422,0,M.orygis
+SRR10251198,La3,India,,G49377,Deer,1,New pattern,0,M.orygis
+SRR10251199,La3,India,,G49378,Deer,1,New pattern,0,M.orygis
+SRR10251200,La3,India,,G49379,Cattle,1,SB0422,0,M.orygis
+SRR10251201,La3,India,,G49380,Cattle,1,New pattern,0,M.orygis
+SRR10251185,La3,India,,G49381,Cattle,1,SB0422,0,M.orygis
+SRR10251186,La3,India,,G49382,Cattle,1,New pattern,0,M.orygis
+SRR10251187,La3,India,,G49383,Cattle,1,New pattern,0,M.orygis
+SRR10251188,La3,India,,G49384,Cattle,1,New pattern,0,M.orygis
+SRR10251189,La3,India,,G49385,Cattle,1,SB0422,0,M.orygis
+SRR10251190,La3,India,,G49386,Cattle,1,SB0422,0,M.orygis
+SRR10251191,La3,India,,G49387,Cattle,1,SB0422,0,M.orygis
+SRR10251192,La3,India,,G49388,Cattle,1,SB0422,0,M.orygis
+SRR10251202,La3,India,,G49389,Deer,1,New pattern,0,M.orygis
+SRR10251203,La3,India,,G49390,Cattle,1,New pattern,0,M.orygis
+SRR10321143,La3,India,,G49401,Human,1,SB0422,0,M.orygis
+SRR10321149,La3,India,,G49402,Human,1,SB0422,0,M.orygis
+SRR10321128,La3,India,,G49403,Human,1,SB0422,0,M.orygis
+SRR10321130,La3,India,,G49404,Human,1,SB0422,0,M.orygis
+SRR10321134,La3,India,,G49405,Human,1,SB0422,0,M.orygis
+ERR161044,La1.1,Malawi,,G04143,Human,0,New pattern,1,M.bovis
+ERR181980,La1.1,Malawi,,G04145,Human,0,SB2190,1,M.bovis
+ERR212091,La1.1,Malawi,,G04147,Human,1,SB0425,1,M.bovis
+ERR2815611,La1.1,Germany,,G36800,antelope,0,SB1898,0,M.bovis
+SRR8065072,La1.1,Uganda,,G41493,Cattle,1,SB1405,1,M.bovis
+SRR8065075,La1.1,Uganda,,G41496,Cattle,1,SB1406,1,M.bovis
+SRR8065076,La1.1,Uganda,,G41497,Cattle,1,SB1405,1,M.bovis
+SRR8065077,La1.1,Uganda,,G41498,Cattle,1,SB1406,1,M.bovis
+SRR8065083,La1.1,Uganda,,G41504,Cattle,1,SB1405,1,M.bovis
+ERR3458083,La1.2,Ethiopia,,G00208,Cattle,1,SB0134,1,M.bovis
+SAMN03023955,La1.2,,,G01032,BCG,0,New pattern,1,M.bovis
+SRS897753,La1.2,United Kingdom,,G01033,BCG,0,SB0120,1,M.bovis
+SRS897754,La1.2,,,G01034,BCG,0,SB0120,1,M.bovis
+SAMN03023958,La1.2,,,G01035,BCG,0,SB0120,1,M.bovis
+SAMN03023953,La1.2,,,G01036,BCG,0,SB0120,1,M.bovis
+SAMN03023954,La1.2,,,G01037,BCG,0,SB0120,1,M.bovis
+SAMN03023952,La1.2,,,G01038,BCG,0,SB0120,1,M.bovis
+SAMN03023966,La1.2,,,G01039,BCG,0,SB0120,1,M.bovis
+SAMN03023960,La1.2,,,G01040,BCG,0,SB0120,1,M.bovis
+SAMN03023957,La1.2,,,G01041,BCG,0,SB0120,1,M.bovis
+SRS897671,La1.2,,,G01551,BCG,0,SB0120,1,M.bovis
+ERS2573046,La1.2,Switzerland,Switzerland,G02545,Human,0,SB0120,1,M.bovis
+SRR5486087,La1.2,Spain,,G36378,Cattle,1,SB0120,1,M.bovis
+SRR5486088,La1.2,Spain,,G36379,Cattle,1,SB0120,1,M.bovis
+SRR5486089,La1.2,Spain,,G36380,Cattle,1,SB0828,1,M.bovis
+SRR5486090,La1.2,Spain,,G36381,Cattle,1,SB0828,1,M.bovis
+SRR5486091,La1.2,Spain,,G36382,Cattle,1,SB0828,1,M.bovis
+SRR5486092,La1.2,Spain,,G36383,Cattle,1,SB0828,1,M.bovis
+SRR5486093,La1.2,Spain,,G36384,Cattle,1,SB0828,1,M.bovis
+SRR5486073,La1.2,Eritrea,,G36385,Cattle,1,SB0134,1,M.bovis
+SRR5486074,La1.2,Eritrea,,G36386,Cattle,1,SB0120,1,M.bovis
+SRR5486075,La1.2,Eritrea,,G36387,Cattle,1,SB0134,1,M.bovis
+SRR5486076,La1.2,Eritrea,,G36388,Cattle,1,SB0134,1,M.bovis
+SRR5486077,La1.2,Eritrea,,G36389,Cattle,1,SB0120,1,M.bovis
+SRR5486078,La1.2,Eritrea,,G36390,Cattle,1,SB0120,1,M.bovis
+SRR5486079,La1.2,Eritrea,,G36391,Cattle,1,SB0120,1,M.bovis
+SRR5486080,La1.2,Eritrea,,G36392,Cattle,1,SB0948,1,M.bovis
+SRR5486081,La1.2,Eritrea,,G36393,Cattle,1,SB0134,1,M.bovis
+SRR5486082,La1.2,Eritrea,,G36394,Cattle,1,SB0120,1,M.bovis
+SRR5486083,La1.2,Eritrea,,G36395,Cattle,1,SB0120,1,M.bovis
+SRR5486084,La1.2,Eritrea,,G36396,Cattle,1,SB0120,1,M.bovis
+SRR5486085,La1.2,Eritrea,,G36397,Cattle,1,SB0120,1,M.bovis
+SRR5486086,La1.2,Eritrea,,G36398,Cattle,1,SB0120,1,M.bovis
+SRR5486071,La1.2,Ethiopia,,G36399,Cattle,1,SB1517,1,M.bovis
+SRR5486072,La1.2,Ethiopia,,G36400,Cattle,1,SB1517,1,M.bovis
+ERR2815610,La1.2,,,G36801,BCG,0,SB0120,0,M.bovis
+ERR2815607,La1.2,Germany,,G36804,cattle,0,SB0120,0,M.bovis
+ERR2815602,La1.2,,,G36809,BCG,0,SB0120,0,M.bovis
+ERR2815506,La1.2,Germany,,G36898,cattle,0,SB0120,0,M.bovis
+SRR1792485,La1.2,USA,,G37692,Cattle,1,SB0120,1,M.bovis
+SRR5485729,La1.2,USA,,G37788,Cattle,1,SB0120,1,M.bovis
+SRR4117155;SRR4199188,La1.2,France,,G38455,wild boar,1,SB0120,1,M.bovis
+SRR7131117,La1.2,Italy,Italy,G38462,Human,0,SB0120,1,M.bovis
+SRR7131025,La1.2,Morocco,Morocco,G38463,Human,1,SB0120,1,M.bovis
+SRR3085259,La1.2,Tunisia,,G42039,Human,1,SB0120,1,M.bovis
+SRR7851302,La1.2,France,,G47575,cattle,1,SB0134,0,M.bovis
+SRR7851309,La1.2,France,,G47582,cattle,1,SB2680,0,M.bovis
+SRR7851312,La1.2,France,,G47585,cattle,1,SB0120,0,M.bovis
+SRR7851313,La1.2,France,,G47586,cattle,1,SB0948,0,M.bovis
+SRR7851316,La1.2,France,,G47589,cattle,1,SB0120,0,M.bovis
+SRR7851317,La1.2,France,,G47590,cattle,1,SB0040,0,M.bovis
+SRR7851321,La1.2,France,,G47594,cattle,1,SB0120,0,M.bovis
+SRR7851322,La1.2,France,,G47595,cattle,1,SB0120,0,M.bovis
+SRR7851323,La1.2,France,,G47596,cattle,1,SB0120,0,M.bovis
+SRR7851325,La1.2,France,,G47598,cattle,1,SB0927,0,M.bovis
+SRR7851326,La1.2,France,,G47599,cattle,1,SB0120,0,M.bovis
+SRR7851329,La1.2,France,,G47602,cattle,1,SB0134,0,M.bovis
+SRR7851330,La1.2,France,,G47603,cattle,1,SB0120,0,M.bovis
+SRR7851331,La1.2,France,,G47604,cattle,1,SB0120,0,M.bovis
+SRR7851334,La1.2,France,,G47607,cattle,1,New pattern,0,M.bovis
+SRR7851342,La1.2,France,,G47615,cattle,1,SB0120,0,M.bovis
+SRR7851344,La1.2,France,,G47617,cattle,1,SB0120,0,M.bovis
+SRR7851345,La1.2,France,,G47618,cattle,1,SB0120,0,M.bovis
+SRR7851346,La1.2,France,,G47619,cattle,1,SB0120,0,M.bovis
+SRR7851347,La1.2,France,,G47620,cattle,1,SB0822,0,M.bovis
+SRR7851348,La1.2,France,,G47621,cattle,1,New pattern,0,M.bovis
+SRR7851350,La1.2,France,,G47623,cattle,1,SB0120,0,M.bovis
+SRR7851352,La1.2,France,,G47625,cattle,1,SB0162,0,M.bovis
+SRR7851353,La1.2,France,,G47626,cattle,1,SB0120,0,M.bovis
+SRR7851355,La1.2,France,,G47628,cattle,1,SB0828,0,M.bovis
+SRR7851356,La1.2,France,,G47629,cattle,1,SB0120,0,M.bovis
+SRR7851359,La1.2,France,,G47632,cattle,1,New pattern,0,M.bovis
+SRR7851360,La1.2,France,,G47633,cattle,1,SB0120,0,M.bovis
+SRR7851365,La1.2,France,,G47638,cattle,1,SB0120,0,M.bovis
+SRR7851367,La1.2,France,,G47640,cattle,1,SB0120,0,M.bovis
+SRR7851368,La1.2,France,,G47641,cattle,1,New pattern,0,M.bovis
+SRR7851369,La1.2,France,,G47642,cattle,1,SB0120,0,M.bovis
+SRR7851371,La1.2,France,,G47644,cattle,1,New pattern,0,M.bovis
+SRR7851374,La1.2,France,,G47647,cattle,1,SB0120,0,M.bovis
+SRR7851375,La1.2,France,,G47648,cattle,1,SB0120,0,M.bovis
+SRR7851377,La1.2,France,,G47650,cattle,1,New pattern,0,M.bovis
+SRR7851381,La1.2,France,,G47654,cattle,1,SB0120,0,M.bovis
+SRR4117155,La1.2,France,,G47677,cattle,1,SB0120,0,M.bovis
+SRR4199188,La1.2,France,,G47678,cattle,1,SB0120,0,M.bovis
+SRR7851302,La1.2,France,,G49366,cattle,1,SB0134,0,M.bovis
+SRR10303300,La1.2,Kazakhstan,,G59919,Human,1,SB0120,0,M.bovis
+SRR10379919,La1.2,Moldova,,G59967,Human,1,SB0120,0,M.bovis
+SRR10430327,La1.2,Kazakhstan,,G60801,Human,1,SB0120,0,M.bovis
+ERR4769564,La1.2,Ethiopia,,G66536,update,0,SB0134,0,M.bovis
+ERR4769563,La1.2,Ethiopia,,G66537,update,0,SB0134,0,M.bovis
+ERR4769562,La1.2,Ethiopia,,G66538,update,0,SB0134,0,M.bovis
+ERR4772233,La1.2,Ethiopia,,G66546,update,0,SB0134,0,M.bovis
+ERR4772230,La1.2,Ethiopia,,G66711,update,1,SB0134,0,M.bovis
+ERR4772226,La1.2,Ethiopia,,G66715,update,1,SB0134,0,M.bovis
+ERR4772225,La1.2,Ethiopia,,G66716,update,1,SB0134,0,M.bovis
+ERR4772219,La1.2,Ethiopia,,G66722,update,1,SB0134,0,M.bovis
+ERR4772218,La1.2,Ethiopia,,G66723,update,1,SB0134,0,M.bovis
+ERR4772212,La1.2,Ethiopia,,G66729,update,1,SB0134,0,M.bovis
+ERR4772211,La1.2,Ethiopia,,G66730,update,1,SB0134,0,M.bovis
+ERR4772210,La1.2,Ethiopia,,G66731,update,1,SB0134,0,M.bovis
+ERR4772206,La1.2,Ethiopia,,G66734,update,1,SB0134,0,M.bovis
+ERR4772205,La1.2,Ethiopia,,G66735,update,1,SB0134,0,M.bovis
+ERR6358029,La1.2,Italy,,G66752,cattle,1,SB0841,0,M.bovis
+ERR6358030,La1.2,Italy,,G66753,cattle,1,SB0120,0,M.bovis
+ERR229952,La1.4,Russia,,G04148,,0,SB1919,1,M.bovis
+ERR551252,La1.4,Germany,,G13403,Human,0,SB0288,1,M.bovis
+ERR2199785,La1.4,Germany,,G36744,,0,SB0120,1,M.bovis
+ERR2200072,La1.4,Germany,,G36745,,0,SB0120,1,M.bovis
+ERR2517425,La1.4,Netherlands,,G36751,,0,SB0288,1,M.bovis
+ERR2815603,La1.4,Germany,,G36808,cat,0,SB0288,0,M.bovis
+ERR2851358,La1.4,Lebanon,Lebanon,G42133,Human,1,SB1215,1,M.bovis
+ERR550755,La1.7-unk4,Germany,,G13253,,0,SB0871,1,M.bovis
+ERR551009,La1.7-unk4,Germany,,G13329,Human,0,New pattern,1,M.bovis
+ERR551191,La1.7-unk4,Germany,,G13389,Human,0,SB0120,1,M.bovis
+ERR551917,La1.7-unk4,Germany,,G13622,Human,0,New pattern,1,M.bovis
+ERR2815613,La1.7-unk4,Germany,,G36798,cattle,0,SB0120,0,M.bovis
+ERR2815612,La1.7-unk4,Germany,,G36799,cattle,0,SB0120,0,M.bovis
+ERR2815536,La1.7-unk4,Germany,,G36872,cattle,0,SB0120,0,M.bovis
+ERR2815535,La1.7-unk4,Germany,,G36873,cattle,0,SB0120,0,M.bovis
+ERR2815520,La1.7-unk4,Germany,,G36886,cattle,0,SB0120,0,M.bovis
+ERR2815519,La1.7-unk4,Germany,,G36887,pig,0,SB0120,0,M.bovis
+ERR2815512,La1.7-unk4,Germany,,G36892,pig,0,SB0120,0,M.bovis
+ERR2815510,La1.7-unk4,Germany,,G36894,cattle,0,SB0120,0,M.bovis
+SRR7851362,La1.7-unk4,France,,G47635,cattle,1,SB0829,0,M.bovis
+SRR7851366,La1.7-unk4,France,,G47639,cattle,1,SB0120,0,M.bovis
+SRR7851373,La1.7-unk4,France,,G47646,cattle,1,SB0121,0,M.bovis
+ERR3445485,La1.7-unk4,Brazil,,G47656,cattle/Buffalo,1,SB0822,0,M.bovis
+ERR3445486,La1.7-unk4,Brazil,,G47657,cattle/Buffalo,1,SB0822,0,M.bovis
+ERR3445487,La1.7-unk4,Brazil,,G47658,cattle/Buffalo,1,SB0822,0,M.bovis
+ERR3445488,La1.7-unk4,Brazil,,G47659,cattle/Buffalo,1,SB0822,0,M.bovis
+ERR3445489,La1.7-unk4,Brazil,,G47660,cattle/Buffalo,1,SB0822,0,M.bovis
+ERR3445490,La1.7-unk4,Brazil,,G47661,cattle/Buffalo,1,SB0822,0,M.bovis
+ERR3445491,La1.7-unk4,Brazil,,G47662,cattle/Buffalo,1,SB0822,0,M.bovis
+ERR3445492,La1.7-unk4,Brazil,,G47663,cattle/Buffalo,1,SB0822,0,M.bovis
+ERR3445494,La1.7-unk4,Brazil,,G47665,cattle/Buffalo,1,SB0822,0,M.bovis
+ERR3445495,La1.7-unk4,Brazil,,G47666,cattle/Buffalo,1,SB0822,0,M.bovis
+ERR3445496,La1.7-unk4,Brazil,,G47667,cattle/Buffalo,1,SB0885,0,M.bovis
+ERR3445497,La1.7-unk4,Brazil,,G47668,cattle/Buffalo,1,SB0822,0,M.bovis
+ERR3445498,La1.7-unk4,Brazil,,G47669,cattle/Buffalo,1,SB0822,0,M.bovis
+ERR3445499,La1.7-unk4,Brazil,,G47670,cattle/Buffalo,1,SB0822,0,M.bovis
+ERR3445500,La1.7-unk4,Brazil,,G47671,cattle/Buffalo,1,SB0822,0,M.bovis
+ERR3906063,La1.7-unk4,Brazil,,G47676,cattle/Buffalo,1,SB0822,0,M.bovis
+ERR2512839,La1.7-unk5,United Kingdom,,G36713,Human,0,New pattern,1,M.bovis
+SRR8064853,La1.7-unk5,Zambia,,G41509,Cattle,1,SB0120,1,M.bovis
+SRR8064854,La1.7-unk5,Zambia,,G41510,Cattle,1,SB0120,1,M.bovis
+SRR8064855,La1.7-unk5,Zambia,,G41511,Cattle,1,SB0120,1,M.bovis
+SRR8064856,La1.7-unk5,Zambia,,G41512,Cattle,1,SB0120,1,M.bovis
+SRR8064857,La1.7-unk5,Zambia,,G41513,Cattle,1,SB0120,1,M.bovis
+SRR8064858,La1.7-unk5,Zambia,,G41514,Cattle,1,SB0120,1,M.bovis
+SRR8064859,La1.7-unk5,Zambia,,G41515,Cattle,1,SB0120,1,M.bovis
+SRR8064860,La1.7-unk5,Zambia,,G41516,Cattle,1,SB0120,1,M.bovis
+SRR1792161,La1.8-unk6,USA,,G37368,Cervid,1,SB1069,1,M.bovis
+SRR1792474,La1.8-unk6,USA,,G37681,Cervid,1,SB1069,1,M.bovis
+SRR1792479,La1.8-unk6,USA,,G37686,Cervid,1,SB1069,1,M.bovis
+SRR1792481,La1.8-unk6,USA,,G37688,Cervid,1,SB1069,1,M.bovis
+SRR1792482,La1.8-unk6,USA,,G37689,Cervid,1,SB1069,1,M.bovis
+SRR1792488,La1.8-unk6,USA,,G37695,Cervid,1,SB1069,1,M.bovis
+SRR1792493,La1.8-unk6,USA,,G37700,Cervid,1,SB1069,1,M.bovis
+ERR2512675,La1.8.2,United Kingdom,,G36708,Human,0,SB0901,1,M.bovis
+SRR6044919,La1.8.2,United Kingdom,,G36715,Human,0,SB0134,1,M.bovis
+ERR2516262,La1.8.2,Belgium,,G36742,,0,SB0134,1,M.bovis
+SRR5196685,La1.8.2,France,,G38456,Cattle,1,SB0821,1,M.bovis
+SRR7851304,La1.8.2,France,,G47577,Cattle,1,SB0134,0,M.bovis
+SRR7851306,La1.8.2,France,,G47579,Cattle,1,SB0825,0,M.bovis
+SRR7851307,La1.8.2,France,,G47580,Cattle,1,SB0821,0,M.bovis
+SRR7851311,La1.8.2,France,,G47584,Cattle,1,SB0818,0,M.bovis
+SRR7851315,La1.8.2,France,,G47588,Cattle,1,SB0089,0,M.bovis
+SRR7851324,La1.8.2,France,,G47597,Cattle,1,SB0826,0,M.bovis
+SRR7851327,La1.8.2,France,,G47600,Cattle,1,SB0134,0,M.bovis
+SRR7851328,La1.8.2,France,,G47601,pig,1,SB0840,0,M.bovis
+SRR7851333,La1.8.2,France,,G47606,Cattle,1,SB0040,0,M.bovis
+SRR7851336,La1.8.2,France,,G47609,Cattle,1,SB0134,0,M.bovis
+SRR7851337,La1.8.2,France,,G47610,Cattle,1,SB0885,0,M.bovis
+SRR7851338,La1.8.2,France,,G47611,Cattle,1,SB0134,0,M.bovis
+SRR7851339,La1.8.2,France,,G47612,Cattle,1,New pattern,0,M.bovis
+SRR7851340,La1.8.2,France,,G47613,Cattle,1,SB0928,0,M.bovis
+SRR7851354,La1.8.2,France,,G47627,Cattle,1,SB0818,0,M.bovis
+SRR7851361,La1.8.2,France,,G47634,Cattle,1,SB0128,0,M.bovis
+SRR7851370,La1.8.2,France,,G47643,Cattle,1,SB0823,0,M.bovis
+SRR7851372,La1.8.2,France,,G47645,Cattle,1,SB0089,0,M.bovis
+SRR7851376,La1.8.2,France,,G47649,Cattle,1,SB0120,0,M.bovis
+SRR7851378,La1.8.2,France,,G47651,Cattle,1,SB0824,0,M.bovis
+SRR7851379,La1.8.2,France,,G47652,Cattle,1,SB0827,0,M.bovis
+SRR5196685,La1.8.2,France,,G47679,Cattle,1,SB0821,0,M.bovis
+SRR7851306,La1.8.2,France,,G49363,Cattle,1,SB0825,0,M.bovis
+SRR7851304,La1.8.2,France,,G49364,Cattle,1,SB0134,0,M.bovis
+ERR4769570,La1.8.2,Mali,,G66530,Cattle,1,SB0991,0,M.bovis
+ERR4769569,La1.8.2,Mali,,G66531,Cattle,1,SB0134,0,M.bovis
+ERR3458082,La1.8-unk8,Ethiopia,,G00373,Cattle,1,SB1476,1,M.bovis
+ERR2212113,La1.5,Germany,,G66737,red deer,1,SB0989,0,M.bovis
+ERR2212114,La1.5,Germany,,G66738,red deer,1,SB0989,0,M.bovis
+ERR2212116,La1.5,Germany,,G66740,red deer,1,SB0989,0,M.bovis
+ERR2212117,La1.5,Germany,,G66741,red deer,1,SB0989,0,M.bovis
+ERR2212118,La1.5,Germany,,G66742,bison,0,SB0989,0,M.bovis
+ERR2212119,La1.5,Germany,,G66743,lynx,0,SB0989,0,M.bovis
+ERR2212120,La1.5,Germany,,G66744,fallow deer,1,SB0989,0,M.bovis
+ERR2212121,La1.5,Germany,,G66745,sika deer,0,SB0989,0,M.bovis
+ERR2212122,La1.5,Germany,,G66746,fallow deer,1,SB0989,0,M.bovis
+ERR2212123,La1.5,Germany,,G66747,fallow deer,1,SB0989,0,M.bovis
+ERR2212124,La1.5,Germany,,G66748,red deer,1,SB0989,0,M.bovis
+ERR2212125,La1.5,Germany,,G66749,lynx,0,SB0989,0,M.bovis
+SRR13888760,La2,Spain,,G67120,Wild boar,,SB1908,,M.caprae
+SRR13888783,La2,Spain,,G67121,Cattle,,SB0418,,M.caprae
+SRR13888762,La2,Spain,,G67122,Goat,,SB0157,,M.caprae
+SRR13888792,La2,Spain,,G67123,Goat,,SB0416,,M.caprae
+SRR13888769,La2,Spain,,G67124,Goat,,SB0415,,M.caprae
+SRR13888773,La2,Spain,,G67125,Goat,,SB1081,,M.caprae
+SRR13888784,La2,Spain,,G67126,isolated from Cattle,,SB0418,,M.caprae
+SRR13888788,La2,Spain,,G67127,Goat,,SB0157,,M.caprae
+SRR13888766,La2,Spain,,G67128,Goat,,SB0157,,M.caprae
+SRR13888795,La2,Spain,,G67129,isolated from Cattle,,SB1199,,M.caprae
+SRR13888781,La2,Spain,,G67130,isolated from Cattle,,SB0418,,M.caprae
+SRR13888794,La2,Spain,,G67131,Goat,,SB0157,,M.caprae
+SRR13888789,La2,Spain,,G67132,isolated from Cattle,,SB0418,,M.caprae
+SRR13888753,La2,Spain,,G67133,Goat,,SB0416,,M.caprae
+SRR13888763,La2,Spain,,G67134,Goat,,SB0157,,M.caprae
+SRR13888775,La2,Spain,,G67135,Goat,,SB0157,,M.caprae
+SRR13888757,La2,Spain,,G67136,Wild boar,,SB0415,,M.caprae
+SRR13888759,La2,Spain,,G67137,Wild boar,,SB0415,,M.caprae
+SRR13888774,La2,Spain,,G67138,Cattle,,SB0418,,M.caprae
+SRR13888786,La2,Spain,,G67139,Cattle,,SB0415,,M.caprae
+SRR13888790,La2,Spain,,G67140,Cattle,,SB0416,,M.caprae
+SRR13888797,La2,Spain,,G67141,Cattle,,SB1199,,M.caprae
+SRR13888772,La2,Spain,,G67142,Goat,,SB0415,,M.caprae
+SRR13888776,La2,Spain,,G67143,Cattle,,SB1902,,M.caprae
+SRR13888782,La2,Spain,,G67144,Goat,,SB0415,,M.caprae
+SRR13888764,La2,Spain,,G67145,Goat,,SB0157,,M.caprae
+SRR13888750,La2,Spain,,G67146,Cattle,,SB0418,,M.caprae
+SRR13888767,La2,Spain,,G67147,Wild boar,,SB0415,,M.caprae
+SRR13888765,La2,Spain,,G67148,Goat,,SB0416,,M.caprae
+SRR13888780,La2,Spain,,G67149,Cattle,,SB0415,,M.caprae
+SRR13888761,La2,Spain,,G67150,Wild boar,,SB0415,,M.caprae
+SRR13888770,La2,Spain,,G67151,Goat,,SB1081,,M.caprae
+SRR13888798,La2,Spain,,G67152,Cattle,,SB0416,,M.caprae
+SRR13888771,La2,Spain,,G67153,Goat,,SB1081,,M.caprae
+SRR13888785,La2,Spain,,G67154,Cattle,,SB1908,,M.caprae
+SRR13888749,La2,Spain,,G67155,Goat,,SB0416,,M.caprae
+SRR13888758,La2,Spain,,G67156,Wild boar,,SB0415,,M.caprae
+SRR13888777,La2,Spain,,G67157,Wild boar,,SB0157,,M.caprae
+SRR13888799,La2,Spain,,G67158,Cattle,,SB0415,,M.caprae
+SRR13888752,La2,Spain,,G67159,Cattle,,SB0416,,M.caprae
+SRR13888778,La2,Spain,,G67160,Cattle,,SB0418,,M.caprae
+SRR13888796,La2,Spain,,G67161,Cattle,,SB0157,,M.caprae
+SRR13888787,La2,Spain,,G67162,Cattle,,SB0157,,M.caprae
+SRR13888791,La2,Spain,,G67163,Goat,,SB0157,,M.caprae
+SRR13888755,La2,Spain,,G67164,Goat,,SB0416,,M.caprae
+SRR13888768,La2,Spain,,G67165,Wild boar,,SB0157,,M.caprae
+SRR13888756,La2,Spain,,G67166,Wild boar,,SB0415,,M.caprae
+SRR13888754,La2,Spain,,G67167,Cattle,,SB0416,,M.caprae
+SRR13888751,La2,Spain,,G67168,Goat,,SB0416,,M.caprae
+SRR13888779,La2,Spain,,G67169,Sheep,,SB0157,,M.caprae
+SRR13888793,La2,Spain,,G67170,Goat,,SB0415,,M.caprae

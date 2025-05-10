@@ -1698,3 +1698,17 @@ def make_mask_file(gb_file, outfile):
         for l in lines:
             fp.write("%s\n" %l)
     return lines
+
+def compare_results(c1, c2, sample=None):
+    """
+    Compare two runs of snipgenie.
+    """
+
+    x = c1[~c1.pos.isin(c2.pos)]
+    y = c2[~c2.pos.isin(c1.pos)]
+    print ('%s/%s sites not in second:' %(len(x),len(c1)))
+    print (x)
+    print ('-------------------------')
+    print ('%s/%s sites not in first:' %(len(y),len(c2)))
+    print (y)
+    return x,y

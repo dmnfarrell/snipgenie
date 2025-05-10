@@ -111,7 +111,8 @@ ggplottree <- function(tree, meta, cols=NULL, colors=NULL, cmaps=NULL, legends=N
                        layout="rectangular", offset=10,
                        tiplabel=FALSE, tipsize=3, tiplabelsize=5, tiplabelcol=NULL, tipalpha=NULL,
                        legend.fontsize=18, legend.position='left', legend.pointsize=8, size=.5,
-					   align=FALSE, tipoffset=0, scalebar=FALSE, scalebar.width=10) {
+					   align=FALSE, tipoffset=0, scalebar=FALSE, scalebar.width=10,
+                       gradient=FALSE) {
 
     #make legends list if not provided
     if (is.null(legends)) {
@@ -173,7 +174,7 @@ ggplottree <- function(tree, meta, cols=NULL, colors=NULL, cmaps=NULL, legends=N
             p2 <- p2 + new_scale_fill()
             p2 <- gheatmap(p2, df, offset=i*offset, width=.08,
                       colnames_angle=90, colnames_offset_y=.001, color=NA)
-            if (type == 'integer'){
+            if (type == 'integer' && gradient == TRUE) {
 				#p2 <- p2 + scale_fill_gradient(low='#F8F699',high='#06A958', na.value="white")
                 clrs = brewer.pal(9, cmap)
                 p2 <- p2 + scale_fill_gradientn(colors=clrs, na.value="white")
@@ -203,7 +204,7 @@ ggplottree <- function(tree, meta, cols=NULL, colors=NULL, cmaps=NULL, legends=N
 		}
     }
     if (scalebar) {
-        p2 <- p2 + geom_treescale(x=NULL, y=-2, width=scalebar.width, offset = NULL,
+        p2 <- p2 + geom_treescale(x=NULL, y=-3, width=scalebar.width, offset = NULL,
                        label='SNPs', color="black", linesize = 1.2, fontsize = 7)
     }
     return(p2)

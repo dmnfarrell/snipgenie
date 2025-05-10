@@ -86,7 +86,7 @@ defaults = {'threads':4, 'labelsep':'_', 'labelindex':0,
             'filters': default_filter, 'proximity': 10, 'mask': None,
             'uninformative_sites': False,
             'reference': None, 'gb_file': None, 'overwrite':False,
-            'omit_samples': [], 'get_stats':False,
+            'subset': None, 'get_stats':False,
             'old_method': False,
             'buildtree':False, 'bootstraps':100}
 
@@ -409,9 +409,8 @@ def align_reads(df, idx, outdir='mapped', callback=None, aligner='bwa', platform
             else:
                 file2 = None
 
-        out = os.path.join(outdir,name+'.bam')
-        print (name)
-
+        out = os.path.join(outdir,str(name)+'.bam')
+        #print (name)
         if aligner == 'bwa':
             aligners.bwa_align(file1, file2, idx=idx, out=out, unmapped=unmapped, **kwargs)
         elif aligner == 'bowtie':
@@ -753,7 +752,7 @@ def variant_calling(samples, ref, outpath, filters=None, proximity=10, mask=None
         name = r['sample']
         #print (name)
         path = os.path.join(vcfoutpath, name)
-        #print (r.bam_file)
+        #print (path, os.path.exists(path))
         snpfile,indfile = run_file(r.bam_file, ref, path, threads=threads)
         outfiles.append(snpfile)
         indelfiles.append(indfile)
@@ -770,11 +769,11 @@ def variant_calling(samples, ref, outpath, filters=None, proximity=10, mask=None
     subprocess.check_output(cmd, shell=True)
     relabel_vcfheader(merged, sample_file)
 
-    #filter calls
+    #filter snp calls
     if filters == None:
         filters = default_filter
     if filters != '':
-        filtered = os.path.join(outpath,'filtered.vcf.gz')
+        filtered = os.path.join(outpath,'snps.vcf.gz')
         cmd = '{bc} filter -i "{f}" -o {o} -O z {i}'.format(bc=bcftoolscmd,i=merged,
                                                             o=filtered,f=filters)
         print (cmd)
@@ -1092,6 +1091,8 @@ class WorkFlow(object):
         if self.manifest != None:
             print ('using manifest file for samples')
             df = pd.read_csv(self.manifest)
+            #ensure sample names are strings
+            df['sample'] = df['sample'].astype(str)
         else:
             self.filenames = get_files_from_paths(self.input)
             #get files from input folder(s)
@@ -1246,7 +1247,7 @@ class WorkFlow(object):
         if self.buildtree == True:
             print ('building tree')
             print ('-------------')
-            if len(bam_files) <= 2:
+            if len(samples) <= 2:
                 print ('Cannot build tree, too few samples.')
                 return
             if platform.system() == 'Windows':
@@ -1264,26 +1265,37 @@ class WorkFlow(object):
 
         return
 
-def test_run(path='test_run'):
-    """Test run"""
+def test_run(path='test_run', sample_size='small', simulate=True, overwrite=True, threads=4):
+    """Test run.
+    Args:
+        path: destination path for simulated data
+        simulate: simulate data even if already present
+        overwrite: overwrite previous outputs - re-does alignments
+    """
 
     from . import simulate
-    os.makedirs(path,exist_ok=True)
     ref = sarscov2_genome
     newick = os.path.join(module_path, 'testing', 'sim.newick')
-    fasta_file = os.path.join(module_path,'testing','phastsim_output1.fasta')
-    #if not os.path.exists(fasta_file):
-        #print ('running phastsim..')
-        #simulate.run_phastsim(path, ref, newick)
+    if sample_size == 'small':
+        fasta_file = os.path.join(module_path,'testing','phastsim_sarscov2_small.fasta')
+    elif sample_size == 'medium':
+        fasta_file = os.path.join(module_path,'testing','phastsim_sarscov2_medium.fasta')
+    elif sample_size == 'large':
+        fasta_file = os.path.join(module_path,'testing','phastsim_sarscov2_large.fasta')
+    if not os.path.exists(fasta_file):
+        return
     print (f'found {fasta_file}')
-    print ('simulating fastq files..')
-    simulate.simulate_paired_end_reads(fasta_file, 150, 1e5, path)
-
+    print (path, os.path.exists(path))
+    if simulate == True or not os.path.exists(path):
+        os.makedirs(path,exist_ok=True)
+        print ('simulating fastq files..')
+        simulate.simulate_paired_end_reads(fasta_file, 150, 1e5, path)
+    start = time.time()
     out = 'test_run_results'
-    args = {'threads':4, 'outdir': out, 'input': path,
+    args = {'threads':threads, 'outdir': out, 'input': path,
             'species':'Sars-Cov-2',
             'aligner':'bwa', 'filters':'QUAL>=40 && DP4>=4',
-            'reference': None, 'overwrite':True}
+            'reference': None, 'overwrite': overwrite}
     W = WorkFlow(**args)
     st = W.setup()
     if st == True:
@@ -1292,7 +1304,9 @@ def test_run(path='test_run'):
     meta = simulate.create_meta_data(samples['sample'])
     meta.to_csv(os.path.join(out,'metadata.csv'))
     print (f'test run results in {out}. you can also open the results folder in the GUI.')
-    return
+    tt = time.time()-start
+    print (f'took {tt} seconds')
+    return tt
 
 def main():
     "Run the application"
@@ -1360,7 +1374,7 @@ def main():
     check_platform()
 
     if args['test'] == True:
-        test_run()    
+        test_run()
     elif args['version'] == True:
         from . import __version__
         print ('snipgenie version %s' %__version__)

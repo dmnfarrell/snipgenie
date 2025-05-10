@@ -33,13 +33,12 @@ module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
 config_path = os.path.join(home,'.config','snipgenie')
 bin_path = os.path.join(config_path, 'binaries')
 
-def run_phastsim(path, ref, newick):
+def run_phastsim(newick, ref, outpath='phastsim_output/'):
     """Run phastsim """
 
     refseq = SeqIO.read(ref, 'fasta')
-    scale = (10/len(refseq))
-    outpath = os.path.join(path, 'phastsim_output')
-    cmd = 'phastSim --outpath {o} --outputFile 1 --seed 1 --createFasta' \
+    scale = (10/len(refseq))   
+    cmd = 'phastSim --outpath {o} --seed 1 --createFasta' \
              ' --createPhylip --treeFile {n}' \
              ' --scale {s} --invariable .1 --alpha 1.0 --omegaAlpha 1.0' \
              ' --reference {r}'.format(o=outpath,s=scale,r=ref,n=newick)

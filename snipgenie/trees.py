@@ -59,7 +59,7 @@ def get_colormap(values):
 def run_fasttree(infile, outfile, bootstraps=100):
     """Run fasttree on fasta alignment"""
 
-    fc = tools.get_cmd('fasttreeMP')    
+    fc = tools.get_cmd('fasttreeMP')
     cmd = '{fc} -nt {i} > {o}'.format(fc=fc,b=bootstraps,i=infile,o=outfile)
     try:
         tmp = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
@@ -67,7 +67,7 @@ def run_fasttree(infile, outfile, bootstraps=100):
         print(e)
     return
 
-def run_RAXML(infile, name='variants', threads=8, bootstraps=100, outpath='.'):
+def run_RAXML(infile, name='variants', threads=8, bootstraps=100, model='GTRCAT', outpath='.'):
     """Run Raxml pthreads.
         Args:
             infile: sequence alignment fasta file
@@ -78,8 +78,7 @@ def run_RAXML(infile, name='variants', threads=8, bootstraps=100, outpath='.'):
     outpath = os.path.abspath(outpath)
     if not os.path.exists(outpath):
         os.makedirs(outpath, exist_ok=True)
-
-    model = 'GTRCAT'
+   
     s1 = random.randint(0,1e8)
     s2 = random.randint(0,1e8)
 
@@ -101,17 +100,20 @@ def run_RAXML(infile, name='variants', threads=8, bootstraps=100, outpath='.'):
     out = os.path.join(outpath,'RAxML_bipartitions.variants')
     return out
 
-def convert_branch_lengths(treefile, outfile, snps):
+def convert_branch_lengths(treefile, outfile, p):
     """
-    Convert the branch lengths of a tree to scale to the original number
-    of snps in the alignment
+    Convert the branch lengths of a tree to scale snps per site
+    to the original number of snps in the alignment.
+    Args:
+        treefile: newick tree filename
+        outfile: new tree filename
+        p: scaling factor i.e. number of positions in alignment
     """
     tree = Phylo.read(treefile, "newick")
     for parent in tree.find_clades(terminal=False, order="level"):
             for child in parent.clades:
                 if child.branch_length:
-                    child.branch_length *= snps
-    #Phylo.draw(tree)
+                    child.branch_length *= p
     Phylo.write(tree, outfile, "newick")
     return
 

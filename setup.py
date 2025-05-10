@@ -11,6 +11,7 @@ setup(
     long_description = long_description,
     url='https://github.com/dmnfarrell/snipgenie',
     license='GPL v3',
+    license_files = ('LICENSE.txt',),
     author = 'Damien Farrell',
     author_email = 'farrell.damien@gmail.com',
     packages = ['snipgenie'],

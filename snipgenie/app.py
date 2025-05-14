@@ -524,7 +524,7 @@ def mpileup_parallel_old(bam_files, ref, outpath, threads=4, callback=None, temp
         os.remove(f)
     return rawbcf
 
-def mpileup_parallel(bam_file, ref, rawbcf, threads=4, callback=None, tempdir=None):
+def mpileup_parallel(bam_file, ref, rawbcf, threads=4, callback=None, tempdir=None, show_cmd=False):
     """Run mpileup in over multiple regions with GNU parallel on linux or rush on Windows
       Separate bcf files are then joined together.
       Assumes alignment to a bacterial reference with a single chromosome.
@@ -558,22 +558,15 @@ def mpileup_parallel(bam_file, ref, rawbcf, threads=4, callback=None, tempdir=No
     #print (regstr)
     filesstr = ' '.join(outfiles)
     bcftoolscmd = tools.get_cmd('bcftools')
-
-    if platform.system() == 'Windows':
-        rushcmd = tools.get_cmd('rush')
-        cmd = 'echo {reg} | {rc} -D " " "{bc} mpileup -r {{}} -f {r} -a {a} --max-depth 500 --min-MQ 60 {b} -o {p}/{{@[^:]*$}}.bcf"'\
-                .format(rc=rushcmd,bc=bcftoolscmd,reg=regstr,r=ref,b=bam_file,a=annotatestr,p=tempdir)
-    else:
-        cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b --max-depth 500 --min-MQ 60 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
+    cmd = 'parallel bcftools mpileup -r {{1}} -a {a} -O b --max-depth 500 --min-MQ 60 -o {{2}} -f {r} {b} ::: {reg} :::+ {o}'\
                 .format(r=ref, reg=regstr, b=bam_file, o=filesstr, a=annotatestr)
-    #print (cmd)
-    #if callback != None:
-    #    callback(cmd)
+
     subprocess.check_output(cmd, shell=True, stderr=subprocess.PIPE)
     #concat the separate files
     cmd = '{bc} concat {i} --threads {t} -O b -o {o}'.format(bc=bcftoolscmd,i=' '.join(outfiles),o=rawbcf,t=threads)
-    print (cmd)
-    subprocess.check_output(cmd, shell=True)
+    if show_cmd == True:
+        print (cmd)
+    subprocess.check_output(cmd, shell=True, stderr=subprocess.PIPE)
     #remove temp files
     for f in outfiles:
         os.remove(f)
@@ -706,7 +699,7 @@ def run_file(bam_file, ref, outpath, overwrite=False, threads=4):
     #assumes other files are there and returns - improve this
     if os.path.exists(vcfout) and overwrite == False:
         return snpsout, indelsout
-    tools.bcftools_call(rawbcf, vcfout, show_cmd=True)
+    tools.bcftools_call(rawbcf, vcfout, show_cmd=False)
 
     #print ('splitting snps and indels..')
     cmd = '{bc} view -v snps -o {o} -O b {i}'.format(bc=bcftoolscmd,o=snpsout,i=vcfout)
@@ -730,6 +723,18 @@ def write_filelist(files, filename):
     df.to_csv(filename, index=False, header=False)
     return
 
+def smart_tqdm(iterable, **kwargs):
+    """check if we are in notebook"""
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            from tqdm.notebook import tqdm
+        else:
+            from tqdm import tqdm
+    except NameError:
+        from tqdm import tqdm
+    return tqdm(iterable, **kwargs)
+
 def variant_calling(samples, ref, outpath, filters=None, proximity=10, mask=None,
                     gff_file=None, overwrite=False, threads=4, **kwargs):
     """
@@ -746,8 +751,8 @@ def variant_calling(samples, ref, outpath, filters=None, proximity=10, mask=None
 
     outfiles = []
     indelfiles = []
-    from tqdm import tqdm
-    for i, r in tqdm(samples.iterrows(), total=len(samples)):
+    #from tqdm import tqdm
+    for i, r in smart_tqdm(samples.iterrows(), total=len(samples)):
     #for i,r in samples.iterrows():
         name = r['sample']
         #print (name)
@@ -1265,7 +1270,8 @@ class WorkFlow(object):
 
         return
 
-def test_run(path='test_run', sample_size='small', simulate=True, overwrite=True, threads=4):
+def test_run(path='test_run', sample_size='small', simulate=True,
+             overwrite=True, aligner='bwa', out='test_run_results', threads=4):
     """Test run.
     Args:
         path: destination path for simulated data
@@ -1285,16 +1291,18 @@ def test_run(path='test_run', sample_size='small', simulate=True, overwrite=True
     if not os.path.exists(fasta_file):
         return
     print (f'found {fasta_file}')
-    print (path, os.path.exists(path))
+    #clear output folder
+    if os.path.exists(out):
+        shutil.rmtree(out)
     if simulate == True or not os.path.exists(path):
         os.makedirs(path,exist_ok=True)
         print ('simulating fastq files..')
         simulate.simulate_paired_end_reads(fasta_file, 150, 1e5, path)
     start = time.time()
-    out = 'test_run_results'
+
     args = {'threads':threads, 'outdir': out, 'input': path,
             'species':'Sars-Cov-2',
-            'aligner':'bwa', 'filters':'QUAL>=40 && DP4>=4',
+            'aligner':aligner, 'filters':'QUAL>=40 && DP4>=4',
             'reference': None, 'overwrite': overwrite}
     W = WorkFlow(**args)
     st = W.setup()

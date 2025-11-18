@@ -1713,6 +1713,29 @@ class App(QMainWindow):
         failed.to_csv(os.path.join(self.outputdir,'failed.csv'))
         return
 
+    def add_assembly(self):
+        """Add externally assembled file to the sample"""
+
+        df = self.fastq_table.model.df
+        row = self.fastq_table.getSelectedRows()[0]
+        idx = df.index[row]
+        #get file and copy it to assembly folder
+        filter = "Fasta Files(*.fa *.fna *.fasta)"
+        filename, _ = QFileDialog.getOpenFileName(self, 'Open File', './',
+                                    filter="%s;;All Files(*.*)" %filter)
+        if not filename:
+            return
+        path = os.path.join(self.outputdir, 'assembled')
+        os.makedirs(path,exist_ok=True)
+        #copy file
+        dest = os.path.join(path, os.path.basename(filename))
+        shutil.copy(filename, dest)
+        df.loc[idx, 'assembly'] = filename
+        lengths = tools.get_sequence_lengths(filename)
+        df.loc[idx,'N50'] = tools.calculate_N50(lengths)
+        self.fastq_table.refresh()
+        return
+
     def get_consensus_sequences(self):
         """Consensus sequences for all samples"""
 

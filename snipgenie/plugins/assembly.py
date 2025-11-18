@@ -34,31 +34,6 @@ index_path = os.path.join(app.config_path, 'contam')
 if not os.path.exists(index_path):
     os.makedirs(index_path, exist_ok=True)
 
-def calculate_N50(list_of_lengths):
-    """Calculate N50 for a sequence of numbers.
-    Args:
-        list_of_lengths (list): List of numbers.
-    Returns:
-        float: N50 value.
-    """
-    tmp = []
-    for tmp_number in set(list_of_lengths):
-            tmp += [tmp_number] * list_of_lengths.count(tmp_number) * tmp_number
-    tmp.sort()
-    if (len(tmp) % 2) == 0:
-        median = (tmp[int(len(tmp) / 2) - 1] + tmp[int(len(tmp) / 2)]) / 2
-    else:
-        median = tmp[int(len(tmp) / 2)]
-    return median
-
-def get_sequence_lengths(fasta_file):
-    """Get sequence lengths from fasta"""
-
-    lengths = []
-    for record in SeqIO.parse(fasta_file, "fasta"):
-        lengths.append(len(record.seq))
-    return lengths
-
 class AssemblyPlugin(Plugin):
     """Genome assembly plugin for SNiPgenie"""
 
@@ -114,8 +89,8 @@ class AssemblyPlugin(Plugin):
                 else:
                     print (f'assembly exists in {outfile}, remove this file to recreate')
                 df.loc[i,'assembly'] = outfile
-                lengths = get_sequence_lengths(outfile)
-                df.loc[i,'N50'] = calculate_N50(lengths)
+                lengths = tools.get_sequence_lengths(outfile)
+                df.loc[i,'N50'] = tools.calculate_N50(lengths)
             return
 
         self.parent.run_threaded_process(func, self.parent.processing_completed)

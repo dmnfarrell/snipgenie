@@ -153,6 +153,9 @@ ggplottree <- function(tree, meta, cols=NULL, colors=NULL, cmaps=NULL, legends=N
             scale_fill_manual(values=clrs, na.value="black",
                 guide = guide_legend(override.aes = list(size=legend.pointsize)))
     p2 <- p
+    current_offset <- max(p2$data$x)/100
+    heatmap_width <- .1
+    constant_gap <- 50
     if (length(cols)>1){
         for (i in 2:length(cols)){
             col <- cols[i]
@@ -172,8 +175,13 @@ ggplottree <- function(tree, meta, cols=NULL, colors=NULL, cmaps=NULL, legends=N
                 clrs <- get_color_mapping(df, col, cmap)
             }
             p2 <- p2 + new_scale_fill()
-            p2 <- gheatmap(p2, df, offset=i*offset, width=.08,
+            if (i==1){
+                current_offset <- current_offset + constant_gap
+            }
+            print(current_offset)
+            p2 <- gheatmap(p2, df, offset=i*offset, width=heatmap_width,
                       colnames_angle=90, colnames_offset_y=.001, color=NA)
+            current_offset <- current_offset + heatmap_width + constant_gap
             if (type == 'integer' && gradient == TRUE) {
 				#p2 <- p2 + scale_fill_gradient(low='#F8F699',high='#06A958', na.value="white")
                 clrs = brewer.pal(9, cmap)
@@ -204,7 +212,7 @@ ggplottree <- function(tree, meta, cols=NULL, colors=NULL, cmaps=NULL, legends=N
 		}
     }
     if (scalebar) {
-        p2 <- p2 + geom_treescale(x=NULL, y=-3, width=scalebar.width, offset = NULL,
+        p2 <- p2 + geom_treescale(x=NULL, y=-10, width=scalebar.width, offset = NULL,
                        label='SNPs', color="black", linesize = 1.2, fontsize = 7)
     }
     return(p2)

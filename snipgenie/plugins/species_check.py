@@ -49,9 +49,10 @@ def get_blast_coverage(bl, fasta):
     bl['perc_cov'] = bl.apply(lambda x: round(x.length/x.sslen*100,2),1)
     return bl
 
-def blast_16S(filename, database='16S_ncbi.fa', hits=100, pident=99.5):
+def blast_16S_old(filename, database='16S_ncbi.fa', hits=100, pident=99.5):
+    """Blast a fasta assembly to 16S sequences"""
 
-    bl=tools.blast_fasta(database, filename, maxseqs=hits)
+    bl = tools.blast_fasta(database, filename, maxseqs=hits)
     bl = get_blast_coverage(bl, database)
     bl = bl.drop_duplicates('sseqid')
     if '16S_ncbi' in database:
@@ -61,6 +62,59 @@ def blast_16S(filename, database='16S_ncbi.fa', hits=100, pident=99.5):
     bl['genus'] = bl.species.apply(lambda x: x.split(' ')[0])
     cols = ['sseqid','sslen','length','perc_cov','pident','stitle','species']
     bl = bl[(bl.pident>=pident) & (bl.perc_cov>=80)].sort_values('pident',ascending=False)
+    return bl
+
+def get_blast_coverage_qlen(bl, fasta_query):
+    """
+    Get alignment coverage of blast results, calculating coverage
+    as the alignment length ('length') divided by the query length ('qlen').
+    The 'fasta_query' must contain the 16S sequences used as the query.
+    """
+    # Load the query 16S sequence lengths
+    df = tools.fasta_to_dataframe(fasta_query)
+    df = df.rename(columns={'length': 'qlen'})
+    # Merge the BLAST results with the query sequence lengths
+    bl = bl.merge(df, left_on='qseqid', right_on='name', how='left')
+    # Calculate percent coverage (alignment length / query length)
+    bl['perc_cov'] = bl.apply(lambda x: round(x.length / x.qlen * 100, 2), axis=1)
+    return bl
+
+def blast_16S(contig_file, reference, hits=100, pident=99.5):
+    """
+    Blast 16S reference sequences (query) to contig assembly (target).
+
+    contig_file: The FASTA file of your assembled contigs (the target/subject DB).
+    reference: The FASTA file of the 16S reference sequences (the query).
+    """
+
+    # --- 1. BLAST: Swap Query and Target ---
+    # The 16S reference sequences are the query, the contigs are the database.
+    bl = tools.blast_fasta(contig_file, reference, maxseqs=hits)
+    # --- 2. Coverage Calculation: Use 16S length (Qlen) ---
+    # Calculate coverage based on the 16S reference length (qlen).
+    bl = get_blast_coverage_qlen(bl, reference)
+    # --- 3. Filtering and Annotation ---
+    # The gene is now identified by the query sequence ID (qseqid).
+    # We keep the best match for each unique 16S sequence/strain.
+    bl = bl.drop_duplicates('qseqid')
+
+    # Parse taxonomic information (assuming 'stitle' still comes from the 16S ref file)
+    if '16S_ncbi' in reference:
+        # Assuming stitle structure is consistent for NCBI 16S
+        #bl['species'] = bl.qseqid.apply(lambda x: ' '.join(x.split()[1:3]))
+        bl['species'] = bl.description.apply(lambda x: ' '.join(x.split()[1:3]))
+    elif 'SILVA' in reference:
+        # Assuming stitle structure is consistent for SILVA
+        bl['species'] = bl.description.apply(lambda x: x.split(';')[-1])
+
+    bl['genus'] = bl.species.apply(lambda x: x.split(' ')[0])
+    # Filter for high identity and high coverage of the 16S gene
+    # perc_cov >= 80 means the alignment covers at least 80% of the 16S reference.
+    bl = bl[(bl.pident >= pident) & (bl.perc_cov >= 80)].sort_values('pident', ascending=False)
+    # Rename sseqid (contig ID) for clarity in the output
+    bl = bl.rename(columns={'sseqid': 'contig_id'})
+    cols = ['species', 'genus', 'contig_id', 'qlen', 'length', 'perc_cov', 'pident', 'stitle']
+    #print (bl.columns)
     return bl
 
 def extract_sequences_by_ids(input_fasta, output_fasta, ids_to_extract):
@@ -136,7 +190,7 @@ class SpeciesCheckerPlugin(Plugin):
         import urllib.request
         urllib.request.urlretrieve(url, infile)
         tools.gunzip(infile, ref)
-        tools.make_blast_database(ref)
+        #tools.make_blast_database(ref)
         return
 
     def set_database(self):
@@ -152,7 +206,7 @@ class SpeciesCheckerPlugin(Plugin):
         return
 
     def create_widgets(self):
-        """Create widgets if GUI plugin"""
+        """Create widgets if GUI 'species', 'genus' plugin"""
 
         self.main = QWidget()
         layout = self.layout = QVBoxLayout()
@@ -240,7 +294,11 @@ class SpeciesCheckerPlugin(Plugin):
                     continue
                 if sample in self.results and overwrite == False:
                     continue
+                print (f'blasting sample {sample} to 16S..')
+                tools.make_blast_database(r.assembly)
                 bl = blast_16S(r.assembly, self.ref_file, pident=pident, hits=hits)
+                #remove temp files
+
                 #print (bl)
                 if len(bl) == 0:
                     print ('no blast hits found!')
@@ -255,17 +313,17 @@ class SpeciesCheckerPlugin(Plugin):
         return
 
     def get_results(self):
-        """Reuslts from blast tables"""
+        """Results from blast tables"""
 
         print ('getting results..')
-        cols = ['sseqid','perc_cov','pident','stitle','species']#,'genus']
+        cols = ['species','perc_cov','pident','stitle']#,'genus']
         res=[]
         for sample in self.results:
             bl = self.results[sample]
-            x=bl.iloc[0][cols]
+            x = bl.iloc[0][cols]
             x.name = sample
             res.append(x)
-
+            #print (res)
         df = pd.DataFrame(res)
         self.result_table.setDataFrame(df)
         return
@@ -275,7 +333,7 @@ class SpeciesCheckerPlugin(Plugin):
 
         targetseq = SeqRecord(Seq(bl.iloc[0].qseq), id=name)
         m=bl[:50]
-        names = list(m.sseqid)
+        names = list(m.qseqid)
         #extract relevant sequences from ref fasta
         extract_sequences_by_ids(self.ref_file, 'temp.fa', names)
         #add target sequence to tree also
@@ -290,7 +348,7 @@ class SpeciesCheckerPlugin(Plugin):
         sample = idx[0]
         if sample not in self.results:
             return
-        cols = ['species','sseqid','perc_cov','pident','length','evalue','bitscore','stitle']
+        cols = ['species','qseqid','perc_cov','pident','length','evalue','bitscore','stitle']
         bl = self.results[sample]
         #print (bl.columns)
         w = QDialog(self.main)
@@ -305,7 +363,7 @@ class SpeciesCheckerPlugin(Plugin):
 
         treefile, m = self.get_tree(bl, sample)
         tv = widgets.TreeViewer(w)
-        tv.draw(treefile, df=m.set_index('sseqid'), tiplabelcol='species')
+        tv.draw(treefile, df=m.set_index('qseqid'), tiplabelcol='species')
         idx = tabs.addTab(tv, 'Tree')
 
         sv = widgets.SequencesViewer(w)

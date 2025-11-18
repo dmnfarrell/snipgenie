@@ -852,6 +852,7 @@ class SampleTable(DataFrameTable):
         removeAction = menu.addAction("Remove Selected")
         removebamAction = menu.addAction("Delete Bam Files")
         movefastqAction = menu.addAction("Move Fastq Files")
+        addassemblyAction = menu.addAction("Add Assembly")
         copyAction = menu.addAction("Copy")
         exportAction = menu.addAction("Export Table")
         action = menu.exec_(self.mapToGlobal(event.pos()))
@@ -881,6 +882,8 @@ class SampleTable(DataFrameTable):
             self.deleteBamFiles(rows)
         elif action == movefastqAction:
             self.app.movefastq()
+        elif action == addassemblyAction:
+            self.app.add_assembly()
         elif action == copyAction:
             self.copy()
         elif action == exportAction:

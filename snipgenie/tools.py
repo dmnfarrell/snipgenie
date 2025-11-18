@@ -1712,3 +1712,28 @@ def compare_results(c1, c2, sample=None):
     print ('%s/%s sites not in first:' %(len(y),len(c2)))
     print (y)
     return x,y
+
+def calculate_N50(list_of_lengths):
+    """Calculate N50 for a sequence of numbers. For assemblies.
+    Args:
+        list_of_lengths (list): List of numbers.
+    Returns:
+        float: N50 value.
+    """
+    tmp = []
+    for tmp_number in set(list_of_lengths):
+            tmp += [tmp_number] * list_of_lengths.count(tmp_number) * tmp_number
+    tmp.sort()
+    if (len(tmp) % 2) == 0:
+        median = (tmp[int(len(tmp) / 2) - 1] + tmp[int(len(tmp) / 2)]) / 2
+    else:
+        median = tmp[int(len(tmp) / 2)]
+    return median
+
+def get_sequence_lengths(fasta_file):
+    """Get sequence lengths from fasta"""
+
+    lengths = []
+    for record in SeqIO.parse(fasta_file, "fasta"):
+        lengths.append(len(record.seq))
+    return lengths

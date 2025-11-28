@@ -670,6 +670,28 @@ def blast_sequences(database, seqs, labels=None, **kwargs):
     df = blast_fasta(database, 'tempseq.fa', **kwargs)
     return df
 
+def run_prokka(filename, path='.', trusted='', threads=4):
+    """Run prokka on a fasta file.
+        Args:
+            outdir: results folder
+            trusted: trusted proteins (gbk or fasta protein file)
+    """
+
+    name = os.path.splitext(os.path.basename(filename))[0]
+    outdir = os.path.join(path, name)
+    if trusted != '' and os.path.exists(trusted):
+        cmd = f'/local/prokka/bin/prokka --proteins {trusted} \
+            --outdir {outdir} {filename} --prefix {name} --centre X --compliant --cpus {threads}'
+    else:
+        cmd = f'/local/prokka/bin/prokka \
+            --outdir {outdir} {filename} --prefix {name} --centre X --compliant --cpus {threads}'
+    if not os.path.exists(outdir):
+        print (cmd)
+        subprocess.check_output(cmd, shell=True)
+    else:
+        print ('folder exists')
+    return
+
 def run_kraken(file1, file2='', dbname='STANDARD16', threads=4, outfile='krakenreport.txt'):
     """
     Run kraken2 on single/paired end fastq files. Requires that the dbname is set in
@@ -677,27 +699,34 @@ def run_kraken(file1, file2='', dbname='STANDARD16', threads=4, outfile='krakenr
     """
 
     os.environ['KRAKEN2_DB_PATH'] = '/local/kraken2'
-    cmd = 'kraken2 -db {db} --report {o} --threads {t} --confidence 0.1 --paired {f1} {f2} > kraken.out'\
+    if isinstance(file2, str) and os.path.exists(file2):
+        #paired end
+        cmd = 'kraken2 -db {db} --report {o} --threads {t} --confidence 0.1 --paired {f1} {f2} > kraken.out'\
             .format(f1=file1,f2=file2,t=threads,db=dbname,o=outfile)
+    else:
+        cmd = 'kraken2 -db {db} --report {o} --threads {t} --confidence 0.1 {f1} > kraken.out'\
+            .format(f1=file1,t=threads,db=dbname,o=outfile)
     print (cmd)
     subprocess.check_output(cmd, shell=True)
     rep=pd.read_csv('krakenreport.txt',sep='\t',names=['perc_frag','n_frags_root','n_frags','rank_code','taxid','name'])
     rep['name'] = rep.name.str.lstrip()
     return rep
 
-def kraken_run_samples(samples, dbname, found=pd.DataFrame({'sample':[]})):
+def kraken_run_samples(samples, dbname='STANDARD16', threads=4, found=pd.DataFrame({'sample':[]})):
     """
     Run a set of samples with kraken.
     """
 
     res=[]
+    if not 'filename2' in samples.columns:
+        samples['filename2'] = pd.Series()
     for i,r in samples.iterrows():
         name = r['sample']
         print (name)
         if name in list(found['sample']):
             continue
         try:
-            rep = run_kraken(r.filename1,r.filename2, threads=12, dbname='STANDARD16')
+            rep = run_kraken(r.filename1,r.filename2, threads=threads, dbname=dbname)
         except Exception as e:
             print (e)
             pass

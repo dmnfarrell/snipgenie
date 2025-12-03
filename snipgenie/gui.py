@@ -1378,7 +1378,11 @@ class App(QMainWindow):
         self.tree_viewer()
         filename = os.path.join(self.outputdir,'tree.newick')
         self.treeviewer.load_tree(filename)
-        self.treeviewer.meta = self.meta
+        #merge meta with main table
+        df = self.fastq_table.model.df
+        if self.meta is not None:
+            df = df.merge(self.meta,on='sample',how='left')
+        self.treeviewer.meta = df
         self.treeviewer.update_widgets()
         self.treeviewer.update()
         return
@@ -1392,6 +1396,7 @@ class App(QMainWindow):
         #if not 'phylogeny' in self.get_right_tabs():
             #idx = self.right_tabs.addTab(self.treeviewer, 'phylogeny')
         self.treeviewer.activateWindow()
+        self.treeviewer.setWindowTitle('Tree View')
         self.treeviewer.show()
         #self.right_tabs.setCurrentIndex(idx)
         return

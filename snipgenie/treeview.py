@@ -66,7 +66,7 @@ def colormap_from_values(colormap_name, vals):
     cm = {i:colormap.css(i) for i in labels}
     return cm
 
-def add_legend(canvas, cmap, label='', shape='o'):
+def add_legend(canvas, cmap, label='', shape='o', font_size=12):
     """Category or continuous value legend.
     canvas: canvas
     cmap: mapping of labels to colors
@@ -78,17 +78,19 @@ def add_legend(canvas, cmap, label='', shape='o'):
     s = 50
     min = 15
     e = min+s+l*15
+
     legend = canvas.legend(
         legendmarkers,
         bounds=("70%", "100%", s, e),
         label=label,
-        margin=100,
+        margin=100
         )
     return
 
 def add_color_scale(canvas, colormap_name, min=0, max=1, label=''):
 
-    colormap = toyplot.color.brewer.map(name=colormap_name, domain_min=min, domain_max=max, reverse=True)
+    colormap = toyplot.color.brewer.map(name=colormap_name,
+                                         domain_min=min, domain_max=max, reverse=True)
     legend = canvas.color_scale(colormap,
                                 x1="90%", y1="-20%", x2="90%", y2="20%",
                                 label=label)
@@ -98,9 +100,9 @@ def get_node_colors(tre, df, col, cmap):
     """Node colors from tree and dataframe labels"""
 
     node_colors=[]
-    for n in tre.get_node_values('name', True, True):
-        if n in df.index:
-            val = df.loc[n][col]
+    for n in tre.get_nodes():
+        if n.name in df.index:
+            val = df.loc[n.name][col]
             if val in cmap:
                 node_colors.append(cmap[val])
             else:
@@ -147,8 +149,9 @@ class TreeViewer(QWidget):
         import toytree
         self.colors = {}
         self.node_colors = {}
-        self.node_sizes = 10
+        self.node_size = 10
         self.showtiplabels = True
+        self.font_size = 14
         self.default_style = {
             "layout":'r',
             "edge_type": 'p',
@@ -164,10 +167,9 @@ class TreeViewer(QWidget):
                 "font-size": "14px"
             },
             "node_labels": False,
-            "node_colors": toytree.colors[2],
-            "node_sizes": self.node_sizes,
+            "node_colors": 'black',
             "node_markers":"o",
-            "node_style": { "stroke": 'black','stroke-width':0},
+            "node_style": { 'fill':'#6FA8ED','fill_opacity': None,'stroke': 'black','stroke-width':1},
             "use_edge_lengths":True
         }
 
@@ -365,7 +367,6 @@ class TreeViewer(QWidget):
     def test_tree(self, n=None):
         """Load a test tree"""
 
-        import toytree
         if n==None:
             n, ok = QInputDialog().getInt(self, "Test tree",
                                                  "Nodes:", 10)
@@ -395,7 +396,6 @@ class TreeViewer(QWidget):
     def random_tree(self, n=12):
         """Make a random tree"""
 
-        import toytree
         tre = toytree.rtree.coaltree(n)
         ## assign random edge lengths and supports to each node
         for node in tre.treenode.traverse():
@@ -406,12 +406,11 @@ class TreeViewer(QWidget):
     def load_tree(self, filename=None):
         """Load the tree"""
 
-        import toytree
         if filename == None:
             options = QFileDialog.Options()
             filter = "newick files (*.newick);;All files (*.*)"
             filename, _ = QFileDialog.getOpenFileName(self,"Open tree file",
-                                        "",filter=filter,selectedFilter =filter, options=options)
+                                        "",filter=filter, options=options)
             if not filename:
                 return
         self.set_tree(toytree.tree(filename))
@@ -447,11 +446,10 @@ class TreeViewer(QWidget):
 
     def load_multitree(self):
 
-        import toytree
         options = QFileDialog.Options()
         filter = "newick files (*.newick);;All files (*.*)"
         filename, _ = QFileDialog.getOpenFileName(self,"Open tree file",
-                                    "",filter=filter,selectedFilter =filter, options=options)
+                                    "", filter=filter, options=options)
         if not filename:
             return
         self.tree = toytree.mtree(filename)
@@ -477,13 +475,18 @@ class TreeViewer(QWidget):
             self.browser.setHtml('')
             self.tipitems.clear()
             return
-        if type(self.tree) is toytree.Multitree.MultiTree:
+
+        if type(self.tree) is toytree.core.multitree.MultiTree:
             self.update_multitree()
             return
-        tre = self.tree
-        ns = [0 if i else self.node_sizes for i in tre.get_node_values(None, 1, 0)]
 
-        #widget values
+        tre = self.tree
+        df_node_data = tre.get_node_data()
+        # Check for empty string in 'name' column to identify internal nodes (non-tips)
+        df_node_data['node_size'] = df_node_data['name'].apply(lambda x: self.node_size if x != '' else 0)
+        custom_node_sizes = df_node_data['node_size'].tolist()
+
+        # widget values
         ncw = self.colorby['node color']
         nodecol = ncw.currentText()
         tlw = self.colorby['tip labels']
@@ -493,7 +496,7 @@ class TreeViewer(QWidget):
         cmap = None
 
         if self.meta is not None:
-            df = self.meta.copy().fillna('')
+            df = self.meta.copy().fillna('').set_index('sample',drop=False)
             idx = tre.get_tip_labels()
             df = df.reindex(index=idx)
             df = df.loc[idx]
@@ -508,10 +511,11 @@ class TreeViewer(QWidget):
                     dtype = 'object'
 
                 labels = df[nodecol].unique()
+                #tre.set_node_data(nodecol, data=self.meta[nodecol], inplace=True)
                 if len(labels)>20:
                      print ('too many categories for legend')
                      node_colors = None
-                elif dtype == 'object':
+                if dtype == 'object':
                     cmap = colormap_from_labels(colormap, labels)
                     node_colors = get_node_colors(tre, df, nodecol, cmap)
                 else:
@@ -527,28 +531,35 @@ class TreeViewer(QWidget):
         colorlist = [self.colors[tip] if tip in self.colors else "black" for tip in tre.get_tip_labels()]
         self.style['tip_labels_colors'] = colorlist
         self.style['node_colors'] = node_colors
-        self.style['node_sizes'] = ns
+
         if self.ts != '':
             style = {}
         else:
             style = self.style
 
+        # DRAW
         canvas = toyplot.Canvas(width=self.width, height=self.height)
         axes1 = canvas.cartesian(bounds=("5%", "75%", "5%", "95%"), margin=10)
-        c,axes,mark = self.tree.draw(ts=self.ts,
-                                        axes=axes1,
-                                        scalebar=True, **style)
+        c, axes, mark = self.tree.draw(
+            tree_style=self.ts,
+            axes=axes1,
+            node_sizes=custom_node_sizes,
+            scale_bar=True,
+            node_hover=True,
+            node_mask=False,
+            **style
+        )
 
-        #add legend
-        if node_colors != None and cmap != None:
+        # add legend (rest of the code remains the same)
+        if node_colors is not None and cmap != None:
             if dtype == 'object':
-                add_legend(canvas, cmap, nodecol, shape=style['node_markers'])
+                add_legend(canvas, cmap, nodecol, style['node_markers'], self.font_size)
             else:
-                vals = df[nodecol].replace('',np.nan).dropna().values
-                if len(vals)==0:
-                    print ('no values for legend')
+                vals = df[nodecol].replace('', np.nan).dropna().values
+                if len(vals) == 0:
+                    print('no values for legend')
                     return
-                add_color_scale(canvas, colormap,  min=vals.min(), max=vals.max(), label=nodecol)
+                add_color_scale(canvas, colormap, min=vals.min(), max=vals.max(), label=nodecol)
 
         toyplot.html.render(canvas, "temp.html")
         with open('temp.html', 'r') as f:
@@ -656,7 +667,7 @@ class TreeViewer(QWidget):
                 'tip_labels':{'type':'checkbox','default': self.showtiplabels},
                 'tip_labels_align':{'type':'checkbox','default':self.style['tip_labels_align'] },
                 #'node_labels':{'type':'combobox','default':self.style['node_labels'],'items': nlabels},
-                'node_sizes':{'type':'spinbox','default':self.node_sizes,'range':(2,40),'interval':1},
+                'node_size':{'type':'spinbox','default':self.node_size,'range':(2,40),'interval':1},
                 'node_markers': {'type':'combobox','default':self.style['node_markers'],'items':markers},
                 'font_size':{'type':'combobox','default':tip_labels_style['font-size'],'items':fonts}
                 }
@@ -680,9 +691,10 @@ class TreeViewer(QWidget):
         #if kwds['node_labels'] == '':
         #    self.style['node_labels'] = False
         if 'font_size' in kwds:
-            self.style['tip_labels_style']['font-size'] = kwds['font_size']
+            self.font_size = self.style['tip_labels_style']['font-size'] = kwds['font_size']
+
         #self.ts = kwds['ts']
-        self.node_sizes = kwds['node_sizes']
+        self.node_size = kwds['node_size']
         return
 
     def reset_style(self):
@@ -720,7 +732,7 @@ class TreeViewer(QWidget):
         text='Phylo Tree Viewer\n'\
             +'version '+version+'\n'\
             +'Copyright (C) Damien Farrell 2021-\n'
-
+        text += f'toytree version {toytree.__version__}\n'
         msg = QMessageBox.about(self, "About", text)
         return
         return

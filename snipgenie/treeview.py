@@ -33,7 +33,7 @@ home = os.path.expanduser("~")
 module_path = os.path.dirname(os.path.abspath(__file__)) #path to module
 iconpath = os.path.join(module_path, 'plugins', 'icons')
 logoimg = os.path.join(iconpath, 'tree.svg')
-version = '0.2'
+version = '0.3'
 
 widgetstyle = '''
     QLabel {
@@ -313,7 +313,7 @@ class TreeViewer(QWidget):
             w.activated.connect(self.update)
             w.setStyleSheet(widgetstyle)
 
-        w = self.catlegendw = QCheckBox('Categorical Legend')
+        w = self.catlegendw = QCheckBox('Force Categorical Legend')
         l.addWidget(w)
 
         btn = QPushButton('Set Format')
@@ -512,9 +512,9 @@ class TreeViewer(QWidget):
 
                 labels = df[nodecol].unique()
                 #tre.set_node_data(nodecol, data=self.meta[nodecol], inplace=True)
-                if len(labels)>20:
-                     print ('too many categories for legend')
-                     node_colors = None
+                #if len(labels)>20:
+                #     print ('too many categories for legend')
+                #     node_colors = None
                 if dtype == 'object':
                     cmap = colormap_from_labels(colormap, labels)
                     node_colors = get_node_colors(tre, df, nodecol, cmap)
@@ -607,14 +607,17 @@ class TreeViewer(QWidget):
         options = QFileDialog.Options()
         filter = "png files (*.png);;pdf files (*.pdf);;All files (*.*)"
         filename, _ = QFileDialog.getSaveFileName(self,"Save Project",
-                                    "",filter=filter,selectedFilter =filter, options=options)
+                                    "",filter=filter, options=options)
         if not filename:
             return
-
-        ext = os.path.splitext(filename)
-        print (ext)
-        from toyplot import png
-        png.render(self.canvas, filename, width=(4, "inches"))
+        ext = os.path.splitext(filename)[1]
+        if ext == '.png':
+            from toyplot import png
+            png.render(self.canvas, filename, width=(4, "inches"))
+        elif ext == '.pdf':
+            from toyplot import pdf
+            pdf.render(self.canvas, filename, width=(4, "inches"))
+        print (f'saved to {filename}')
         return
 
     def fit_to_window(self):
@@ -684,7 +687,7 @@ class TreeViewer(QWidget):
     def set_style(self, kwds):
         """Set style"""
 
-        omit = ['width','height','font_size','ts']
+        omit = ['width','height','font_size','ts','node_size']
         for k in kwds:
             if k not in omit:
                 self.style[k] = kwds[k]

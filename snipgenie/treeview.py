@@ -210,7 +210,7 @@ class TreeViewer(QWidget):
         self.menubar.addMenu(self.file_menu)
         self.tree_menu = QMenu('Tree', parent)
         self.tree_menu.addAction('Show Unrooted', self.unroot_tree)
-        self.tree_menu.addAction('Subsample Tree', self.unroot_tree)
+        #self.tree_menu.addAction('Subsample Tree', self.unroot_tree)
         self.menubar.addMenu(self.tree_menu)
         self.view_menu = QMenu('View', parent)
         self.view_menu.addAction('Fit to Window', self.fit_to_window)
@@ -723,10 +723,11 @@ class TreeViewer(QWidget):
         return
 
     def drop_tips(self):
+        """Drop selected tips"""
 
         items = self.tipitems.selectedItems()
         names = [i.text(0) for i in items]
-        self.tree = self.tree.drop_tips(names=names).ladderize()
+        self.tree = toytree.mod.drop_tips(self.tree, *names)#.ladderize()
         self.update()
         return
 

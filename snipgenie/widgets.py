@@ -2392,11 +2392,11 @@ class ScratchPad(QWidget):
         items = { 'new text':{'action':self.newText,'file':'document-new'},
                   'save': {'action':self.save,'file':'save'},
                   'save all': {'action':self.saveAll,'file':'save-all'},
-                  'clear': {'action':self.clear,'file':'clear'}
+                  'clear': {'action':self.clear,'file':'clean'}
                     }
         for i in items:
             if 'file' in items[i]:
-                iconfile = os.path.join(iconpath,items[i]['file']+'.png')
+                iconfile = os.path.join(iconpath,items[i]['file'])
                 icon = QIcon(iconfile)
             else:
                 icon = QIcon.fromTheme(items[i]['icon'])
@@ -2414,7 +2414,7 @@ class ScratchPad(QWidget):
             obj = items[name]
             #print (name,type(obj))
             if type(obj) is str:
-                te = dialogs.PlainTextEditor()
+                te = PlainTextEditor()
                 te.setPlainText(obj)
                 self.main.addTab(te, name)
             elif type(obj) is pd.DataFrame:
@@ -2456,7 +2456,7 @@ class ScratchPad(QWidget):
         """Save all figures in a folder"""
 
         dir =  QFileDialog.getExistingDirectory(self, "Save Folder",
-                                             homepath, QFileDialog.ShowDirsOnly)
+                                             '.', QFileDialog.ShowDirsOnly)
         if not dir:
             return
         for name in self.items:
@@ -2465,8 +2465,13 @@ class ScratchPad(QWidget):
         return
 
     def clear(self):
-        """Clear plots"""
+        """Clear items"""
 
+        msg='Clear all items?'
+        reply = QMessageBox.question(self, 'Clear items?', msg,
+                                            QMessageBox.No | QMessageBox.Yes )
+        if reply == QMessageBox.No:
+            return
         self.items.clear()
         self.main.clear()
         return
@@ -2477,7 +2482,7 @@ class ScratchPad(QWidget):
         name, ok = QInputDialog.getText(self, 'Name', 'Name:',
                     QLineEdit.Normal, '')
         if ok:
-            tw = dialogs.PlainTextEditor()
+            tw = PlainTextEditor()
             self.main.addTab(tw, name)
             self.items[name] = tw.toPlainText()
         return

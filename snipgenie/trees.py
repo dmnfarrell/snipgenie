@@ -79,8 +79,8 @@ def run_RAXML(infile, name='variants', threads=8, bootstraps=100, model='GTRCAT'
     if not os.path.exists(outpath):
         os.makedirs(outpath, exist_ok=True)
    
-    s1 = random.randint(0,1e8)
-    s2 = random.randint(0,1e8)
+    s1 = random.randint(0,100000)
+    s2 = random.randint(0,100000)
 
     files = glob.glob(os.path.join(outpath,'RAxML_*'))
     for f in files:

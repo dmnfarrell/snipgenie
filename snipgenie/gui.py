@@ -493,8 +493,7 @@ class App(QMainWindow):
         self.analysis_menu.addAction('Create SNP alignment',
             lambda: self.run_threaded_process(self.snp_alignment, self.processing_completed))
         icon = QIcon(os.path.join(iconpath,'phylogeny.png'))
-        self.analysis_menu.addAction(icon, 'Build Phylogeny',
-            lambda: self.run_threaded_process(self.make_phylo_tree, self.phylogeny_completed))
+        self.analysis_menu.addAction(icon, 'Build Phylogeny', self.make_phylo_tree)
         self.analysis_menu.addSeparator()
         self.analysis_menu.addAction('Run Workflow', self.run)
 
@@ -590,6 +589,7 @@ class App(QMainWindow):
         return
 
     def load_preset_genome(self, seqname, gbfile, mask, ask):
+        """Load a preset genome"""
 
         if ask == True:
             msg = 'This will replace the current reference with a preset.'
@@ -1350,17 +1350,33 @@ class App(QMainWindow):
         self.opentables[name] = table
         return
 
-    def make_phylo_tree(self, progress_callback=None, method='raxml'):
+    def make_phylo_tree(self):
         """Make phylogenetic tree"""
+
+        outfile = os.path.join(self.outputdir,'tree.newick')
+        if os.path.exists(outfile):
+            msg = "This will overwrite your current tree, continue?"
+            reply = QMessageBox.question(self, 'Warning!', msg,
+                                     QMessageBox.No | QMessageBox.Yes )
+            if reply == QMessageBox.No:
+                return
+
+        self.run_threaded_process(self.run_phylo_tree, self.phylogeny_completed)
+        return
+
+    def run_phylo_tree(self, progress_callback=None, method='raxml'):
+        """Run phylogenetic tree tool"""
 
         corefasta = os.path.join(self.outputdir, 'core.fa')
         bootstraps = 100
+        outfile = os.path.join(self.outputdir,'tree.newick')
+
         if method == 'raxml':
             treefile = trees.run_RAXML(corefasta, bootstraps=bootstraps, outpath=self.outputdir)
         elif method == 'fasttree':
             outfile = os.path.join(self.outputdir, 'tree.newick')
             treefile = trees.run_fasttree(corefasta, bootstraps=bootstraps, outfile=outfile)
-        outfile = os.path.join(self.outputdir,'tree.newick')
+
         snpmat = pd.read_csv(self.snp_matrix, sep=' ',index_col=0)
         ls = len(snpmat)
         trees.convert_branch_lengths(treefile, outfile, ls)
@@ -1368,9 +1384,11 @@ class App(QMainWindow):
         return
 
     def phylogeny_completed(self):
+        """Show phylogeny after finished"""
 
         self.processing_completed()
         self.show_phylogeny()
+        return
 
     def show_phylogeny(self):
         """Show current tree"""
@@ -2231,14 +2249,15 @@ class App(QMainWindow):
         return
 
     def about(self):
+        """About window"""
 
         from . import __version__
         import matplotlib
-        import PySide2
         pandasver = pd.__version__
         pythonver = platform.python_version()
         mplver = matplotlib.__version__
         try:
+            import PySide2
             qtver = PySide2.QtCore.__version__
             qtlib = 'PySide2'
         except:
